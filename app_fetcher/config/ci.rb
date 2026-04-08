@@ -1,3 +1,4 @@
+# typed: ignore
 # Run using bin/ci
 
 CI.run do
