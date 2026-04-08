@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db_core:
+    image: postgres:15
+    volumes:
+      - ./postgres_core_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+
+  db_fetcher:
+    image: postgres:15
+    volumes:
+      - ./postgres_fetcher_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - ./redis_data:/data
+
+  app_core:
+    build: ./app_core
+    volumes:
+      - ./app_core:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db_core
+      - redis
+
+  app_fetcher:
+    build: ./app_fetcher
+    volumes:
+      - ./app_fetcher:/app
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db_fetcher
+      - redis
