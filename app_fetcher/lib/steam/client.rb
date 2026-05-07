@@ -32,9 +32,20 @@ module Steam
 
     sig { params(market_hash_name: String).returns(Steam::Response[ItemPriceData]) }
     def fetch_item_price(market_hash_name)
-      perform_request(Steam::ItemPriceData, "/market/priceoverview/") do
+      response = perform_request(Steam::ItemPriceData, "/market/priceoverview/") do
         { market_hash_name: market_hash_name, appid: CS2_APPID, currency: 1 }
       end
+
+      T.cast(response, Steam::Response[Steam::ItemPriceData])
+    end
+
+    sig { params(steam_id: String).returns(Steam::Response[InventoryData]) }
+    def fetch_user_inventory(steam_id)
+      response = perform_request(Steam::InventoryData, "/inventory/#{steam_id}/#{CS2_APPID}/2") do
+        { l: "english", count: 2000 }
+      end
+
+      T.cast(response, Steam::Response[Steam::InventoryData])
     end
 
     private
@@ -53,10 +64,10 @@ module Steam
 
     sig do 
       params(
-        dto_class: T.class_of(ItemPriceData), 
+        dto_class: T.untyped, 
         path: String,
         params_blk: T.proc.returns(T::Hash[Symbol, T.untyped])
-      ).returns(Steam::Response[ItemPriceData]) 
+      ).returns(T.untyped) 
     end
     def perform_request(dto_class, path, &params_blk)
       response = @connection.get(path, params_blk.call)
@@ -64,16 +75,17 @@ module Steam
       case response.status
       when 200
         body = JSON.parse(response.body)
-        return Steam::Response[dto_class].new(status: 404, error: "Not Found") unless body['success']
+        return Steam::Response[T.untyped].new(status: 404, error: "Not Found") unless body['success']
 
-        Steam::Response[dto_class].new(status: 200, data: dto_class.from_hash(body))
+        data = dto_class.from_hash(body)
+        Steam::Response[T.untyped].new(status: 200, data: data)
       when 429
-        Steam::Response[dto_class].new(status: 429, error: "Rate Limit Exceeded")
+        Steam::Response[T.untyped].new(status: 429, error: "Rate Limit Exceeded")
       else
-        Steam::Response[dto_class].new(status: response.status, error: "Steam API Error")
+        Steam::Response[T.untyped].new(status: response.status, error: "Steam API Error")
       end
     rescue Faraday::Error, JSON::ParserError => e
-      Steam::Response[dto_class].new(status: 500, error: e.message)
+      Steam::Response[T.untyped].new(status: 500, error: e.message)
     end
   end
 end

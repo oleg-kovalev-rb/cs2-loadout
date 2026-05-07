@@ -29,7 +29,8 @@ module Steam
 
   SteamDataObjects = T.type_alias do
     T.any(
-      ItemPriceData
+      ItemPriceData,
+      InventoryData
     )
   end
 
@@ -49,6 +50,27 @@ module Steam
         median_price: hash["median_price"],
         volume: hash["volume"]
       )
+    end
+  end
+
+  class InventoryData < T::Struct
+    extend T::Sig
+    extend Response::DataClassMethods
+
+    const :assets, T::Array[T::Hash[String, T.untyped]]
+    const :descriptions, T::Array[T::Hash[String, T.untyped]]
+
+    sig { override.params(hash: T::Hash[String, T.untyped]).returns(InventoryData) }
+    def self.from_hash(hash)
+      InventoryData.new(
+        assets: hash["assets"] || [],
+        descriptions: hash["descriptions"] || []
+      )
+    end
+
+    sig { returns(T::Array[String]) }
+    def market_hash_names
+      descriptions.map { |desc| desc["market_hash_name"] }.compact.uniq
     end
   end
 end
