@@ -13,7 +13,7 @@ module Api
         if response.success?
           names = response.data.market_hash_names
 
-          items_attributes = names.map { |name| Steam::ItemParser.parse(name) }
+          items_attributes = names.map { |name| Steam::ItemBuilder.build(name) }
 
           unless items_attributes.empty?
             Item.upsert_all(items_attributes, unique_by: :market_hash_name)

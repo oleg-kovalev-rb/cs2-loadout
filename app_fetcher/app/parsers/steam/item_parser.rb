@@ -1,13 +1,13 @@
 # typed: strict
 
 module Steam
-  class ItemParser
+  class ItemBuilder
     extend T::Sig
 
     ParsedData = T.type_alias { T::Hash[Symbol, T.untyped] }
 
     sig { params(market_hash_name: String).returns(ParsedData) }
-    def self.parse(market_hash_name)
+    def self.build(market_hash_name)
       stattrak = market_hash_name.include?("StatTrak™")
       souvenir = market_hash_name.include?("Souvenir")
 

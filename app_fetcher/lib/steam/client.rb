@@ -13,18 +13,15 @@ module Steam
 
     CS2_APPID = T.let(730, Integer)
 
-    LIMIT_MAP = T.let({
-      price_overview: :steam_price_api,
-      price_history:  :steam_history_api,
-      assets:         :steam_assets_api
-    }.freeze, T::Hash[Symbol, Symbol])
-
     sig { void }
     def initialize
       @connection = T.let(Faraday.new(url: BASE_URL) do |f|
         f.headers = default_headers
+
+        f.request :user_agent_rotator
         f.request :url_encoded
         f.adapter Faraday.default_adapter
+
         f.options.timeout = 10
         f.options.open_timeout = 5
       end, Faraday::Connection)
@@ -32,7 +29,7 @@ module Steam
 
     sig { params(market_hash_name: String).returns(Steam::Response[ItemPriceData]) }
     def fetch_item_price(market_hash_name)
-      response = perform_request(Steam::ItemPriceData, "/market/priceoverview/") do
+      response = perform_request(Steam::ItemPriceData, "/market/priceoverview/", :steam_price) do
         { market_hash_name: market_hash_name, appid: CS2_APPID, currency: 1 }
       end
 
@@ -41,7 +38,7 @@ module Steam
 
     sig { params(steam_id: String).returns(Steam::Response[InventoryData]) }
     def fetch_user_inventory(steam_id)
-      response = perform_request(Steam::InventoryData, "/inventory/#{steam_id}/#{CS2_APPID}/2") do
+      response = perform_request(Steam::InventoryData, "/inventory/#{steam_id}/#{CS2_APPID}/2", :steam_inventory) do
         { l: "english", count: 2000 }
       end
 
@@ -50,26 +47,18 @@ module Steam
 
     private
 
-    sig { returns(T::Hash[String, String]) }
-    def default_headers
-      {
-        "User-Agent" => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept" => "application/json, text/javascript, */*; q=0.01",
-        "Accept-Language" => "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer" => "https://steamcommunity.com/market/",
-        "X-Requested-With" => "XMLHttpRequest",
-        "Connection" => "keep-alive"
-      }
-    end
-
-    sig do 
+    sig do
       params(
         dto_class: T.untyped, 
         path: String,
+        limit_key: Symbol,
         params_blk: T.proc.returns(T::Hash[Symbol, T.untyped])
       ).returns(T.untyped) 
     end
-    def perform_request(dto_class, path, &params_blk)
+    def perform_request(dto_class, path, limit_key, &params_blk)
+      Prop.throttle!("#{limit_key}_rpm".to_sym, "global")
+      Prop.throttle!("#{limit_key}_rpd".to_sym, "global")
+
       response = @connection.get(path, params_blk.call)
 
       case response.status
