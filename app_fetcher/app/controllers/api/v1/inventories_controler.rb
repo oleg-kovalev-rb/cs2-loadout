@@ -13,10 +13,11 @@ module Api
         if response.success?
           names = response.data.market_hash_names
 
-          items = Steam::ItemParser.parse_collection(names)
+          items_attributes = names.map { |name| Steam::ItemParser.parse(name) }
 
-          new_items = items.reject(&:persisted?)
-          new_items.each(&:save!)
+          unless items_attributes.empty?
+            Item.upsert_all(items_attributes, unique_by: :market_hash_name)
+          end
 
           render json: {
             items_count: items.size,
