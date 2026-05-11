@@ -1,0 +1,4 @@
+schedule_price_updates:
+  cron: "0 * * * *"
+  class: "PriceSchedulerWorker"
+  queue: default

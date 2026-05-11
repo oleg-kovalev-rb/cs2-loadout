@@ -7,7 +7,7 @@ module Steam
     PRICE_REGEXP = T.let(/(\d+(?:[.,]\d+)?)/, Regexp)
 
     sig { params(item_id: Integer, price_data: Steam::ItemPriceData).returns(PriceLog) }
-    def self.build(item, price_data)
+    def self.build(item_id, price_data)
       PriceLog.new(
         item_id:,
         lowest_price_cents: to_cents(price_data.lowest_price),
