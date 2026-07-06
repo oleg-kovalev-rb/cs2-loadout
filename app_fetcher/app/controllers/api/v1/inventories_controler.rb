@@ -19,9 +19,17 @@ module Api
             Item.upsert_all(items_attributes, unique_by: :market_hash_name)
           end
 
+          items = Item.where(market_hash_name: names)
+
           render json: {
             items_count: items.size,
-            items: items.as_json(only: [:market_hash_name, :item_type, :metadata]) 
+            items: items.as_json(only: [
+              :market_hash_name,
+              :item_type,
+              :metadata,
+              :current_price_cents,
+              :change_24h_cents
+            ]) 
           }, status: :ok
         else
           render json: { message: response.error }, status: :bad_request

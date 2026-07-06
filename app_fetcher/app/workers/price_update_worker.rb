@@ -27,11 +27,11 @@ class PriceUpdateWorker
                     .order(created_at: :desc)
                     .first
 
-      change_24h_cents = (price_log.lowest_price_cents - price_24h_ago.lowest_price_cents).to_i
+      change_24h_cents = price_24h_ago.nil? ? 0 : (price_log.lowest_price_cents - price_24h_ago.lowest_price_cents).to_i
 
       publish_to_stream(
         item.market_hash_name,
-        price_log.lowest_price_cents
+        price_log.lowest_price_cents,
         change_24h_cents
       )
     else

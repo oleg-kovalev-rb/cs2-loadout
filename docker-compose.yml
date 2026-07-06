@@ -19,7 +19,8 @@ services:
     image: redis:7-alpine
     volumes:
       - ./redis_data:/data
-
+    ports:
+      - "6380:6379"
   app_core:
     build: ./app_core
     volumes:
@@ -29,6 +30,9 @@ services:
     depends_on:
       - db_core
       - redis
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REDIS_URL_STREAM: redis://redis:6379/2
 
   app_fetcher:
     build: ./app_fetcher
@@ -39,3 +43,20 @@ services:
     depends_on:
       - db_fetcher
       - redis
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REDIS_URL_SIDEKIQ: redis://redis:6379/1
+      REDIS_URL_STREAM: redis://redis:6379/2
+
+  fetcher_worker:
+    build: ./app_fetcher
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - ./app_fetcher:/app
+    depends_on:
+      - db_fetcher
+      - redis
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      REDIS_URL_SIDEKIQ: redis://redis:6379/1
+      REDIS_URL_STREAM: redis://redis:6379/2
