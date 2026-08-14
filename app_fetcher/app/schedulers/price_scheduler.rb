@@ -1,6 +1,6 @@
 # typed: strict
 
-class PriceSchedulerWorker
+class PriceScheduler
   include Sidekiq::Worker
   extend T::Sig
 
