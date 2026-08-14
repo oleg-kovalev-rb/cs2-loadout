@@ -1,0 +1,18 @@
+<h1>Welcome to the Home Page</h1>
+<div>
+  Hello <%= @user_name %>
+<div>
+
+<div style="padding: 20px;">
+  <% if session[:user_id] %>
+    <h3>Welcome! Ur session_id is: <%= session[:user_id] %></h3>
+    
+    <%= button_to "Sign out", session_path, method: :delete, data: { turbo: false } %>
+  <% else %>
+    <h3>Sign In to check your inventory</h3>
+
+    <%= button_to session_path, method: :post, data: { turbo: false }, style: "border: none; background: none; padding: 0; cursor: pointer;" do %>
+      <%= image_tag "https://community.akamai.steamstatic.com/public/images/signinthroughsteam/sits_01.png", alt: "Sign in through Steam" %>
+    <% end %>
+  <% end %>
+</div>
