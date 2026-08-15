@@ -27,29 +27,25 @@ module Steam
       raise AuthError, "Missing Steam payload" if auth_params.empty?
 
       check_params = auth_params.dup
-      check_params['openid.mode'] = 'check_authentication'
+      check_params["openid.mode"] = "check_authentication"
 
       uri = URI(STEAM_OPENID_URL)
       
-      # 1. Настраиваем HTTP клиента явно
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
 
-      # 2. Формируем POST запрос
       request = Net::HTTP::Post.new(uri.request_uri)
       request.set_form_data(check_params)
       
-      # 3. ДОБАВЛЯЕМ USER-AGENT (Критично для Steam API!)
-      request['User-Agent'] = 'AppMain_SteamAuth_PetProject/1.0'
+      request["User-Agent"] = "AppMain_SteamAuth_PetProject/1.0"
 
-      # 4. Выполняем запрос
       response = http.request(request)
 
       unless response.is_a?(Net::HTTPSuccess) && response.body.include?("is_valid:true")
         raise AuthError, "Steam validation failed"
       end
 
-      claimed_id = auth_params['openid.claimed_id']
+      claimed_id = auth_params["openid.claimed_id"]
       steam_id_match = claimed_id&.match(%r{openid/id/(\d+)})
 
       unless steam_id_match
@@ -58,8 +54,6 @@ module Steam
 
       steam_id_match[1]
     rescue Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError, EOFError => e
-      # Перехватываем сетевые и SSL ошибки, чтобы не ронять приложение (500 Error),
-      # а корректно отработать через наш кастомный AuthError
       raise AuthError, "Network error during validation: #{e.message}"
     end
   end
