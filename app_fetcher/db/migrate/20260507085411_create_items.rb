@@ -5,6 +5,8 @@ class CreateItems < ActiveRecord::Migration[7.2]
       t.jsonb :metadata, default: {}, null: false
 
       t.integer :current_price_cents
+      t.integer :change_24h_cents
+
       t.timestamps
     end
 

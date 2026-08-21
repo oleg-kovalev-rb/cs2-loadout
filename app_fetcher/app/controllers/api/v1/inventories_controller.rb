@@ -31,7 +31,6 @@ module Api
             items_count: inventory_items.size,
             items: inventory_items.as_json(only: [
               :market_hash_name,
-              :item_type,
               :metadata,
               :current_price_cents,
               :change_24h_cents

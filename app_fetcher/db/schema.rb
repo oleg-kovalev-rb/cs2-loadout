@@ -18,6 +18,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_07_094717) do
     t.string "market_hash_name", null: false
     t.jsonb "metadata", default: {}, null: false
     t.integer "current_price_cents"
+    t.integer "change_24h_cents"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["market_hash_name"], name: "index_items_on_market_hash_name", unique: true
