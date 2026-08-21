@@ -5,8 +5,6 @@ require 'prop'
 
 module Steam
   class Client
-    class RateLimitError < StandardError; end
-
     extend T::Sig
 
     BASE_URL = T.let("https://steamcommunity.com".freeze, String)
@@ -73,6 +71,8 @@ module Steam
       else
         Steam::Response[T.untyped].new(status: response.status, error: "Steam API Error")
       end
+    rescue Prop::RateLimited => e
+      Steam::Response[T.untyped].new(status: 429, error: "Rate Limit Exceeded (retry after #{e.retry_after}s)")
     rescue Faraday::Error, JSON::ParserError => e
       Steam::Response[T.untyped].new(status: 500, error: e.message)
     end
