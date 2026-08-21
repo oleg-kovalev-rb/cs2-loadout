@@ -1,7 +1,7 @@
 # typed: strict
 
 class Item < ApplicationRecord
-  store_accessor :metadata, :weapon_type, :item_name, :condition, :stattrak
+  store_accessor :condition, :item_name, :metadata, :weapon_type, :souvenir, :stattrak
 
   validates :market_hash_name, presence: true
   validates :market_hash_name, uniqueness: true

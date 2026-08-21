@@ -41,24 +41,24 @@ module Steam
         weapon_type, item_name = clean_name.split(WEAPON_TYPE_SEPARATOR, 2)
 
         {
-          market_hash_name: market_hash_name,
+          market_hash_name:,
           metadata: {
-            weapon_type: weapon_type,
-            item_name: item_name,
-            condition: condition,
-            stattrak: stattrak,
-            souvenir: souvenir
+            weapon_type:,
+            item_name:,
+            condition:,
+            stattrak:,
+            souvenir:
           }
         }
       else
         {
-          market_hash_name: market_hash_name,
+          market_hash_name:,
           metadata: {
             weapon_type: nil,
             condition: nil,
             item_name: clean_name,
-            stattrak: false,
-            souvenir: false
+            stattrak:,
+            souvenir:
           }
         }
       end
