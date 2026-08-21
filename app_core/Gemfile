@@ -16,6 +16,8 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
+# Vite integration for the React dashboard island [https://vite-ruby.netlify.app]
+gem "vite_rails"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
@@ -67,4 +69,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   # TODO: uncomment and fix tapioca gem "selenium-webdriver"
+  # Stub outbound HTTP calls (e.g. the app_fetcher proxy) in tests [https://github.com/bblimke/webmock]
+  gem "webmock"
 end
+
+# Rails 7.2's test runner isn't compatible with minitest 6.x (Rails::TestUnit::LineFiltering#run
+# gets called with an arity minitest 6 changed); pin to the 5.x line Rails 7.2 was built against.
+gem "minitest", "~> 5.25"

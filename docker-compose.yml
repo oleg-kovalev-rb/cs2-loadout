@@ -30,9 +30,11 @@ services:
     depends_on:
       - db_core
       - redis
+      - app_fetcher
     environment:
       REDIS_URL: redis://redis:6379/0
       REDIS_URL_STREAM: redis://redis:6379/2
+      APP_FETCHER_URL: http://app_fetcher:3001
 
   app_fetcher:
     build: ./app_fetcher
@@ -47,6 +49,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       REDIS_URL_SIDEKIQ: redis://redis:6379/1
       REDIS_URL_STREAM: redis://redis:6379/2
+      PORT: 3001
 
   fetcher_worker:
     build: ./app_fetcher

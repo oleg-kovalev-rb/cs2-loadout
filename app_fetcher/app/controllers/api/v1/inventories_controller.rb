@@ -3,6 +3,8 @@
 module Api
   module V1
     class InventoriesController < ApplicationController
+      extend T::Sig
+
       sig { void }
       def show
         steam_id = params[:steam_id]

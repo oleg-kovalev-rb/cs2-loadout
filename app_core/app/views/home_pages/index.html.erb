@@ -6,7 +6,9 @@
 <div style="padding: 20px;">
   <% if session[:user_id] %>
     <h3>Welcome! Ur session_id is: <%= session[:user_id] %></h3>
-    
+
+    <p><%= link_to "Go to dashboard", dashboard_path %></p>
+
     <%= button_to "Sign out", session_path, method: :delete, data: { turbo: false } %>
   <% else %>
     <h3>Sign In to check your inventory</h3>

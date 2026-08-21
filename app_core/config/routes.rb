@@ -15,4 +15,6 @@ Rails.application.routes.draw do
   resource :session, only: %i[create destroy] do
     get :callback
   end
+
+  resource :dashboard, only: :show
 end

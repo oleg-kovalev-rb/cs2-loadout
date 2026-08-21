@@ -1,0 +1,27 @@
+<% content_for :title, "Dashboard — FLOAT" %>
+
+<div class="dash-root">
+  <div class="bg-fx" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">FLOAT<span>/</span></span>
+      <span class="brand-sub">Steam market intelligence</span>
+    </div>
+    <div class="profile-chip">
+      <span class="avatar" aria-hidden="true"><%= current_user.nickname.to_s.first.presence&.upcase || "?" %></span>
+      <span class="profile-name"><%= current_user.nickname.presence || "Player" %></span>
+    </div>
+  </header>
+
+  <div id="dashboard-root" data-api-url="<%= dashboard_path(format: :json) %>"></div>
+
+  <footer class="dash-footer">
+    <span class="sync-pill"><span class="pulse-dot" aria-hidden="true"></span>Snapshot loaded just now</span>
+    <span class="footer-note">Auto-refresh isn&rsquo;t wired up yet &mdash; reload the page for the latest prices</span>
+  </footer>
+</div>
+
+<% content_for :vite_entrypoint do %>
+  <%= vite_javascript_tag "dashboard.jsx" %>
+<% end %>

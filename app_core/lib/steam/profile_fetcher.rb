@@ -12,7 +12,7 @@ module Steam
 
     sig { params(steam_id: String).returns(T.nilable(ProfileData)) }
     def self.call(steam_id)
-      api_key = ENV.fetch("STEAM_WEB_API_KEY")
+      api_key = ENV.fetch("STEAM_WEB_API_KEY", "")
 
       return nil if api_key.empty?
 

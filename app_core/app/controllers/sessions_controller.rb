@@ -4,7 +4,7 @@ class SessionsController < ApplicationController
   # TODO: Add rescue from
 
   def create
-    redirect_to Steam::Authenticator.auth_url(callback_sessions_url, root_url), allow_other_host: true
+    redirect_to Steam::Authenticator.auth_url(callback_session_url, root_url), allow_other_host: true
   end
 
   def callback
