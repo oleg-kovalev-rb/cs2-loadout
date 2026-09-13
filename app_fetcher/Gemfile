@@ -33,7 +33,7 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
-# gem "rack-cors"
+gem "rack-cors"
 
 gem 'sorbet', :group => :development
 gem 'sorbet-runtime'
@@ -42,6 +42,7 @@ gem 'prop'
 gem 'redis', '~> 5.0'
 gem 'connection_pool'
 gem 'faraday'
+gem 'jwt'
 
 gem 'sidekiq-cron'
 
@@ -59,4 +60,11 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   gem 'tapioca', require: false
+
+  gem "rspec-rails"
+end
+
+group :test do
+  # Stub outbound HTTP calls (e.g. Steam::Client's real Steam API calls) in tests [https://github.com/bblimke/webmock]
+  gem "webmock"
 end

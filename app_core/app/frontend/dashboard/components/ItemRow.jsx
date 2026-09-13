@@ -1,13 +1,14 @@
 import { Sparkline } from './Sparkline'
 import { itemSeries } from '../utils/itemSeries'
-import { fmtUSD, centsToUSD, conditionAbbr } from '../utils/format'
+import { fmtPrice, conditionAbbr } from '../utils/format'
 import { changePct } from '../utils/filters'
 
 export function ItemRow({ item, isSelected, onSelect }) {
-  const direction = item.changeCents >= 0 ? 'up' : 'down'
-  const arrow = item.changeCents >= 0 ? '▲' : '▼'
+  const isTradable = item.currentPriceCents !== 0
   const pct = changePct(item) * 100
-  const sparkValues = itemSeries(item, '7d')
+  const direction = pct >= 0 ? 'up' : 'down'
+  const arrow = pct >= 0 ? '▲' : '▼'
+  const sparkValues = itemSeries(item, '7d').map((point) => point.value)
 
   return (
     <li>
@@ -18,7 +19,7 @@ export function ItemRow({ item, isSelected, onSelect }) {
       >
         <span className="mover-id">
           <span className="mover-name">
-            {item.weaponType} | {item.itemName}
+            {item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}
           </span>
           <span className="mover-tags">
             {item.stattrak && <span className="tag tag-stattrak">ST</span>}
@@ -27,10 +28,12 @@ export function ItemRow({ item, isSelected, onSelect }) {
         </span>
         <Sparkline values={sparkValues} variant={direction} />
         <span className="mover-figures">
-          <span className="mover-price tabular">{fmtUSD(centsToUSD(item.currentPriceCents))}</span>
-          <span className={`mover-delta tabular ${direction}`}>
-            {arrow} {Math.abs(pct).toFixed(1)}%
-          </span>
+          <span className="mover-price tabular">{fmtPrice(item.currentPriceCents)}</span>
+          {isTradable && (
+            <span className={`mover-delta tabular ${direction}`}>
+              {arrow} {Math.abs(pct).toFixed(1)}%
+            </span>
+          )}
         </span>
       </button>
     </li>

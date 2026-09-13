@@ -1,3 +1,5 @@
+import { itemSeries } from './itemSeries'
+
 // Fixed vocabulary and display order — shown in full regardless of which
 // conditions are actually present in the current inventory.
 export const CONDITIONS = ['Factory New', 'Minimal Wear', 'Field-Tested', 'Well-Worn', 'Battle-Scarred']
@@ -11,14 +13,13 @@ export function applyFilters(items, filters) {
   })
 }
 
-// The list displays each item's 24h change as a *percentage* (matching how
-// differently-priced items are actually comparable), so sort by that same
-// percentage rather than raw cents — otherwise a $5 move on a $50 item and a
-// $5 move on a $5,000 item would tie for sort order despite showing very
-// different percentages.
 export function changePct(item) {
-  const startCents = item.currentPriceCents - item.changeCents
-  return startCents === 0 ? 0 : item.changeCents / startCents
+  const points = itemSeries(item, '24h')
+  if (points.length === 0) return 0
+
+  const first = points[0].value
+  const last = points[points.length - 1].value
+  return first ? (last - first) / first : 0
 }
 
 export const SORTERS = {

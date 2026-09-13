@@ -1,7 +1,8 @@
 // The one place to retune chart density. Not yet known to be "right" —
 // change these freely, nothing else in the dashboard needs to change.
 
-export const RANGE_POINTS = { '24h': 24, '7d': 7, '30d': 30 } // data points plotted per range
+export const RANGE_MS ={ '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000, '30d': 30 * 24 * 60 * 60 * 1000 }
+
 export const X_AXIS_TICK_COUNT = 5 // x-axis labels shown (independent of point count)
 export const Y_AXIS_TICK_COUNT = 4 // y-axis price labels shown
 

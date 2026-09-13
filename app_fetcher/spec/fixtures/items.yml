@@ -1,0 +1,5 @@
+redline:
+  market_hash_name: "AK-47 | Redline (Field-Tested)"
+  metadata: '{"weapon_type":"AK-47","item_name":"Redline","condition":"Field-Tested","stattrak":false,"souvenir":false}'
+  current_price_cents: 3845
+  change_24h_cents: 120

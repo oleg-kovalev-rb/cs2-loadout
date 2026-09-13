@@ -16,7 +16,7 @@ module Steam
       @connection = T.let(Faraday.new(url: BASE_URL) do |f|
         f.headers = default_headers
 
-        f.request :user_agent_rotator
+        f.use Faraday::UserAgentRotator
         f.request :url_encoded
         f.adapter Faraday.default_adapter
 
@@ -44,6 +44,11 @@ module Steam
     end
 
     private
+
+    sig { returns(T::Hash[String, String]) }
+    def default_headers
+      { "Accept" => "application/json" }
+    end
 
     sig do
       params(

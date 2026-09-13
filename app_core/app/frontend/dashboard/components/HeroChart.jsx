@@ -1,10 +1,12 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { ChartTooltip } from './ChartTooltip'
-import { fmtAxisUSD, centsToUSD } from '../utils/format'
-import { generateAxisLabels, Y_AXIS_TICK_COUNT } from '../chartConfig'
+import { fmtUSD, centsToUSD } from '../utils/format'
+import { generateAxisLabels, Y_AXIS_TICK_COUNT, RANGE_MS } from '../chartConfig'
 
 export function HeroChart({ values, range }) {
-  const data = values.map((cents, i) => ({ i, cents }))
+  const now = Date.now()
+  const start = now - RANGE_MS[range]
+  const data = values.map(({ at, value }) => ({ at, cents: value }))
   const xLabels = generateAxisLabels(range)
 
   return (
@@ -20,12 +22,12 @@ export function HeroChart({ values, range }) {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(139,148,171,0.09)" vertical={false} />
-              <XAxis dataKey="i" hide />
+              <XAxis dataKey="at" type="number" domain={[start, now]} hide />
               <YAxis
                 domain={['dataMin', 'dataMax']}
                 tickCount={Y_AXIS_TICK_COUNT}
                 width={54}
-                tickFormatter={(cents) => fmtAxisUSD(centsToUSD(cents))}
+                tickFormatter={(cents) => fmtUSD(centsToUSD(cents))}
                 tick={{ fill: 'var(--text-faint)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
                 axisLine={false}
                 tickLine={false}

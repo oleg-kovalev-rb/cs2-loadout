@@ -2,12 +2,13 @@ export function fmtUSD(dollars) {
   return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function fmtAxisUSD(dollars) {
-  return '$' + Math.round(dollars).toLocaleString('en-US')
-}
-
 export function centsToUSD(cents) {
   return cents / 100
+}
+
+export function fmtPrice(cents) {
+  if (cents === 0) return '—'
+  return fmtUSD(centsToUSD(cents || 0))
 }
 
 const CONDITION_ABBR = {

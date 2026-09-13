@@ -7,10 +7,9 @@ module Api
 
       sig { void }
       def show
-        steam_id = params[:steam_id]
         client = Steam::Client.new
 
-        response = client.fetch_user_inventory(steam_id)
+        response = client.fetch_user_inventory(current_steam_id)
 
         if response.success?
           items_names = response.data.market_hash_names
@@ -25,7 +24,7 @@ module Api
             Item.new(attrs)
           end
 
-          inventory_items = items + new_items
+          inventory_items = items.values + new_items
 
           render json: {
             items_count: inventory_items.size,

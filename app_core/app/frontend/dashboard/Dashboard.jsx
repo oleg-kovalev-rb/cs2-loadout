@@ -5,8 +5,8 @@ import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
 import { MarketVolumeTile } from './components/MarketVolumeTile'
 
-export function Dashboard({ apiUrl }) {
-  const { data, status, error } = useDashboardData(apiUrl)
+export function Dashboard({ fetcherUrl, bridgeToken }) {
+  const { data, status, error } = useDashboardData(fetcherUrl, bridgeToken)
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
   if (status === 'loading') {

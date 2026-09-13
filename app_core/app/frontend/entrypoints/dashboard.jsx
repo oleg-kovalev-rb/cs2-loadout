@@ -4,6 +4,6 @@ import { Dashboard } from '../dashboard/Dashboard'
 
 const mountNode = document.getElementById('dashboard-root')
 if (mountNode) {
-  const apiUrl = mountNode.dataset.apiUrl
-  createRoot(mountNode).render(<Dashboard apiUrl={apiUrl} />)
+  const { fetcherUrl, bridgeToken } = mountNode.dataset
+  createRoot(mountNode).render(<Dashboard fetcherUrl={fetcherUrl} bridgeToken={bridgeToken} />)
 }

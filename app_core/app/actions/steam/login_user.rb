@@ -17,7 +17,7 @@ module Steam
         user.avatar_url = profile[:avatar_url]
       end
 
-      user.save! unless user.persisted?
+      user.save!
 
       user
     end

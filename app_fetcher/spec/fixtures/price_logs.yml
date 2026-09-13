@@ -1,0 +1,6 @@
+redline_recent:
+  item: redline
+  lowest_price_cents: 3845
+  median_price_cents: 3900
+  volume: 512
+  created_at: <%= 1.hour.ago.iso8601 %>

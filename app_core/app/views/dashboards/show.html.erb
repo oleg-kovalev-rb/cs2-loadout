@@ -14,7 +14,11 @@
     </div>
   </header>
 
-  <div id="dashboard-root" data-api-url="<%= dashboard_path(format: :json) %>"></div>
+  <div
+    id="dashboard-root"
+    data-bridge-token="<%= @bridge_token %>"
+    data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
+  ></div>
 
   <footer class="dash-footer">
     <span class="sync-pill"><span class="pulse-dot" aria-hidden="true"></span>Snapshot loaded just now</span>

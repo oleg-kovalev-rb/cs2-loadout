@@ -1,10 +1,26 @@
 import { describe, test, expect } from 'vitest'
 import { applyFilters, applySort } from '../utils/filters'
 
+function hoursAgo(hours) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+}
+
 const items = [
-  { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000, changeCents: 300 },
-  { marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true, currentPriceCents: 14500, changeCents: -200 },
-  { marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false, currentPriceCents: 5800, changeCents: 100 },
+  {
+    marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false,
+    currentPriceCents: 4000, changeCents: 300,
+    priceHistory: [{ at: hoursAgo(23), priceCents: 3700 }],
+  },
+  {
+    marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true,
+    currentPriceCents: 14500, changeCents: -200,
+    priceHistory: [{ at: hoursAgo(23), priceCents: 14700 }],
+  },
+  {
+    marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false,
+    currentPriceCents: 5800, changeCents: 100,
+    priceHistory: [{ at: hoursAgo(23), priceCents: 5700 }],
+  },
 ]
 
 function emptyFilters() {
@@ -44,12 +60,20 @@ describe('applyFilters', () => {
 describe('applySort', () => {
   test('delta_desc orders biggest gainers first', () => {
     const result = applySort(items, 'delta_desc')
-    expect(result.map((i) => i.changeCents)).toEqual([300, 100, -200])
+    expect(result.map((i) => i.marketHashName)).toEqual([
+      'AK-47 | Redline (FT)',
+      'AWP | Asiimov (BS)',
+      'AK-47 | Vulcan (MW) ST',
+    ])
   })
 
   test('delta_asc orders biggest losers first', () => {
     const result = applySort(items, 'delta_asc')
-    expect(result.map((i) => i.changeCents)).toEqual([-200, 100, 300])
+    expect(result.map((i) => i.marketHashName)).toEqual([
+      'AK-47 | Vulcan (MW) ST',
+      'AWP | Asiimov (BS)',
+      'AK-47 | Redline (FT)',
+    ])
   })
 
   test('price_desc orders most expensive first', () => {

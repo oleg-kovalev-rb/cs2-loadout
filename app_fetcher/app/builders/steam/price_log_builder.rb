@@ -17,6 +17,7 @@ module Steam
     end
 
     class << self
+      extend T::Sig
       private
 
       sig { params(price_string: T.nilable(String)).returns(Integer) }

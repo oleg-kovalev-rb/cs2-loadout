@@ -10,7 +10,8 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :inventories, only: [:show], param: :steam_id
+      get "inventories/me", to: "inventories#show"
+      post "price_histories", to: "price_histories#index"
     end
   end
 end

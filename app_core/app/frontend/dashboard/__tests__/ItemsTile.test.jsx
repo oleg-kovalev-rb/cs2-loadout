@@ -5,12 +5,16 @@ import { describe, test, expect } from 'vitest'
 import { ItemsTile } from '../components/ItemsTile'
 import { dashboardReducer, initialState } from '../reducer'
 
+function hoursAgo(hours) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+}
+
 const items = [
-  { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000, changeCents: 300 },
-  { marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true, currentPriceCents: 14500, changeCents: -200 },
-  { marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false, currentPriceCents: 5800, changeCents: 100 },
-  { marketHashName: 'AWP | Neo-Noir (FN)', weaponType: 'AWP', itemName: 'Neo-Noir', condition: 'Factory New', stattrak: false, currentPriceCents: 7600, changeCents: 50 },
-  { marketHashName: 'M4A4 | Howl (MW)', weaponType: 'M4A4', itemName: 'Howl', condition: 'Minimal Wear', stattrak: false, currentPriceCents: 285000, changeCents: -1000 },
+  { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000, changeCents: 300, priceHistory: [{ at: hoursAgo(23), priceCents: 3700 }] },
+  { marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true, currentPriceCents: 14500, changeCents: -200, priceHistory: [{ at: hoursAgo(23), priceCents: 14700 }] },
+  { marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false, currentPriceCents: 5800, changeCents: 100, priceHistory: [{ at: hoursAgo(23), priceCents: 5700 }] },
+  { marketHashName: 'AWP | Neo-Noir (FN)', weaponType: 'AWP', itemName: 'Neo-Noir', condition: 'Factory New', stattrak: false, currentPriceCents: 7600, changeCents: 50, priceHistory: [{ at: hoursAgo(23), priceCents: 7550 }] },
+  { marketHashName: 'M4A4 | Howl (MW)', weaponType: 'M4A4', itemName: 'Howl', condition: 'Minimal Wear', stattrak: false, currentPriceCents: 285000, changeCents: -1000, priceHistory: [{ at: hoursAgo(23), priceCents: 286000 }] },
 ]
 
 // A thin harness that owns the real reducer, exactly like Dashboard.jsx does —

@@ -4,10 +4,7 @@ class DashboardsController < ApplicationController
   before_action :require_login, only: :show
 
   def show
-    respond_to do |format|
-      format.html
-      format.json { render json: Dashboard::BuildSnapshot.call(current_user) }
-    end
+    @bridge_token = Steam::BridgeToken.encode(current_user.steam_id)
   end
 
   private
