@@ -25,22 +25,22 @@ module Steam
       end, Faraday::Connection)
     end
 
-    sig { params(market_hash_name: String).returns(Steam::Response[ItemPriceData]) }
+    sig { params(market_hash_name: String).returns(Steam::Response[Steam::Response::Data::ItemPriceData]) }
     def fetch_item_price(market_hash_name)
-      response = perform_request(Steam::ItemPriceData, "/market/priceoverview/", :steam_price) do
+      response = perform_request(Steam::Response::Data::ItemPriceData, "/market/priceoverview/", :steam_price) do
         { market_hash_name: market_hash_name, appid: CS2_APPID, currency: 1 }
       end
 
-      T.cast(response, Steam::Response[Steam::ItemPriceData])
+      T.cast(response, Steam::Response[Steam::Response::Data::ItemPriceData])
     end
 
-    sig { params(steam_id: String).returns(Steam::Response[InventoryData]) }
+    sig { params(steam_id: String).returns(Steam::Response[Steam::Response::Data::InventoryData]) }
     def fetch_user_inventory(steam_id)
-      response = perform_request(Steam::InventoryData, "/inventory/#{steam_id}/#{CS2_APPID}/2", :steam_inventory) do
+      response = perform_request(Steam::Response::Data::InventoryData, "/inventory/#{steam_id}/#{CS2_APPID}/2", :steam_inventory) do
         { l: "english", count: 2000 }
       end
 
-      T.cast(response, Steam::Response[Steam::InventoryData])
+      T.cast(response, Steam::Response[Steam::Response::Data::InventoryData])
     end
 
     private
