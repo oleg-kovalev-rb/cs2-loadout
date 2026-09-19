@@ -46,6 +46,14 @@ a change's scope just because an unrelated file is flagged here.
   `sig` and the class has no `extend T::Sig`, unlike every other method in
   a `typed: strict` file. Confirmed as a real `srb tc` error (`7017: The
   method 'stattrak' does not have a 'sig'`).
+- `app_fetcher/app/schedulers/price_scheduler.rb` — `sidekiq_options` has
+  no `retry:`, unlike both workers (`PriceUpdateWorker: retry: 5`,
+  `ItemsListUpdateWorker: retry: 3`), so it silently falls back to
+  Sidekiq's default of 25 retries over ~3 weeks. Not confirmed by a tool
+  the way the two entries above are (this is a Sidekiq runtime default,
+  not a static check) — judgment call based on the other two jobs always
+  setting it explicitly. See
+  `.claude/styleguides/fetcher/background-jobs.md`.
 
 ## `app_core`
 
