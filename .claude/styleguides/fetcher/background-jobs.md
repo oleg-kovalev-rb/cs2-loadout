@@ -145,6 +145,57 @@ ItemsListUpdateWorker#perform
     ↓ Steam::ItemParser → Item.upsert_all
 ```
 
+## Testing
+
+General RSpec mechanics — spec levels, fixtures vs. `FactoryBot`,
+`WebMock` vs. VCR, the Sorbet-sigil exemption, example granularity — are
+governed by `.claude/styleguides/rspec-conventions.md` and
+`.claude/adr/fetcher/rspec-testing-strategy.md`; this section only adds
+what's specific to testing workers/schedulers. A worker or scheduler
+spec is a **unit spec** (see that styleguide's layer table) — it lives
+under `spec/workers/`/`spec/schedulers/`, no `type:` metadata.
+
+### MUST
+
+- Run every worker/scheduler spec under `Sidekiq::Testing.fake!`
+  (configured once, globally, in `rails_helper.rb`, not per-spec).
+  `.perform_async` enqueues into an in-memory array instead of hitting a
+  real Sidekiq-backed Redis connection — assert against `<Worker>.jobs`
+  (its size, `["args"]`), not a side effect of the enqueued job actually
+  running. `PriceScheduler`'s spec is the concrete case: assert
+  `PriceUpdateWorker.jobs.size` and the enqueued `item.id`s, never that
+  `PriceUpdateWorker#perform` itself ran.
+- Test `STREAM_REDIS_POOL` against a real Redis connection, never
+  mocked. `PriceUpdateWorker#publish_to_stream` writes directly to
+  Redis, not through Sidekiq's queue — that write *is* the job's own
+  documented responsibility (see
+  `.claude/adr/fetcher/price-updates-via-redis-stream.md`), so its spec
+  asserts against what was actually written (`XRANGE "prices_stream",
+  "-", "+"`), never a stubbed `redis.xadd` call. This is why
+  `app_fetcher`'s CI runs a real Redis service.
+- Trim `prices_stream` before/after any example that publishes to it
+  (e.g. `XTRIM prices_stream MAXLEN 0`, via a
+  `spec/support/redis_stream_helper.rb` support module) so one example's
+  entries can't leak into another's assertions, or collide with
+  whatever a locally-running app instance already wrote to the same
+  stream in dev.
+- Stub the Steam API the same way any other unit spec does: `WebMock`
+  against `Steam::Client`'s underlying HTTP call, never a canned
+  `Steam::Response` handed back in place of the real client — so the
+  worker's own branching on `response.success?` is exercised for real,
+  not assumed away.
+
+### SHOULD
+
+- Pack a success case's assertions into one `:aggregate_failures`
+  example rather than several single-expectation `it`s. A
+  `PriceUpdateWorker` success case typically has three things to check
+  at once — the `PriceLog` row, the `Item`'s updated
+  `current_price_cents`/`change_24h_cents`, and the stream entry — that
+  belongs in one example, not three that each re-run the same
+  stub-and-perform setup to check a single field (see
+  `rspec-conventions.md`'s Example Granularity).
+
 ## Canonical Implementations
 
 - `app_fetcher/app/workers/price_update_worker.rb`
@@ -152,10 +203,17 @@ ItemsListUpdateWorker#perform
 - `app_fetcher/app/schedulers/price_scheduler.rb`
 - `app_fetcher/config/schedule.yml`, `app_fetcher/config/sidekiq.yml`,
   `app_fetcher/config/initializers/sidekiq.rb`
+- Testing: none yet — no worker/scheduler spec exists in the repo. See
+  `.claude/plans/price-update-pipeline-test-coverage.md` for the plan
+  that introduces the first ones.
 
 ## Related ADR
 
-`.claude/adr/fetcher/price-updates-via-redis-stream.md` — why
-`PriceUpdateWorker` publishes to a capped Redis Stream instead of
-Pub/Sub or a direct WebSocket push, and why that's shipped ahead of any
-consumer.
+- `.claude/adr/fetcher/price-updates-via-redis-stream.md` — why
+  `PriceUpdateWorker` publishes to a capped Redis Stream instead of
+  Pub/Sub or a direct WebSocket push, and why that's shipped ahead of any
+  consumer.
+- `.claude/adr/fetcher/rspec-testing-strategy.md` — why a background
+  job's spec doesn't fit cleanly into "unit" or "integration," and why
+  `STREAM_REDIS_POOL` specifically gets a real Redis connection while
+  Sidekiq's own queue gets `Sidekiq::Testing.fake!` instead.
