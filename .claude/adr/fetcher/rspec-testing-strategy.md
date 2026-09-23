@@ -115,6 +115,35 @@ cleanly into either level:
    `WebMock` isn't replaced, it's layered under VCR at the request
    level and used directly at the unit level.
 
+7. **Pack multiple expectations about the same scenario into one
+   example, wrapped in an explicit `aggregate_failures do ... end`
+   block, not the `it "...", :aggregate_failures do` metadata-tag
+   form.** Every `it` pays real per-example overhead — transactional
+   fixture/factory setup, a full Rack dispatch for a request spec, a
+   browser round-trip for a system spec. Splitting one logical check
+   into several single-expectation `it` blocks multiplies that overhead
+   for no isolation benefit, since they're all asserting on the same
+   call/state, not exercising independent scenarios. The explicit block
+   form is required over the tag form because the tag aggregates
+   failures across the *entire* example body — an unexpected exception
+   raised during arrange/act gets folded into the same failure report as
+   the assertions, muddying which part of the example actually broke.
+   The block form keeps that boundary explicit: it wraps only the
+   `expect` calls, not the arrange/act code that precedes them.
+
+8. **Structure a stateful spec as arrange (`let`/`before`) → act (a
+   named `subject`) → assert.** A `create(:item, ...)` or
+   `stub_request(...)` call buried inline in an example body hides what
+   the example depends on and can't be reused by a sibling example in
+   the same `context`; naming it via `let`/`let!`/`before` separates
+   "what's arranged" from "what's asserted" and lets every example in a
+   `context` share the same setup. Naming the action under test via a
+   `subject` avoids repeating `described_class.new.perform(...)` in
+   every example body. This is deliberately not applied to pure-function
+   specs with no persisted data or stub (e.g. `Steam::ItemParser`) —
+   forcing the structure onto a one-line call adds indirection without
+   buying anything.
+
 ## Alternatives Considered
 
 ### Alternative: Mock every external dependency (Redis, Steam API) in every spec, always

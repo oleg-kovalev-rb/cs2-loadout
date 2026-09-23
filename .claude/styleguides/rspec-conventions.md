@@ -143,62 +143,39 @@ exists to verify — see MUST NOT below and the Related ADR.
 
 ## Example Granularity
 
-Every `it` pays real per-example overhead — transactional fixture/factory
-setup, a full Rack dispatch for a request spec, a browser round-trip for
-a system spec. Splitting one logical check into several single-expectation
-`it` blocks multiplies that overhead for no isolation benefit, since
-they're all asserting on the same call/state, not exercising independent
-scenarios. Reserve a new `it` for a genuinely different scenario or code
-branch (see the Layer → level mapping and Responsibilities above);
-different expectations about the *same* scenario belong in the *same*
-example.
+Reserve a new `it` for a genuinely different scenario or code branch
+(see the Layer → level mapping and Responsibilities above); different
+expectations about the *same* scenario belong in the *same* example —
+see the Related ADR for why.
 
 When an example ends up with more than 3 expectations, wrap those
 expectations in an explicit `aggregate_failures do ... end` block — not
 the `it "...", :aggregate_failures do` metadata-tag form. The block
 wraps only the `expect` calls, not the arrange/act code (`let`
 dereferences, the `subject` call, deriving a value to assert against)
-that precedes them — see Example Structure below for that split. The
-tag form aggregates failures across the *entire* example body, which
-means an unexpected exception raised during setup or the action gets
-folded into the same failure report as the assertions, muddying which
-part of the example actually broke; the block form keeps that boundary
-explicit. A failing run still reports every failing expectation inside
-the block at once, instead of stopping at the first `expect` and forcing
-a fix-rerun-fix cycle to find the rest.
+that precedes them — see Example Structure below for that split, and
+the Related ADR for why the block form is required instead of the tag
+form.
 
 ## Example Structure
 
 Once a spec creates persisted test data, stubs an external call, and/or
 exercises a stateful action (the shape of most worker/scheduler specs),
 structure it as arrange (`let`/`before`) → act (a named `subject`) →
-assert, instead of building everything inline in the example body:
+assert, instead of building everything inline in the example body. See
+the Related ADR for why.
 
-- **Test data via `let`/`let!`, not inline `create`/`create_list`.** A
-  `create(:item, ...)` call buried in the middle of an example body
-  hides what data the example depends on, and can't be reused by a
-  sibling example in the same `context`. Name it
-  (`let(:item) { create(:item, ...) }`) so every example in that
-  `context` shares the same setup and a reader sees the test's fixtures
-  listed alongside its description, not interleaved with assertions.
-  Use `let!` instead of `let` when nothing in the example references
-  the record before the action runs (e.g. `PriceScheduler`'s spec,
-  where the scheduler queries `Item` directly rather than being handed
-  an id) — plain `let` is lazy and won't exist in the DB yet when the
-  action needs it to. When the record's own value *is* referenced while
-  building the action (e.g. `item.id` passed into `perform`), plain
-  `let` is enough — referencing it forces creation before the action
-  runs.
-- **Stubs via `before`, not inline `stub_request`.** Same reasoning: a
-  `WebMock` `stub_request(...).to_return(...)` call is setup, not the
-  behavior under test. Putting it in `before` separates "what's
-  arranged" from "what's asserted," and lets every example in that
-  `context` share one stub instead of repeating it.
-- **The action under test via a named `subject`.** Give the call that
-  exercises the class a name (`subject(:perform) {
-  described_class.new.perform(item.id) }`) instead of repeating
-  `described_class.new.perform(...)` in every example body. Examples
-  then read as "arrange → call the named `subject` → assert."
+- **Test data via `let`/`let!`, not inline `create`/`create_list`.** Use
+  `let!` when nothing in the example references the record before the
+  action runs (e.g. `PriceScheduler`'s spec, where the scheduler queries
+  `Item` directly rather than being handed an id) — plain `let` is lazy
+  and won't exist in the DB yet when the action needs it to. When the
+  record's own value *is* referenced while building the action (e.g.
+  `item.id` passed into `perform`), plain `let` is enough — referencing
+  it forces creation before the action runs.
+- **Stubs via `before`, not inline `stub_request`.**
+- **The action under test via a named `subject`**
+  (`subject(:perform) { described_class.new.perform(item.id) }`).
 
 ```ruby
 RSpec.describe PriceUpdateWorker do
@@ -226,19 +203,10 @@ RSpec.describe PriceUpdateWorker do
 end
 ```
 
-This doesn't replace the Example Granularity rule — an example with more
-than 3 expectations still gets its assertions wrapped in
-`aggregate_failures`, regardless of how tidy its arrange/act setup is.
-Note where the block starts: after `perform` and `item.reload` (act),
-not around them — see Example Granularity for why the tag form isn't
-used.
-
 Not every spec needs this: a pure-function unit spec with no persisted
 data and no stub (e.g. `Steam::ItemParser`, `Steam::PriceLogBuilder`)
-has nothing to extract — forcing `let`/`before`/`subject` onto a
-one-line `described_class.parse(name)` call adds indirection without
-buying anything. Reach for this structure once a spec has the setup to
-justify it, not as a blanket rule for every spec file.
+has nothing to extract. Reach for this structure once a spec has the
+setup to justify it, not as a blanket rule for every spec file.
 
 ## Rules
 
@@ -402,5 +370,7 @@ to resolve away.
 structure was chosen over mocking every external dependency always, or
 testing only at the HTTP boundary; why background jobs get an explicit
 special-case rule instead of being forced into "unit" or "integration";
-and why FactoryBot/VCR were chosen over fixtures/hand-written `WebMock`
-stubs.
+why FactoryBot/VCR were chosen over fixtures/hand-written `WebMock`
+stubs; and why examples are grouped into `aggregate_failures` blocks
+(Example Granularity) and structured as arrange/act/assert (Example
+Structure).
