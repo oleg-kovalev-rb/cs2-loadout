@@ -36,12 +36,12 @@ Do not jump straight to implementation for non-trivial work. If a stage
 surfaces a contradiction with an earlier stage, stop and go back to that
 stage rather than improvising.
 
-`create-dev-plan` writes the plan to `.claude/plans/<slug>.md` (gitignored
-working artifact, not committed) so it survives a new session or context
-compaction. `styleguides-check` and `implement-plan` read and update that
-same file in place — check its `status` frontmatter field (`draft` →
-`blocked`/`styleguide-checked` → `implemented`) to see where a task
-currently stands before resuming work on it.
+`create-dev-plan` writes the plan to `.claude/plans/<slug>.md`, committed
+to the repo, so it survives a new session or context compaction and stays
+visible to the rest of the team. `styleguides-check` and `implement-plan`
+read and update that same file in place — check its `status` frontmatter
+field (`draft` → `blocked`/`styleguide-checked` → `implemented`) to see
+where a task currently stands before resuming work on it.
 
 ## Styleguides and ADRs: shared vs per-app
 

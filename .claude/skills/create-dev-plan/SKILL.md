@@ -135,10 +135,11 @@ Write the plan to a file so it survives past this conversation:
 
 - follow it with the plan body (see `Output` below).
 
-`.claude/plans/` is a working directory, not project documentation — it is
-not meant to be committed (see repo `.gitignore`). Once a task is
-implemented, the durable record lives in the code, tests, commit message,
-and any styleguide/ADR produced along the way — not in the plan file.
+`.claude/plans/` is committed to the repo, so a plan stays visible across
+sessions and to the rest of the team. Once a task is implemented, the
+durable record still lives primarily in the code, tests, commit message,
+and any styleguide/ADR produced along the way — the plan file is a
+working artifact of how that record came to be, not a replacement for it.
 
 Report the file path back to the user.
 

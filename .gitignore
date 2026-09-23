@@ -3,5 +3,4 @@ postgres_fetcher_data/
 redis_data/
 .env
 
-.claude/plans/
 .claude/settings.local.json
