@@ -66,6 +66,13 @@ Inspect the shared level plus the subfolder(s) for whichever app(s) the plan
 touches. If a rule appears both shared and in an app subfolder with
 conflicting guidance, the app-local styleguide wins for work in that app.
 
+Before opening a file's full body, read its frontmatter `description`
+line to judge relevance — open the full file only for the ones that look
+applicable to the plan. This is a filter, not the sufficiency
+determination itself: a description ruling a file out is enough to skip
+it, but confirming a file is sufficient (step 3) still requires reading
+its body.
+
 Determine which existing styleguides are relevant to the planned implementation.
 
 Consider areas such as:

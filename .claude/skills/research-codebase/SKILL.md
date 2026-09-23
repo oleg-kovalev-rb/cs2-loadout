@@ -117,6 +117,11 @@ Check:
 - relevant project documentation;
 - existing architectural documentation.
 
+Before opening a styleguide's full body, read its frontmatter
+`description` line — it exists precisely so relevance can be judged
+without a full read. Skip a file whose description clearly doesn't apply
+to this task; open the full body only for files that might.
+
 Do not create or modify styleguides during this skill.
 
 ### 7. Identify constraints and risks
