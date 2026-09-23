@@ -1,3 +1,7 @@
+---
+description: Steam::Response/DTO conventions — Steam::Client's typed result objects, built via from_hash, consumed instead of raised exceptions.
+---
+
 # Steam Response Objects (`Steam::Response` + DTOs)
 
 ## Purpose

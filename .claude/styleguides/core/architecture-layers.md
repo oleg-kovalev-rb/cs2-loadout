@@ -1,3 +1,7 @@
+---
+description: app_core's concrete layer map — Controller → Action (app/actions/steam) → lib/steam/ → Models, plus the dashboard's direct app_fetcher reads.
+---
+
 # Architecture Layers (`app_core`)
 
 See `.claude/styleguides/rails-layering.md` first for the cross-app

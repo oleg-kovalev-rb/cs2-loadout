@@ -1,3 +1,7 @@
+---
+description: app_fetcher's concrete ingestion-pipeline layer map — parsers/builders/workers/schedulers/controllers and which scenario each belongs to.
+---
+
 # Architecture Layers (`app_fetcher`)
 
 See `.claude/styleguides/rails-layering.md` first for the cross-app

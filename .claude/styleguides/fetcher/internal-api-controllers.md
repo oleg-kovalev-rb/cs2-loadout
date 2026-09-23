@@ -1,3 +1,7 @@
+---
+description: Api::V1:: controller conventions in app_fetcher — routing, bridge-token auth, JSON response/error shape, single-collaborator actions.
+---
+
 # Internal API Controllers (`Api::V1::`)
 
 ## Purpose

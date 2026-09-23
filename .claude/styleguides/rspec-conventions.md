@@ -1,3 +1,7 @@
+---
+description: Cross-app RSpec mechanics — unit/request/system spec levels, what to stub vs. exercise for real, example structure/granularity conventions.
+---
+
 # RSpec Conventions
 
 ## Purpose

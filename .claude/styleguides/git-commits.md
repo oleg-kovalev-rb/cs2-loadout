@@ -1,3 +1,7 @@
+---
+description: Commit message format across the monorepo — `[Scope] Imperative summary`, subject-only, no body/trailer, valid scope tags.
+---
+
 # Git Commit Conventions
 
 ## Purpose

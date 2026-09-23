@@ -1,3 +1,7 @@
+---
+description: Sorbet typing discipline and Ruby idioms for hand-written Ruby files in app_fetcher/app_core — sigils, sig, T.let, generics, guard clauses.
+---
+
 # Ruby & Sorbet Conventions
 
 ## Purpose

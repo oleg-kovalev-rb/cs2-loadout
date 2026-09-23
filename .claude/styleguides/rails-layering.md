@@ -1,3 +1,7 @@
+---
+description: Cross-app invariant — the one Controller → orchestration → Models shape and dependency direction both app_fetcher and app_core follow.
+---
+
 # Rails Layering (Cross-App)
 
 ## Purpose

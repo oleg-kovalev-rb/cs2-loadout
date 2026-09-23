@@ -1,3 +1,7 @@
+---
+description: Sidekiq worker/scheduler conventions in app_fetcher — naming, queues/retries, transactions, idempotency, and their spec-level testing rules.
+---
+
 # Background Jobs & Schedulers (Sidekiq)
 
 ## Purpose
