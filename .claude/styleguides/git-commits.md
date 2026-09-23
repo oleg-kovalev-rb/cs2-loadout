@@ -9,14 +9,16 @@ its own "why."
 
 ## Structure
 
-- Subject line: `[Scope] Imperative summary` — no trailing period.
+- Subject line only: `[Scope] Imperative summary` — no trailing period,
+  no body, no trailer.
 - `Scope` is one of the tags already in use:
   - `Core` — `app_core` only;
   - `Fetcher` — `app_fetcher` only;
   - `Core+Fetcher` — a change that touches both apps together (`Core`
     listed first);
-  - `Claude` — changes confined to `.claude/` (skills, styleguides, ADRs,
-    plans) — process/tooling, not application code.
+  - `AI WorkFlow` — changes confined to `.claude/` (skills, styleguides,
+    ADRs, plans) — the AI-driven dev pipeline's own process/tooling, not
+    application code.
   Don't invent a new tag ad hoc; if a genuinely new scope appears (a
   third app or package), add it deliberately rather than
   one-off-improvising a name.
@@ -26,63 +28,30 @@ its own "why."
 This `[Scope]` convention covers the project's entire commit history to
 date except its first dozen commits, from before the convention started
 (`Initial commit` through `Rename service directories`) — those predate
-it and aren't a pattern to follow for new commits.
+it and aren't a pattern to follow for new commits. Commits before the
+subject-line-only rule took effect may still carry a body/trailer —
+that's history, not something to rewrite.
 
 ## Rules
 
 ### MUST
 
-- `[Scope] Imperative summary` as the subject, per Structure above.
-- Keep the subject to one line. If the change needs more explanation,
-  that's what the body is for (see SHOULD) — don't cram extra detail
-  into the subject itself.
-
-### SHOULD
-
-- For a small, self-contained change that's easily understood from the
-  diff, a bare subject line is enough — most of this repo's history is
-  exactly that (e.g. `[Fetcher] Add change_24h_cents column to items`,
-  `[Core] Add user model`).
-- For a change with multiple distinct parts, or a motivation that isn't
-  obvious from the diff, add a body: one `- ` bullet per distinct part,
-  each stating what changed and *why* it was needed — not a restatement
-  of the diff. Wrap body lines at roughly 75 characters. See any of the
-  six most recent commits (e.g. `914ef7b`, `b65a9b8`) for the pattern.
-- When a commit is produced by an AI coding session, end the body with a
-  blank line then a `Co-Authored-By: <Model Name> <noreply@anthropic.com>`
-  trailer (see the same six commits) — this is how AI-assisted commits
-  are marked as such in this repo's history.
+- `[Scope] Imperative summary` as the subject, per Structure above —
+  nothing else in the commit message.
+- Keep the subject to one line.
 
 ### MUST NOT
 
-- Don't pad a one-line-worthy change with a body just to have one, and
-  don't summarize a multi-part change in the subject alone when it
-  genuinely needs a body to explain the "why."
+- Don't add a commit body. If a change has multiple distinct parts, the
+  diff and the individual file/commit split are what explain it — split
+  into more single-purpose commits rather than writing a bullet list to
+  narrate one big one.
+- Don't add a `Co-Authored-By:` or any other trailer.
 
 ## Examples From History
-
-Single-line, no body:
 
 ```
 [Fetcher] Add change_24h_cents column to items
 [Core] Add user model
-```
-
-Multi-part change with a body:
-
-```
-[Fetcher] Add background jobs/schedulers styleguide, ADR for price stream
-
-- Document Sidekiq worker/scheduler conventions: explicit retry: tuned
-  to failure-proneness, queue isolation for Steam-API-calling work,
-  bulk writes over per-record loops, transactions for multi-record
-  consistency, and why jobs stay outside the Steam:: namespace
-- Log PriceScheduler's missing explicit retry: as a deviation (judgment
-  call vs. the two workers, not a tool-confirmed error)
-- Add ADR for publishing price updates to a capped Redis Stream instead
-  of Pub/Sub or a direct WebSocket push — documents that this is
-  write-ahead-of-read infrastructure shipped with no consumer yet, so
-  it isn't mistaken for dead code
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+[AI WorkFlow] Add RSpec testing-conventions styleguide and ADR
 ```
