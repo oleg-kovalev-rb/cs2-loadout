@@ -8,6 +8,23 @@ and `styleguides-check`.
 Do not copy every section blindly.
 Use only sections that provide meaningful project-specific guidance.
 
+If a rule needs more than a few sentences to justify itself (why an
+alternative was rejected, what trade-off was made), that justification
+belongs in an ADR (`.claude/adr/base.md`), not in the styleguide. A
+styleguide states the rule and points to the ADR for the reasoning behind
+it — it does not restate that reasoning inline.
+
+Every styleguide starts with a one-line frontmatter `description`, the
+same way `SKILL.md` files do. This lets `research-codebase` and
+`styleguides-check` judge relevance from the description alone before
+opening the full file.
+
+```yaml
+---
+description: <one line: what this styleguide covers and when it applies>
+---
+```
+
 ---
 
 # <Guideline Name>
@@ -179,3 +196,46 @@ Service
 Domain / Query
     ↓
 Database
+```
+
+---
+
+## Testing
+
+Describe how this type of code is tested — only the parts specific to
+this pattern. General testing mechanics (spec levels, stubbing rules,
+fixtures) belong in a shared testing styleguide (e.g.
+`.claude/styleguides/rspec-conventions.md`); cross-reference it instead
+of restating it here.
+
+Include, when relevant:
+
+- which test level this pattern is exercised at, and why, if it differs
+  from the shared guide's default mapping;
+- what must be exercised for real vs. stubbed, specific to this pattern;
+- fixtures or helpers unique to this pattern.
+
+Omit this section when the shared testing styleguide already fully
+covers this pattern with nothing left to add.
+
+---
+
+## Canonical Implementations
+
+List existing files that best exemplify this pattern today. Point to
+them instead of re-explaining what they already show in code.
+
+If no implementation exists yet, say so explicitly rather than omitting
+the section — it tells the next plan or styleguide author where the
+first one should go.
+
+---
+
+## Related ADR
+
+If an ADR documents the architectural decision behind this pattern, link
+it here (`.claude/adr/<app>/<slug>.md`).
+
+Do not duplicate the ADR's reasoning in the styleguide — the styleguide
+states the rule, the ADR explains why it was chosen. Omit this section
+when no ADR applies.
