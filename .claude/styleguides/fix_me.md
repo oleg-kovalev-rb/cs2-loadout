@@ -54,6 +54,18 @@ a change's scope just because an unrelated file is flagged here.
   not a static check) — judgment call based on the other two jobs always
   setting it explicitly. See
   `.claude/styleguides/fetcher/background-jobs.md`.
+- `app_fetcher/spec/fixtures/items.yml`, `price_logs.yml` — Rails
+  fixtures; `.claude/styleguides/rspec-conventions.md` now standardizes
+  on `FactoryBot` for test data. Existing rows (`redline`,
+  `redline_recent`, etc.) stay loaded and referenced by their current
+  specs; don't add new fixture rows here — use a factory instead. See
+  `.claude/adr/fetcher/rspec-testing-strategy.md`.
+- `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
+  `price_histories_spec.rb` — `inventories_spec.rb` hand-writes a
+  `WebMock` `stub_request` body for a Steam API call at the request
+  level; `rspec-conventions.md` now requires a VCR cassette at that
+  level (unit specs keep using `WebMock` directly). Not migrated here;
+  migrate the next time either file is otherwise touched.
 
 ## `app_core`
 
@@ -70,3 +82,18 @@ a change's scope just because an unrelated file is flagged here.
   boilerplate — `app_fetcher`'s controllers prove `strict` works fine on
   controllers, so this isn't a justified exception, just drift. See
   `.claude/styleguides/ruby-sorbet.md`.
+- `app_core/spec/controllers/dashboards_controller_spec.rb` — uses
+  `type: :controller`, which `.claude/styleguides/rspec-conventions.md`
+  no longer allows for new specs (request specs cover the same ground
+  while exercising the real Rack middleware/session stack a controller
+  spec bypasses, and render views by default with no `render_views`
+  call needed). This is the one existing precedent the new convention
+  deliberately did not extend — see
+  `.claude/adr/fetcher/rspec-testing-strategy.md`'s "Alternative: Keep
+  `type: :controller`..." section. Not rewritten here since this file
+  wasn't otherwise being touched; migrate to `type: :request` next time
+  it's edited.
+- `app_core/spec/fixtures/users.yml` — Rails fixture; same deviation and
+  same rationale as the `app_fetcher` fixtures entry above. Existing
+  `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`
+  factory instead.
