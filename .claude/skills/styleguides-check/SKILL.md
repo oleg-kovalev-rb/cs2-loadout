@@ -31,6 +31,11 @@ The implementation must not begin until this process is complete.
 - Do not invent styleguides that are not relevant to the planned implementation.
 - Do not consider the check complete while a required styleguide is missing or insufficient.
 - The final development plan must explicitly reference all applicable styleguides and technical constraints.
+- Updating the plan file's `status` frontmatter field and its `Missing
+  Styleguides`/`Applicable Styleguides` sections is the exclusive
+  responsibility of this skill — `create-styleguide` and
+  `create-styleguide-from-scratch` only produce and get user approval for
+  the styleguide/ADR artifacts; they must not modify the plan file.
 
 ## Workflow
 
@@ -156,9 +161,12 @@ the plan file, not just visible in this conversation.
 
 Do not create the missing styleguides yourself as part of this skill —
 that belongs to `create-styleguide` or `create-styleguide-from-scratch`.
+Those skills only produce the styleguide (and ADR, when applicable) and
+wait for user approval — they do not touch the plan file. Updating it
+happens only in step 8 below, and only by this skill.
 
 Resume this skill only after the missing or insufficient styleguides have
-been added or completed.
+been added, completed, and approved by the user.
 
 ### 7. Re-check the plan
 

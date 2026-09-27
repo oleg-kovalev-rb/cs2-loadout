@@ -37,9 +37,13 @@ Use:
    Default to the app-specific folder when unsure.
 7. Create the styleguide based on the accepted decision.
 8. Make the styleguide describe how the new pattern must be implemented.
-9. Update the development plan with the ADR, styleguide, and technical
-   constraints.
-10. Validate that the ADR, styleguide, and development plan are consistent.
+9. Present the ADR and styleguide to the user and wait for explicit
+   approval before treating either as final.
+10. Do not update the development plan. Updating its `status`
+    frontmatter field and its `Missing Styleguides`/`Applicable
+    Styleguides` sections is the exclusive responsibility of
+    `styleguides-check` — once the ADR and styleguide are approved,
+    control returns to that skill to re-check and finalize the plan.
 
 ## ADR Requirement
 
@@ -61,5 +65,11 @@ The task is complete only when:
 - the architectural decision is documented in an accepted ADR;
 - the styleguide is created;
 - the styleguide reflects the ADR;
-- the development plan references both;
+- the user has approved the ADR and styleguide;
 - implementation can proceed without making the architectural decision again.
+
+This skill does not update the development plan. Updating the plan's
+`status` frontmatter field and its `Missing Styleguides`/`Applicable
+Styleguides` sections is the exclusive responsibility of
+`styleguides-check` — hand control back to it once the ADR and
+styleguide are approved.

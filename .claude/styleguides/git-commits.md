@@ -22,7 +22,9 @@ its own "why."
     listed first);
   - `AI WorkFlow` — changes confined to `.claude/` (skills, styleguides,
     ADRs, plans) — the AI-driven dev pipeline's own process/tooling, not
-    application code.
+    application code. Exception: a styleguide/ADR created only to support
+    one task's implementation is not its own `AI WorkFlow` commit — see
+    "Task-Scoped Styleguides, ADRs, and Plans" below.
   Don't invent a new tag ad hoc; if a genuinely new scope appears (a
   third app or package), add it deliberately rather than
   one-off-improvising a name.
@@ -35,6 +37,22 @@ date except its first dozen commits, from before the convention started
 it and aren't a pattern to follow for new commits. Commits before the
 subject-line-only rule took effect may still carry a body/trailer —
 that's history, not something to rewrite.
+
+## Task-Scoped Styleguides, ADRs, and Plans
+
+When `styleguides-check` finds a gap and a new styleguide or ADR gets
+created only because this task's plan needed it — not a pre-existing,
+reusable convention — commit it together with that task's
+implementation: one `[Scope]` commit (tagged with the app the code
+belongs to: `Core`, `Fetcher`, or `Core+Fetcher`) covering the plan
+update, the ADR/styleguide, and the code. Don't split the doc into its
+own preceding `AI WorkFlow` commit — that hides that it only exists to
+support this one change.
+
+`AI WorkFlow` still applies to process/tooling changes that stand on
+their own: skill edits, styleguide fixes unrelated to a specific task's
+implementation, or a plan committed on its own before implementation
+(and before any task-scoped styleguide exists to bundle it with).
 
 ## Rules
 

@@ -40,6 +40,12 @@ Use `.claude/styleguides/base.md` as the format reference.
    `.claude/styleguides/base.md` as the format.
 9. Add references to canonical implementations.
 10. Validate the guide against the codebase.
+11. Present the styleguide to the user and wait for explicit approval
+    before treating it as final. This skill only produces the
+    styleguide (and, when applicable, the ADR) — it does not update the
+    development plan. Updating the plan's `status` frontmatter field and
+    its `Missing Styleguides`/`Applicable Styleguides` sections is the
+    exclusive responsibility of `styleguides-check`.
 
 Do not invent conventions that are not supported by the existing code.
 
@@ -79,4 +85,6 @@ The task is complete when:
 - related styleguides were checked;
 - any deviating files found along the way are logged in
   `.claude/styleguides/fix_me.md`, not fixed inline;
-- ADR handling is resolved when applicable.
+- ADR handling is resolved when applicable;
+- the user has approved the styleguide;
+- the development plan was not modified by this skill.
