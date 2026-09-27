@@ -29,6 +29,9 @@ class PriceUpdateWorker
         item.update!(current_price_cents: price_log.lowest_price_cents, change_24h_cents: change_24h_cents)
       end
 
+      ItemPriceCache.invalidate(item.market_hash_name)
+      PriceHistoryCache.invalidate(item.market_hash_name)
+
       publish_to_stream(
         item.market_hash_name,
         price_log.lowest_price_cents,

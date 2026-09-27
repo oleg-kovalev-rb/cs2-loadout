@@ -28,5 +28,9 @@ module App
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Route Rails.cache (via :solid_cache_store) at the dedicated `cache`
+    # database declared in config/database.yml, not the primary one.
+    config.solid_cache.connects_to = { database: { writing: :cache } }
   end
 end

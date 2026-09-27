@@ -32,7 +32,12 @@ RSpec.describe PriceUpdateWorker do
       context "with no prior price log" do
         let(:item) { create(:item, :without_price) }
 
-        it "creates the first price log, updates the item, and publishes to the stream" do
+        before do
+          ItemPriceCache.fetch_for([ item.market_hash_name ])
+          PriceHistoryCache.fetch_for([ item.market_hash_name ])
+        end
+
+        it "creates the first price log, updates the item, publishes to the stream, and invalidates both caches" do
           perform
           item.reload
           fields = prices_stream_entries.last[1]
@@ -45,6 +50,10 @@ RSpec.describe PriceUpdateWorker do
             expect(fields["market_hash_name"]).to eq(item.market_hash_name)
             expect(fields["price_cents"]).to eq("3845")
             expect(fields["change_24h_cents"]).to eq("0")
+
+            cached_price = ItemPriceCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]
+            expect(cached_price.current_price_cents).to eq(3845)
+            expect(PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]).not_to be_empty
           end
         end
       end
@@ -74,15 +83,22 @@ RSpec.describe PriceUpdateWorker do
       before do
         stub_request(:get, %r{steamcommunity\.com/market/priceoverview/})
           .to_return(status: 200, body: { success: false }.to_json, headers: { "Content-Type" => "application/json" })
+        ItemPriceCache.fetch_for([ item.market_hash_name ])
+        PriceHistoryCache.fetch_for([ item.market_hash_name ])
       end
 
-      it "does not write a price log, does not touch the item, and does not publish" do
+      it "does not write a price log, does not touch the item, does not publish, and does not invalidate either cache" do
         perform
 
         item.reload
-        expect(item.price_logs.count).to eq(0)
-        expect(item.current_price_cents).to eq(3845)
-        expect(prices_stream_entries).to be_empty
+
+        aggregate_failures do
+          expect(item.price_logs.count).to eq(0)
+          expect(item.current_price_cents).to eq(3845)
+          expect(prices_stream_entries).to be_empty
+          expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+          expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+        end
       end
     end
 
@@ -90,15 +106,24 @@ RSpec.describe PriceUpdateWorker do
       let(:item) { create(:item, current_price_cents: 3845, change_24h_cents: 0) }
       let(:item_id) { item.id }
 
-      before { stub_request(:get, %r{steamcommunity\.com/market/priceoverview/}).to_return(status: 429) }
+      before do
+        stub_request(:get, %r{steamcommunity\.com/market/priceoverview/}).to_return(status: 429)
+        ItemPriceCache.fetch_for([ item.market_hash_name ])
+        PriceHistoryCache.fetch_for([ item.market_hash_name ])
+      end
 
-      it "does not write a price log, does not touch the item, and does not publish" do
+      it "does not write a price log, does not touch the item, does not publish, and does not invalidate either cache" do
         perform
 
         item.reload
-        expect(item.price_logs.count).to eq(0)
-        expect(item.current_price_cents).to eq(3845)
-        expect(prices_stream_entries).to be_empty
+
+        aggregate_failures do
+          expect(item.price_logs.count).to eq(0)
+          expect(item.current_price_cents).to eq(3845)
+          expect(prices_stream_entries).to be_empty
+          expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+          expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+        end
       end
     end
   end

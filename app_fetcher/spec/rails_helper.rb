@@ -56,6 +56,7 @@ RSpec.configure do |config|
 
   config.before(:each) do
     Sidekiq::Worker.clear_all
+    Rails.cache.clear
   end
 
   # RSpec Rails uses metadata to mix in different behaviours to your tests,
