@@ -2,3 +2,8 @@ schedule_price_updates:
   cron: "0 * * * *"
   class: "PriceScheduler"
   queue: default
+
+schedule_inventory_value_updates:
+  cron: "0 0 * * *"
+  class: "InventoryValueScheduler"
+  queue: default

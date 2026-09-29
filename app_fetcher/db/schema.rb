@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_07_094717) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_29_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "inventory_value_logs", force: :cascade do |t|
+    t.string "steam_id", null: false
+    t.date "log_date", null: false
+    t.integer "total_value_cents", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["steam_id", "log_date"], name: "index_inventory_value_logs_on_steam_id_and_log_date", unique: true
+  end
 
   create_table "items", force: :cascade do |t|
     t.string "market_hash_name", null: false

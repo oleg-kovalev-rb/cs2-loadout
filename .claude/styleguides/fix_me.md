@@ -97,3 +97,10 @@ a change's scope just because an unrelated file is flagged here.
   same rationale as the `app_fetcher` fixtures entry above. Existing
   `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`
   factory instead.
+- `app_core/lib/steam/profile_fetcher.rb` — `require 'net/http'`/
+  `require 'uri'` use single-quoted string literals; `bin/rubocop`
+  confirms `Style/StringLiterals` (double-quoted preferred) actually
+  applies to this file (a sibling file added in the same session,
+  `inventory_value_trigger.rb`, hit and autocorrected the identical
+  offense) — this is real drift, not an intentional exception. Not fixed
+  here since this file wasn't otherwise being touched.

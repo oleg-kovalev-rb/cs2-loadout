@@ -75,6 +75,9 @@ group :test do
   # TODO: uncomment and fix tapioca gem "selenium-webdriver"
   # Stub outbound HTTP calls (e.g. the Steam OpenID login flow) in tests [https://github.com/bblimke/webmock]
   gem "webmock"
+
+  # Build test data with factories instead of fixtures [https://github.com/thoughtbot/factory_bot_rails]
+  gem "factory_bot_rails"
 end
 
 # Rails 7.2's test runner isn't compatible with minitest 6.x (Rails::TestUnit::LineFiltering#run
