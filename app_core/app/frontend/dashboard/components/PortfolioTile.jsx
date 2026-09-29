@@ -9,7 +9,7 @@ export function PortfolioTile({ portfolio, range, mode, selectedItem, onRangeCha
   const isTradable = !isItemMode || selectedItem.currentPriceCents !== 0
 
   const hasData = values.length > 0
-  const last = hasData ? values[values.length - 1].value : isItemMode ? selectedItem.currentPriceCents : 0
+  const last = hasData ? values[values.length - 1].value : isItemMode ? selectedItem.currentPriceCents : portfolio.currentValueCents
   const first = hasData ? values[0].value : last
   const delta = last - first
   const pct = first ? (delta / first) * 100 : 0

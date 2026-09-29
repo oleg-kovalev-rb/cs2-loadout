@@ -22,6 +22,15 @@ function mapItem(raw, pointsByName) {
   }
 }
 
+function buildData(items) {
+  return {
+    itemsCount: items.length,
+    items,
+    portfolio: portfolioSeries(items),
+    marketVolume: marketVolume(items),
+  }
+}
+
 async function fetchJson(url, options) {
   const response = await fetch(url, options)
   if (!response.ok) throw new Error(`Request to ${url} failed: ${response.status}`)
@@ -31,55 +40,63 @@ async function fetchJson(url, options) {
 export function useDashboardData(fetcherUrl, bridgeToken) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'error'
+  const [historyStatus, setHistoryStatus] = useState('pending') // 'pending' | 'ready' | 'error'
   const [error, setError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
     const authHeaders = { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` }
 
-    async function load() {
-      const inventory = await fetchJson(`${fetcherUrl}/api/v1/inventories/me`, { headers: authHeaders })
-      const names = inventory.items.map((item) => item.market_hash_name)
+    async function loadHistory(rawItems, names) {
+      try {
+        const history = await fetchJson(`${fetcherUrl}/api/v1/price_histories`, {
+          method: 'POST',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ market_hash_names: names }),
+        })
 
-      const history = names.length
-        ? await fetchJson(`${fetcherUrl}/api/v1/price_histories`, {
-            method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ market_hash_names: names }),
-          })
-        : { items: [] }
+        const pointsByName = {}
+        for (const entry of history.items) {
+          pointsByName[entry.market_hash_name] = entry.points
+        }
 
-      const pointsByName = {}
-      for (const entry of history.items) {
-        pointsByName[entry.market_hash_name] = entry.points
-      }
-
-      const items = inventory.items.map((raw) => mapItem(raw, pointsByName))
-
-      return {
-        itemsCount: items.length,
-        items,
-        portfolio: portfolioSeries(items),
-        marketVolume: marketVolume(items),
+        if (cancelled) return
+        setData(buildData(rawItems.map((raw) => mapItem(raw, pointsByName))))
+        setHistoryStatus('ready')
+      } catch {
+        if (cancelled) return
+        setHistoryStatus('error')
       }
     }
 
-    load()
-      .then((mapped) => {
-        if (cancelled) return
-        setData(mapped)
-        setStatus('success')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err)
-        setStatus('error')
-      })
+    async function load() {
+      const inventory = await fetchJson(`${fetcherUrl}/api/v1/inventories/me`, { headers: authHeaders })
+      const names = inventory.items.map((item) => item.market_hash_name)
+      const items = inventory.items.map((raw) => mapItem(raw, {}))
+
+      if (cancelled) return
+      setData(buildData(items))
+      setStatus('success')
+
+      if (!names.length) {
+        setHistoryStatus('ready')
+        return
+      }
+
+      setHistoryStatus('pending')
+      await loadHistory(inventory.items, names)
+    }
+
+    load().catch((err) => {
+      if (cancelled) return
+      setError(err)
+      setStatus('error')
+    })
 
     return () => {
       cancelled = true
     }
   }, [fetcherUrl, bridgeToken])
 
-  return { data, status, error }
+  return { data, status, historyStatus, error }
 }

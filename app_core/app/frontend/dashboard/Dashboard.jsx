@@ -1,16 +1,17 @@
 import { useReducer } from 'react'
 import { dashboardReducer, initialState } from './reducer'
 import { useDashboardData } from './hooks/useDashboardData'
+import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
 import { MarketVolumeTile } from './components/MarketVolumeTile'
 
 export function Dashboard({ fetcherUrl, bridgeToken }) {
-  const { data, status, error } = useDashboardData(fetcherUrl, bridgeToken)
+  const { data, status, historyStatus, error } = useDashboardData(fetcherUrl, bridgeToken)
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
   if (status === 'loading') {
-    return <p className="dash-loading">Loading dashboard…</p>
+    return <DashboardSkeleton />
   }
 
   if (status === 'error') {
@@ -46,7 +47,7 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
         onPageChange={(page) => dispatch({ type: 'PAGE_CHANGED', page })}
       />
 
-      <MarketVolumeTile marketVolume={data.marketVolume} />
+      <MarketVolumeTile marketVolume={data.marketVolume} historyStatus={historyStatus} />
     </main>
   )
 }

@@ -19,7 +19,7 @@ export function Sparkline({ values, width = 38, height = 24, variant = 'up', sho
   const line = pathFromPoints(points)
   const color = variant === 'down' ? 'var(--down)' : variant === 'volume' ? 'var(--accent)' : 'var(--up)'
 
-  const area = showArea
+  const area = showArea && points.length > 0
     ? `${line} L${points[points.length - 1][0].toFixed(1)},${height} L${points[0][0].toFixed(1)},${height} Z`
     : null
 

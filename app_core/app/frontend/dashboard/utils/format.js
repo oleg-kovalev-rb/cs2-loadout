@@ -7,8 +7,8 @@ export function centsToUSD(cents) {
 }
 
 export function fmtPrice(cents) {
-  if (cents === 0) return '—'
-  return fmtUSD(centsToUSD(cents || 0))
+  if (!cents) return '—'
+  return fmtUSD(centsToUSD(cents))
 }
 
 const CONDITION_ABBR = {

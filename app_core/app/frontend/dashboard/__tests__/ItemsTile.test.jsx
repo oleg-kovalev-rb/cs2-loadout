@@ -21,12 +21,12 @@ const items = [
 // this is what makes the test "integration-style" rather than a unit test of
 // ItemsTile in isolation: it proves the reducer + derivation + rendering work
 // together, not just that each piece works alone.
-function Harness() {
+function Harness({ items: itemsProp = items }) {
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
   return (
     <ItemsTile
-      items={items}
+      items={itemsProp}
       filters={state.filters}
       sort={state.sort}
       page={state.page}
@@ -96,5 +96,29 @@ describe('ItemsTile (filter -> sort -> paginate integration)', () => {
     const row = screen.getByRole('button', { name: /Howl/ })
     await user.click(row)
     expect(row).toHaveClass('is-selected')
+  })
+})
+
+describe('ItemsTile (item with no price history yet)', () => {
+  const noHistoryItems = [
+    ...items,
+    {
+      marketHashName: 'Glock-18 | Fade (FN)',
+      weaponType: 'Glock-18',
+      itemName: 'Fade',
+      condition: 'Factory New',
+      stattrak: false,
+      currentPriceCents: 9000,
+      changeCents: 0,
+      priceHistory: [],
+    },
+  ]
+
+  test('renders its price with no delta badge, and participates in sort without crashing', () => {
+    render(<Harness items={noHistoryItems} />)
+
+    const row = screen.getByRole('button', { name: /Fade/ })
+    expect(within(row).getByText('$90.00')).toBeInTheDocument()
+    expect(within(row).queryByText(/▲|▼/)).not.toBeInTheDocument()
   })
 })

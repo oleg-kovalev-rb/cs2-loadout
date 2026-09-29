@@ -1,11 +1,13 @@
 import { Sparkline } from './Sparkline'
 
-export function MarketVolumeTile({ marketVolume }) {
+export function MarketVolumeTile({ marketVolume, historyStatus }) {
+  const isPending = historyStatus === 'pending'
+
   return (
     <section className="tile tile-volume">
       <div className="volume-stat">
         <span className="tile-label">Market volume</span>
-        <span className="stat-big tabular">{marketVolume.countLast24h.toLocaleString('en-US')}</span>
+        <span className="stat-big tabular">{isPending ? '—' : marketVolume.countLast24h.toLocaleString('en-US')}</span>
         <span className="stat-sub">24H · across all tracked items</span>
       </div>
       <Sparkline
