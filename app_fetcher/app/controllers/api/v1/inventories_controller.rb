@@ -7,56 +7,55 @@ module Api
 
       WARMUP_CAP = T.let(20, Integer)
       WARMUP_DEDUP_TTL = T.let(90.seconds, ActiveSupport::Duration)
+      REFRESH_DEDUP_TTL = T.let(1.day, ActiveSupport::Duration)
 
       sig { void }
       def show
-        items_names = UserInventoryCache.read(current_steam_id)
+        items = UserInventoryCache.fetch(current_steam_id)
 
-        unless items_names
-          client = Steam::Client.new
-          response = client.fetch_user_inventory(current_steam_id)
+        if items
+          render_inventory(items)
+        else
+          render_resolved(UserInventorySyncService.call(current_steam_id))
+        end
+      end
 
-          unless response.success?
-            render json: { message: response.error }, status: :bad_request
-            return
-          end
-
-          items_names = response.data.market_hash_names
-          UserInventoryCache.write(current_steam_id, items_names)
+      sig { void }
+      def refresh
+        dedup_key = "inventory_refresh_pending:#{current_steam_id}"
+        unless Rails.cache.write(dedup_key, true, unless_exist: true, expires_in: REFRESH_DEDUP_TTL)
+          render json: { message: "Inventory refresh already requested today" }, status: :too_many_requests
+          return
         end
 
-        items = ItemPriceCache.fetch_for(items_names)
+        render_resolved(UserInventorySyncService.call(current_steam_id))
+      end
 
-        missing_names = items_names - items.keys
-        save_missing_items(missing_names)
+      private
 
-        new_items = missing_names.map do |name|
-          attrs = Steam::ItemParser.parse(name)
-          Item.new(attrs)
+      sig { params(result: UserInventorySyncService::Result).void }
+      def render_resolved(result)
+        unless result.success
+          render json: { message: result.error }, status: :bad_request
+          return
         end
 
-        inventory_items = items.values + new_items
+        render_inventory(T.must(result.items))
+      end
 
-        enqueue_price_warmup(items.values)
+      sig { params(items: T::Array[Item]).void }
+      def render_inventory(items)
+        enqueue_price_warmup(items)
 
         render json: {
-          items_count: inventory_items.size,
-          items: inventory_items.as_json(only: [
+          items_count: items.size,
+          items: items.as_json(only: [
             :market_hash_name,
             :metadata,
             :current_price_cents,
             :change_24h_cents
           ])
         }, status: :ok
-      end
-
-      private
-
-      sig { params(names: T::Array[String]).void }
-      def save_missing_items(names)
-        names.each_slice(500) do |names_batch|
-          ItemsListUpdateWorker.perform_async(names_batch)
-        end
       end
 
       sig { params(items: T::Array[Item]).void }

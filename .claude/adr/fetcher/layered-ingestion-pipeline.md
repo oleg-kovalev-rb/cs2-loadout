@@ -23,11 +23,18 @@ tune retry/queue behavior for "cheap local query" separately from
 relies on (`PriceScheduler` vs `PriceUpdateWorker`'s distinct retry
 counts and queues).
 
-A related question this ADR must also settle: `Api::V1::InventoriesController#show`
-calls `Steam::ItemParser` directly and builds unsaved `Item.new` instances
-for the JSON response, while the actual persistence happens later via
-`ItemsListUpdateWorker`. On its face this looks like the controller
-bypassing the worker layer. It doesn't — see Decision.
+A related question this ADR must also settle: at the time this ADR was
+written, `Api::V1::InventoriesController#show` called `Steam::ItemParser`
+directly and built unsaved `Item.new` instances for the JSON response,
+while the actual persistence happened later via `ItemsListUpdateWorker`.
+On its face this looks like the controller bypassing the worker layer.
+It doesn't — see Decision. (That specific example no longer exists in
+current code — `show`'s cold-start branch and `#refresh` now persist
+synchronously via `UserInventorySyncService`, a distinct, later, and
+narrower exception documented in
+`.claude/adr/fetcher/cross-scenario-service-layer.md`. The carve-out
+described below remains available for a future controller action with
+the same shape as `show` used to have.)
 
 ## Decision
 
@@ -125,11 +132,18 @@ model built from it, provided the actual persistence for those same
 records is deferred to a Scenario-3 worker. This is not the controller
 doing the worker's job — parsing is cheap, pure, local computation with
 no reason to be pushed off the request path; persistence is the
-expensive part, and that stays batched and async
-(`InventoriesController#show` → `ItemsListUpdateWorker`, batched via
-`each_slice(500)`). The rule this preserves is about the *expensive*
-work only running through a worker, not about parsers being off-limits
-to controllers.
+expensive part, and that stays batched and async. (`InventoriesController#show`
+used this shape, batched via `each_slice(500)` into the
+now-removed `ItemsListUpdateWorker`, until the inventory-persistence
+work replaced it with the synchronous
+`UserInventorySyncService` call described in
+`.claude/adr/fetcher/cross-scenario-service-layer.md` — this carve-out
+no longer has a live example in this codebase, but remains available
+for a future controller action that wants this specific
+defer-persistence-to-a-worker shape instead of that newer,
+synchronous-persistence one.) The rule this preserves is about the
+*expensive* work only running through a worker, not about parsers being
+off-limits to controllers.
 
 ## Alternatives Considered
 
@@ -181,7 +195,15 @@ its own retry/queue tuning independent of the cron trigger.
   `Steam::ItemParser` directly as drift/inconsistency and "fix" it by
   making the controller enqueue-and-wait or persist synchronously,
   which would put expensive writes back on the request path. This ADR
-  is what should stop that "fix."
+  is what should stop that "fix" — **except** for the one narrow,
+  named exception in
+  `.claude/adr/fetcher/cross-scenario-service-layer.md`
+  (`UserInventorySyncService`, called synchronously from
+  `InventoriesController#show`'s cold-start branch and `#refresh`),
+  which documents its own distinct rationale for why synchronous
+  persistence is correct there specifically. That ADR doesn't reopen
+  this one's general rule — see its own Implementation Constraints for
+  the scoping.
 
 ## Implementation Constraints
 
@@ -208,8 +230,15 @@ its own retry/queue tuning independent of the cron trigger.
 - `.claude/adr/fetcher/steam-client-response-objects-and-rate-limiting.md`
   — why `Steam::Client` itself is shaped the way it is; this ADR only
   covers who's allowed to call it
-- `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
-- `app_fetcher/app/workers/items_list_update_worker.rb`
+- `.claude/adr/fetcher/cross-scenario-service-layer.md` — a narrow,
+  named exception to this ADR's "only a worker persists" rule and its
+  "no `app/actions/` here" framing, for logic genuinely needed
+  identically by a controller and a worker. Read that ADR's own scoping
+  before assuming either rule still applies unmodified everywhere.
+- `app_fetcher/app/controllers/api/v1/inventories_controller.rb` — no
+  longer an example of this ADR's sync-parse/async-persist carve-out
+  (see `cross-scenario-service-layer.md` above); kept here as the
+  Scenario 1 entry point example for the rest of this ADR's content.
 - `app_fetcher/app/parsers/steam/item_parser.rb`
 - `app_fetcher/app/builders/steam/price_log_builder.rb`
 - `app_fetcher/lib/steam/client.rb`

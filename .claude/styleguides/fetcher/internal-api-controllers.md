@@ -48,19 +48,24 @@ that doesn't need bridge-token auth — see MUST NOT below.
 ## Responsibilities
 
 A controller action parses params, calls exactly one collaborator (a
-`Steam::Client` call, or a plain ActiveRecord query), and renders JSON.
-It does not parse Steam's raw response itself (that's
-`Steam::Client`/its DTOs' job) and carries no business logic beyond
-simple set arithmetic (`items_names - items.keys`) — heavier lifting is
-delegated (parsing to `Steam::ItemParser`, backfill to a worker).
+`Steam::Client` call, a plain ActiveRecord query, or — per the narrow
+exception in `.claude/adr/fetcher/cross-scenario-service-layer.md` — a
+cross-Scenario service), and renders JSON based on that single call's
+result. It does not parse Steam's raw response itself (that's
+`Steam::Client`/its DTOs' job) and carries no business logic beyond a
+conditional render — heavier lifting (Steam calls, item resolution,
+backfill, persistence) is delegated entirely to the one collaborator.
 
 ## Dependencies
 
 May call `Steam::Client` directly (a fresh `Steam::Client.new` per
 request — no injection) and enqueue Sidekiq workers directly
-(`ItemsListUpdateWorker.perform_async`). Relies on `ApplicationController`
+(`PriceUpdateWorker.perform_async`). Relies on `ApplicationController`
 for auth; never re-implements token verification in a specific
-controller.
+controller. See `.claude/adr/fetcher/cross-scenario-service-layer.md`
+for the one exception: `InventoriesController#show`'s cold-start branch
+and `#refresh` call `UserInventorySyncService` synchronously instead of
+enqueuing.
 
 ## Rules
 
@@ -90,8 +95,11 @@ controller.
   than one `Steam::Client` call or query chain, that's a sign the logic
   belongs in a builder/action object instead of the controller.
 - Batch worker enqueues from a controller with `each_slice(n)` rather
-  than one job per record when backfilling in bulk (see
-  `InventoriesController#save_missing_items`).
+  than one job per record when backfilling in bulk. No current
+  controller action does this (`InventoriesController#show`'s backfill
+  moved into `UserInventorySyncService`'s single `Item.upsert_all` call —
+  see `.claude/adr/fetcher/cross-scenario-service-layer.md`); this rule
+  still applies the moment a controller needs to batch-enqueue again.
 
 ### MUST NOT
 

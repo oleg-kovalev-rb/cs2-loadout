@@ -22,7 +22,7 @@ what to enqueue.
 ## Structure
 
 - Workers live in `app/workers/`, named `<Noun><Verb>Worker`
-  (`PriceUpdateWorker`, `ItemsListUpdateWorker`).
+  (`PriceUpdateWorker`, `UserInventorySyncWorker`).
 - The cron-triggered orchestrator lives in `app/schedulers/`, named
   `<Noun>Scheduler` (`PriceScheduler`), and is itself a
   `Sidekiq::Worker` — `sidekiq-cron` enqueues it like any other job, on
@@ -41,9 +41,8 @@ what to enqueue.
 - `perform` is the only public method; its `sig` always `.void`s (a job
   has no return value Sidekiq will use).
 - Arguments are Sidekiq-serializable primitives only — an `Integer` id
-  (`PriceUpdateWorker`) or an `Array[String]` of names
-  (`ItemsListUpdateWorker`) — never an ActiveRecord object or a custom
-  class instance.
+  (`PriceUpdateWorker`) or a `String` (`UserInventorySyncWorker`'s
+  `steam_id`) — never an ActiveRecord object or a custom class instance.
 
 ## Responsibilities
 
@@ -71,15 +70,20 @@ stream.
   weeks) by omission. Pick `N` to reflect how failure-prone the work is:
   a worker that calls the rate-limited, occasionally-flaky Steam API
   gets more retries (`PriceUpdateWorker`: 5) than one that only writes
-  to Postgres (`ItemsListUpdateWorker`: 3).
+  to Postgres (`InventoryValueUpdateWorker`: 3).
 - Route work that calls `Steam::Client` onto its own queue (`:prices`),
   separate from cheap orchestration work (`:default`) — see
-  `config/sidekiq.yml`'s queue list and `PriceUpdateWorker` vs.
-  `ItemsListUpdateWorker`/`PriceScheduler`. This keeps a Steam-API outage
-  or rate-limit backoff from starving unrelated jobs.
+  `config/sidekiq.yml`'s queue list and `PriceUpdateWorker`/
+  `UserInventorySyncWorker` vs. `InventoryValueUpdateWorker`/
+  `PriceScheduler`. This keeps a Steam-API outage or rate-limit backoff
+  from starving unrelated jobs.
 - Use a bulk write (`Item.upsert_all(..., unique_by: ...)`) instead of a
   per-record loop of `.new`/`.save!` when a job processes a batch of
-  independent records (see `ItemsListUpdateWorker`).
+  independent records. No current worker does this directly (see
+  `app/services/user_inventory_sync_service.rb` for the same `upsert_all`
+  pattern, now living in the cross-Scenario service layer instead of a
+  worker — see `.claude/adr/fetcher/cross-scenario-service-layer.md`);
+  this rule still applies the moment a worker needs it again.
 - Wrap multiple writes that must stay consistent with each other in a
   single `ActiveRecord::Base.transaction` (see `PriceUpdateWorker`
   wrapping `price_log.save!` and `item.update!` in `Item.transaction` —
@@ -143,10 +147,16 @@ PriceUpdateWorker#perform
     ↓ Steam::Client → Steam::PriceLogBuilder → transaction (save + update)
     ↓ publish to STREAM_REDIS_POOL ("prices_stream")
 
-Api::V1::InventoriesController#save_missing_items
-    ↓ ItemsListUpdateWorker.perform_async(names_batch)  — batched via each_slice(500)
-ItemsListUpdateWorker#perform
-    ↓ Steam::ItemParser → Item.upsert_all
+sidekiq-cron
+    ↓ enqueues on schedule (daily; its own staleness filter bounds actual Steam calls to ~weekly per steam_id)
+UserInventorySyncScheduler#perform
+    ↓ queries local UserInventory state, no external I/O
+    ↓ UserInventorySyncWorker.perform_async(steam_id)
+UserInventorySyncWorker#perform
+    ↓ UserInventorySyncService.call(steam_id)  — see
+      `.claude/adr/fetcher/cross-scenario-service-layer.md`: the actual
+      Steam call, backfill, and persistence live in this cross-Scenario
+      service, not inline in the worker
 ```
 
 ## Testing
@@ -174,8 +184,10 @@ metadata.
 ## Canonical Implementations
 
 - `app_fetcher/app/workers/price_update_worker.rb`
-- `app_fetcher/app/workers/items_list_update_worker.rb`
-- `app_fetcher/app/schedulers/price_scheduler.rb`
+- `app_fetcher/app/workers/user_inventory_sync_worker.rb`,
+  `app_fetcher/app/workers/inventory_value_update_worker.rb`
+- `app_fetcher/app/schedulers/price_scheduler.rb`,
+  `app_fetcher/app/schedulers/user_inventory_sync_scheduler.rb`
 - `app_fetcher/config/schedule.yml`, `app_fetcher/config/sidekiq.yml`,
   `app_fetcher/config/initializers/sidekiq.rb`
 - `app_fetcher/spec/workers/price_update_worker_spec.rb` — concrete case
@@ -183,7 +195,8 @@ metadata.
   against `XRANGE "prices_stream", "-", "+"`) and its
   `aggregate_failures` guidance (checks the `PriceLog` row, the `Item`'s
   updated price fields, and the stream entry together)
-- `app_fetcher/spec/workers/items_list_update_worker_spec.rb`
+- `app_fetcher/spec/workers/user_inventory_sync_worker_spec.rb`,
+  `app_fetcher/spec/workers/inventory_value_update_worker_spec.rb`
 - `app_fetcher/spec/schedulers/price_scheduler_spec.rb` — concrete case
   for `rspec-conventions.md`'s `Sidekiq::Testing.fake!` rule (asserts
   `PriceUpdateWorker.jobs.size` and the enqueued `item.id`s, never that

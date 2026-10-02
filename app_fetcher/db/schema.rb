@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_29_120000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_01_155638) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -45,5 +45,22 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_29_120000) do
     t.index ["item_id"], name: "index_price_logs_on_item_id"
   end
 
+  create_table "user_inventories", force: :cascade do |t|
+    t.string "steam_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["steam_id"], name: "index_user_inventories_on_steam_id", unique: true
+  end
+
+  create_table "user_inventory_items", force: :cascade do |t|
+    t.bigint "user_inventory_id", null: false
+    t.bigint "item_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_inventory_id", "item_id"], name: "index_user_inventory_items_on_user_inventory_id_and_item_id", unique: true
+  end
+
   add_foreign_key "price_logs", "items"
+  add_foreign_key "user_inventory_items", "items"
+  add_foreign_key "user_inventory_items", "user_inventories"
 end

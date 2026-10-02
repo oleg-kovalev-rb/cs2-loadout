@@ -1,27 +1,30 @@
 # typed: strict
 
-# TTL-only, unlike ItemPriceCache/PriceHistoryCache: a user's Steam
-# inventory changes because of their own trading activity on Steam, not
-# because of anything this app writes — there is no write path in this
-# app to hook an explicit `.invalidate` into, so staleness is bounded by
-# TTL alone.
+# Single-key read-through + invalidation: freshness now comes from the
+# weekly UserInventorySyncService-driven sync plus manual refresh, which
+# both call .invalidate right after UserInventory.sync! succeeds (see
+# .claude/styleguides/fetcher/caching.md). This class only shields
+# Postgres from a read on every dashboard render.
 class UserInventoryCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(1, Integer)
-  TTL = T.let(5.minutes, ActiveSupport::Duration)
+  CACHE_KEY_VERSION = T.let(2, Integer)
+  SAFETY_NET_TTL = T.let(15.minutes, ActiveSupport::Duration)
 
   class << self
     extend T::Sig
 
-    sig { params(steam_id: String).returns(T.nilable(T::Array[String])) }
-    def read(steam_id)
-      Rails.cache.read(cache_key(steam_id))
+    sig { params(steam_id: String).returns(T.nilable(T::Array[Item])) }
+    def fetch(steam_id)
+      Rails.cache.fetch(cache_key(steam_id), expires_in: SAFETY_NET_TTL, skip_nil: true) do
+        user_inventory = UserInventory.find_by(steam_id: steam_id)
+        user_inventory&.items&.to_a
+      end
     end
 
-    sig { params(steam_id: String, market_hash_names: T::Array[String]).void }
-    def write(steam_id, market_hash_names)
-      Rails.cache.write(cache_key(steam_id), market_hash_names, expires_in: TTL)
+    sig { params(steam_id: String).void }
+    def invalidate(steam_id)
+      Rails.cache.delete(cache_key(steam_id))
     end
 
     private

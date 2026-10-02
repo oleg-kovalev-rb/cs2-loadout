@@ -53,6 +53,7 @@ RSpec.configure do |config|
   # config.use_active_record = false
 
   config.include FactoryBot::Syntax::Methods
+  config.include ActiveSupport::Testing::TimeHelpers
 
   config.before(:each) do
     Sidekiq::Worker.clear_all

@@ -1,5 +1,5 @@
 ---
-description: Rails.cache/solid_cache conventions in app_fetcher — dedicated app/caching/ classes, versioned keys, by-key invalidation owned by the writing worker, TTL as a safety net only, and the warmup/dedup pattern for not-yet-priced items.
+description: Rails.cache/solid_cache conventions in app_fetcher — dedicated app/caching/ classes, versioned keys, by-key invalidation owned by the writer (worker or service), three variants (bulk read-through, single-key read-through, TTL-only), and the warmup/dedup pattern for not-yet-priced items.
 ---
 
 # Caching (`app/caching/`)
@@ -19,11 +19,36 @@ get it" — that's still the model's/builder's job.
 
 ## When to Use
 
-Use this pattern for a read path whose underlying data changes at a known,
-infrequent cadence driven by a background job (here: `PriceUpdateWorker`,
-hourly at most per item) and that's read far more often than it changes.
-Don't reach for it for data that changes on every request, or where
-staleness of even a few seconds would be user-visible in a way that
+Three variants, chosen by how the underlying data goes stale and how
+callers key into it:
+
+- **Read-through + explicit invalidation** (`.fetch_for`/`.invalidate`):
+  data changes at a known, infrequent cadence driven by a background job
+  this codebase controls (here: `PriceUpdateWorker`, hourly at most per
+  item), so that job can call `.invalidate` the moment it writes. Read far
+  more often than it changes. Callers key in **bulk** — a request-shaped
+  array of ids, not one at a time.
+- **Single-key read-through + invalidation** (`.fetch`/`.invalidate`): the
+  same staleness story as the bulk variant above (a codebase-controlled
+  writer calls `.invalidate` right after it writes), but every caller only
+  ever needs **one** key per call — there's no request shape that would
+  benefit from a bulk `read_multi` across many steam_ids/users at once.
+  Use this instead of the bulk variant when a cached resource is
+  inherently scoped to "the current request's one id," never a list.
+- **TTL-only** (`.read`/`.write`): data changes due to activity this
+  codebase has no write path into, so there's no event to hook an
+  explicit `.invalidate` call to — staleness is bounded purely by a short
+  TTL instead. As of this update, no class in this codebase implements
+  this variant — `UserInventoryCache` used to be its example, but moved to
+  the single-key read-through variant once the weekly sync + manual
+  refresh (`UserInventorySyncService`, see
+  `.claude/adr/fetcher/cross-scenario-service-layer.md`) gave it a real
+  write path to invalidate against. Kept documented for a future case
+  that's genuinely TTL-only (no invalidation hook this codebase controls
+  at all), not removed just because it's currently unused.
+
+Don't reach for any variant for data that changes on every request, or
+where staleness of even a few seconds would be user-visible in a way that
 matters.
 
 ## Structure
@@ -31,26 +56,43 @@ matters.
 - One class per cached resource, under `app/caching/`, top-level (not
   namespaced under `Steam::` — like workers and schedulers, these encode
   generic caching mechanics, not Steam-domain parsing):
-  `ItemPriceCache`, `PriceHistoryCache`.
+  `ItemPriceCache`, `PriceHistoryCache` (bulk read-through + invalidation),
+  `UserInventoryCache` (single-key read-through + invalidation).
 - Each class is a plain Ruby class with only class-level methods (`class
   << self; extend T::Sig; ...; end` for private ones, per
   `.claude/styleguides/ruby-sorbet.md`) — never instantiated.
 
 ## Interface
 
-Exactly two public class methods per caching class:
+Exactly two public class methods per caching class, named by variant (see
+When to Use) — never mix pairs from different variants on one class:
 
-- `.fetch_for(market_hash_names)` — bulk read. Returns the same shape the
-  caller would have gotten from a direct query (a `market_hash_name =>
-  data` mapping); callers should not need to know whether a given name
-  was a cache hit or a DB fallback.
-- `.invalidate(market_hash_name)` — single-key delete. Returns nothing
-  meaningful; callers don't branch on its result.
+- **Bulk read-through + invalidation**: `.fetch_for(market_hash_names)` —
+  bulk read, returns the same shape the caller would have gotten from a
+  direct query (a `market_hash_name => data` mapping); callers should not
+  need to know whether a given name was a cache hit or a DB fallback.
+  Paired with `.invalidate(market_hash_name)` — single-key delete; returns
+  nothing meaningful, callers don't branch on its result. A class using
+  this pair doesn't expose `.read`/`.write`/`.fetch` primitives directly —
+  collapsing every call site to `fetch_for` keeps the bulk-read-avoids-N+1
+  property (see Rules) from being accidentally bypassed by a future
+  one-off caller.
+- **Single-key read-through + invalidation**: `.fetch(id)` — single-key
+  read with DB fallback: returns the cached value, or on a miss, queries
+  the DB directly (a single query, not `read_multi`/`write_multi` — there
+  is only ever one key per call, so the bulk machinery doesn't apply) and
+  writes the result back with the class's safety-net TTL before
+  returning. Paired with `.invalidate(id)` — single-key delete, same
+  contract as the bulk variant's. A class using this pair doesn't expose
+  `.read`/`.write`/`.fetch_for` directly either.
+- **TTL-only**: `.read(id)` — single-key read, returns the cached value or
+  `nil` on a miss; no DB fallback, no write-through. Paired with
+  `.write(id, value)` — single-key write with the class's TTL; the caller
+  decides when to call it (typically after successfully fetching the
+  value from its real source), it's not triggered by a background job's
+  invalidation hook.
 
-No other public methods. A caching class doesn't expose `.fetch` or
-`.write` primitives directly — collapsing every call site to `fetch_for`
-keeps the bulk-read-avoids-N+1 property (see Rules) from being
-accidentally bypassed by a future one-off caller.
+No other public methods on any variant.
 
 ## Responsibilities
 
@@ -62,36 +104,57 @@ Dependencies) or computing the underlying value (that's still `Item`'s/
 
 ## Dependencies
 
-May call `Item`/`PriceLog` (a plain bulk `ActiveRecord` query on a cache
-miss). Must never be called *from* a model — dependency direction is
-Controller/Worker → Caching → Models, one-way, same as every other layer
-in `.claude/styleguides/rails-layering.md`. Callers: `Api::V1::
-InventoriesController`/`Api::V1::PriceHistoriesController` on the read
-side, `PriceUpdateWorker` on the invalidate side.
+May call `Item`/`PriceLog`/`UserInventory`/`UserInventoryItem` (a plain
+query on a cache miss — bulk for the bulk variant, single-record for the
+single-key variant). Must never be called *from* a model — dependency
+direction is Controller/Worker/Service → Caching → Models, one-way, same
+as every other layer in `.claude/styleguides/rails-layering.md`. Callers:
+`Api::V1::InventoriesController`/`Api::V1::PriceHistoriesController` on
+the read side for the bulk variant (`ItemPriceCache`/`PriceHistoryCache`);
+`Api::V1::InventoriesController` (warm path) on the read side and
+`UserInventorySyncService` on the invalidate side for the single-key
+variant (`UserInventoryCache`) — mirroring `PriceUpdateWorker`'s role for
+the bulk variant, just from the cross-Scenario service layer instead of a
+worker (see
+`.claude/adr/fetcher/cross-scenario-service-layer.md`).
 
 ## Rules
 
 ### MUST
 
-- Read via `Rails.cache.read_multi` and write misses back via
-  `Rails.cache.write_multi` — never a per-name `Rails.cache.fetch` in a
-  loop. A per-name loop's fallback block runs once per miss, which
-  reintroduces the N+1 query pattern caching was meant to remove.
+- **Bulk variant only**: read via `Rails.cache.read_multi` and write
+  misses back via `Rails.cache.write_multi` — never a per-name
+  `Rails.cache.fetch` in a loop. A per-name loop's fallback block runs
+  once per miss, which reintroduces the N+1 query pattern caching was
+  meant to remove. This doesn't apply to the single-key variant — there's
+  only ever one key per call, so a plain `Rails.cache.fetch(key,
+  expires_in: TTL) { ... }` is correct there, not a bypass of this rule.
 - Construct keys as versioned arrays: `[<namespace>, <version_integer>,
-  market_hash_name]` (e.g. `["item_price", 1, market_hash_name]`). Bump
-  the version segment whenever the cached payload's shape changes —
-  never reuse a version number for a differently-shaped value.
-- Invalidate with a single `Rails.cache.delete(key)` per
-  `market_hash_name` — no bulk/wildcard delete, no version-bump-instead-
-  of-delete (see the ADR's rejected alternatives).
+  id]` (e.g. `["item_price", 1, market_hash_name]`,
+  `["user_inventory", 2, steam_id]`). Bump the version segment whenever
+  the cached payload's shape changes — never reuse a version number for a
+  differently-shaped value.
+- Invalidate with a single `Rails.cache.delete(key)` per id — no
+  bulk/wildcard delete, no version-bump-instead-of-delete (see the ADR's
+  rejected alternatives).
 - Set an `expires_in:` safety-net TTL on every write (15 minutes for both
   `ItemPriceCache` and `PriceHistoryCache` today) — this is a bound on
   staleness if invalidation is ever missed, not the primary freshness
-  mechanism.
-- Only `PriceUpdateWorker` calls `.invalidate`, immediately after its
-  existing successful transaction — never on a failed Steam response
-  branch. If a future job writes `Item#current_price_cents` or a new
-  `PriceLog` row, it must call the same `.invalidate` entry point.
+  mechanism. Pick the single-key variant's TTL deliberately per class,
+  same as the bulk variant — don't copy another class's number without
+  re-deriving it for the new data's own staleness tolerance.
+- Only the writer named in Dependencies calls `.invalidate` for a given
+  class, immediately after its own successful write — never on a failed
+  external-call branch. `PriceUpdateWorker` owns
+  `ItemPriceCache`/`PriceHistoryCache`'s invalidation;
+  `UserInventorySyncService` owns `UserInventoryCache`'s. If a future
+  writer is introduced for either resource, it must call the same
+  `.invalidate` entry point rather than leaving a second, uninvalidated
+  write path.
+- For a TTL-only class, the `expires_in:` on `.write` *is* the primary
+  freshness mechanism (there's no `.invalidate` to fall back on) — pick it
+  deliberately; don't copy a safety-net TTL from a read-through variant,
+  where invalidation (not the TTL) is the primary mechanism.
 
 ### SHOULD
 
@@ -141,6 +204,13 @@ Api::V1::InventoriesController#show          Api::V1::PriceHistoriesController#i
 PriceUpdateWorker#perform  (after successful transaction)
     ↓ ItemPriceCache.invalidate(market_hash_name)
     ↓ PriceHistoryCache.invalidate(market_hash_name)
+
+Api::V1::InventoriesController#show (warm path)
+    ↓ UserInventoryCache.fetch(steam_id)
+    ↓ (miss → UserInventory/UserInventoryItem/Item query → write)
+
+UserInventorySyncService.call  (after UserInventory.sync! succeeds)
+    ↓ UserInventoryCache.invalidate(steam_id)
 ```
 
 ## Testing
@@ -168,14 +238,22 @@ section only adds what's specific to caching.
 
 ## Canonical Implementations
 
-None yet — this is the first use of `Rails.cache`/`solid_cache` as an
-explicit pattern in `app_fetcher` (Prop's use of `Rails.cache` for
-rate-limiting, in `config/initializers/prop.rb`, predates this and
-doesn't follow this pattern). The first implementation is tracked in
-`.claude/plans/fetcher-price-caching.md`, expected at
-`app_fetcher/app/caching/item_price_cache.rb` and
-`app_fetcher/app/caching/price_history_cache.rb`.
+- Bulk read-through + invalidation: `app_fetcher/app/caching/item_price_cache.rb`,
+  `app_fetcher/app/caching/price_history_cache.rb`.
+- Single-key read-through + invalidation: `app_fetcher/app/caching/user_inventory_cache.rb`.
+- TTL-only: no current implementation — see When to Use for why
+  `UserInventoryCache` is no longer this variant's example.
+
+`ItemPriceCache`/`PriceHistoryCache` are tracked in
+`.claude/plans/fetcher-price-caching.md`; `UserInventoryCache`'s
+single-key read-through shape is tracked in
+`.claude/plans/user-inventory-persistence.md`. Prop's use of
+`Rails.cache` for rate-limiting, in `config/initializers/prop.rb`,
+predates this styleguide and doesn't follow any of the three variants.
 
 ## Related ADR
 
-`.claude/adr/fetcher/price-cache-invalidation.md`
+- `.claude/adr/fetcher/price-cache-invalidation.md`
+- `.claude/adr/fetcher/cross-scenario-service-layer.md` — why
+  `UserInventoryCache`'s invalidation is owned by `UserInventorySyncService`
+  rather than a worker.

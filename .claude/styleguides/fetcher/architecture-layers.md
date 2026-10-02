@@ -90,6 +90,21 @@ Models (app/models/, write)
   only later.
 - **Controllers** (`app/controllers/api/v1/`): Scenario 1's entry
   point — see `.claude/styleguides/fetcher/internal-api-controllers.md`.
+- **Services** (`app/services/`, flat, top-level, named
+  `<Noun>Service` — e.g. `UserInventorySyncService` — not namespaced
+  under `Steam::` even when calling `Steam::Client`, the same exception
+  `background-jobs.md` already carves out for workers/schedulers):
+  the one layer that spans Scenarios instead of belonging to a single
+  one. Reserved for a sequence genuinely needed,
+  unmodified, from **two or more** of Scenario 1/2/3 — not a default
+  home for any non-trivial controller or worker logic. See
+  `.claude/adr/fetcher/cross-scenario-service-layer.md` for why this
+  layer exists and how it differs from `app_core`'s `app/actions/`.
+  Unlike parsers/builders, a class here may call `Steam::Client`
+  directly and persist models; unlike every other Scenario-1 rule, it
+  may be called synchronously, inline, from a controller action before
+  rendering — but only for the specific call sites that ADR names, not
+  as a general permission.
 
 ## Responsibilities
 
@@ -113,6 +128,11 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   (both synchronous) and workers (async enqueue via `.perform_async`,
   never a call) — and, under the carve-out below, a parser directly
   (synchronous).
+- Services (the cross-Scenario layer) may depend on `Steam::Client`,
+  the Caching layer (`ItemPriceCache`/`PriceHistoryCache`), parsers,
+  and models — the same dependency set a worker already has, just
+  reachable from a controller too, synchronously, for the specific
+  named call sites in `cross-scenario-service-layer.md`.
 
 ## Rules
 
@@ -122,7 +142,9 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   `Steam::`, following the split above — don't merge parse+build+persist
   into one class (see ADR, "Alternative: single importer class").
 - Only a worker persists parsed/built data, inside a transaction when
-  more than one write must stay consistent (see `background-jobs.md`).
+  more than one write must stay consistent (see `background-jobs.md`) —
+  except the narrow, named exception in
+  `.claude/adr/fetcher/cross-scenario-service-layer.md`.
 
 ### SHOULD
 
@@ -147,32 +169,40 @@ in a separate worker execution.
 sidekiq-cron ⇢ PriceScheduler#perform ⇢ PriceUpdateWorker#perform
     → Steam::Client → Steam::PriceLogBuilder → transaction (save)
 
-Api::V1::InventoriesController#show
-    → Steam::Client (inventory fetch)
-    → Steam::ItemParser (inline, for the response — carve-out, see ADR)
-    ⇢ ItemsListUpdateWorker#perform (batched, actual persistence — runs
-        later, in a separate worker execution, not before the response
-        above is rendered)
-        → Steam::ItemParser → Item.upsert_all
+Api::V1::InventoriesController#show / #refresh
+    → UserInventorySyncService.call(steam_id)  (the one collaborator —
+        see `.claude/adr/fetcher/cross-scenario-service-layer.md`)
+        → Steam::Client (inventory fetch)
+        → Steam::ItemParser (for any missing names) → Item.upsert_all
+        → UserInventory.sync!
 ```
 
-The `InventoriesController` path calling `Steam::ItemParser` directly
-and returning unsaved `Item.new` instances is deliberate, not a layer
-violation — see
-`.claude/adr/fetcher/layered-ingestion-pipeline.md`'s Decision section.
-Parsing there is cheap, pure, and safe to run inline; the actual
-persistence for the same records still only happens via
-`ItemsListUpdateWorker`.
+`InventoriesController#show`'s cold-start branch and `#refresh` persist
+synchronously, inline, before rendering — this is a narrow, named
+exception to "only a worker persists" (above), not a layer violation.
+See `.claude/adr/fetcher/cross-scenario-service-layer.md` for why, and
+for the original sync-parse/async-persist carve-out this superseded for
+this specific path (`.claude/adr/fetcher/layered-ingestion-pipeline.md`'s
+Decision section still documents that original carve-out as a pattern
+available for a future, similar case — it just no longer describes what
+`show` itself currently does).
 
 ## Canonical Implementations
 
 - `app_fetcher/app/parsers/steam/item_parser.rb`
 - `app_fetcher/app/builders/steam/price_log_builder.rb`
 - `app_fetcher/app/workers/price_update_worker.rb`,
-  `app_fetcher/app/workers/items_list_update_worker.rb`
+  `app_fetcher/app/workers/user_inventory_sync_worker.rb`
 - `app_fetcher/app/schedulers/price_scheduler.rb`
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
+- `app_fetcher/app/services/user_inventory_sync_service.rb` —
+  `UserInventorySyncService`, this layer's first implementation; called
+  identically from `InventoriesController#show`/`#refresh` (Scenario 1)
+  and `UserInventorySyncWorker` (Scenario 3).
 
 ## Related ADR
 
-`.claude/adr/fetcher/layered-ingestion-pipeline.md`
+- `.claude/adr/fetcher/layered-ingestion-pipeline.md`
+- `.claude/adr/fetcher/cross-scenario-service-layer.md` — the
+  `app/services/` layer added above, and the narrow controller-
+  persistence carve-out it comes with.
