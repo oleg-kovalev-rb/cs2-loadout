@@ -8,7 +8,7 @@ RSpec.describe Steam::BridgeToken do
       payload, = JWT.decode(token, ENV.fetch("APP_BRIDGE_JWT_SECRET"), true, algorithm: "HS256")
 
       expect(payload["steam_id"]).to eq("76561198000000001")
-      expect(payload["exp"]).to be_within(5).of(2.minutes.from_now.to_i)
+      expect(payload["exp"]).to be_within(5).of(8.hours.from_now.to_i)
     end
 
     it "is not verifiable with the wrong secret" do

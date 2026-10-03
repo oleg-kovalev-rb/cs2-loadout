@@ -7,7 +7,7 @@ module Steam
     extend T::Sig
 
     ALGORITHM = T.let("HS256", String)
-    TTL = T.let(2.minutes, ActiveSupport::Duration)
+    TTL = T.let(8.hours, ActiveSupport::Duration)
 
     sig { params(steam_id: String).returns(String) }
     def self.encode(steam_id)
