@@ -57,12 +57,6 @@ class ItemTrendCache
       [ "item_trend", CACHE_KEY_VERSION, market_hash_name ]
     end
 
-    # Cursor-based downsampling: walks TREND_POINTS evenly-spaced target
-    # timestamps across the window, advancing a single forward-only index
-    # into the already-sorted logs, carrying the last-seen log forward but
-    # only emitting a point when it's a genuinely new log (no duplicate
-    # carry-forward entries, so a sparsely-logged item returns fewer than
-    # TREND_POINTS points instead of padding).
     sig { params(logs: T::Array[PriceLog]).returns(T::Array[TrendPoint]) }
     def downsample(logs)
       return [] if logs.empty?

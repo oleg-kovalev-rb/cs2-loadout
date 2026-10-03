@@ -1,14 +1,9 @@
 # typed: strict
 
-# Single-key read-through + invalidation: freshness now comes from the
-# weekly UserInventorySyncService-driven sync plus manual refresh, which
-# both call .invalidate right after UserInventory.sync! succeeds (see
-# .claude/styleguides/fetcher/caching.md). This class only shields
-# Postgres from a read on every dashboard render.
 class UserInventoryCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(2, Integer)
+  CACHE_KEY_VERSION = T.let(1, Integer)
   SAFETY_NET_TTL = T.let(15.minutes, ActiveSupport::Duration)
 
   class << self
