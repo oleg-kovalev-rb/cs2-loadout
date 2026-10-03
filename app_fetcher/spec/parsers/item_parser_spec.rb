@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Steam::ItemParser do
+RSpec.describe ItemParser do
   describe ".parse" do
     it "splits weapon type, item name, and condition out of a plain name" do
       result = described_class.parse("AK-47 | Redline (Field-Tested)")

@@ -16,7 +16,7 @@ class PriceUpdateService
 
     sig { params(item: Item, price_data: Steam::Response::Data::ItemPriceData).returns(PriceUpdateService::Result) }
     def call(item, price_data)
-      price_log = Steam::PriceLogBuilder.build(item.id, price_data)
+      price_log = PriceLogBuilder.build(item.id, price_data)
 
       price_24h_ago = item.price_logs
                           .where("created_at <= ?", 24.hours.ago)

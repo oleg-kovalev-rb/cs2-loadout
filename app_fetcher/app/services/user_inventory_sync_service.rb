@@ -22,7 +22,7 @@ class UserInventorySyncService
       names = response.data.market_hash_names
       known_items = ItemPriceCache.fetch_for(names)
       missing_names = names - known_items.keys
-      missing_attrs = missing_names.map { |name| Steam::ItemParser.parse(name) }
+      missing_attrs = missing_names.map { |name| ItemParser.parse(name) }
 
       Item.upsert_all(missing_attrs, unique_by: :market_hash_name) if missing_attrs.any?
       backfilled = missing_attrs.empty? ? [] : Item.where(market_hash_name: missing_attrs.map { |attrs| attrs[:market_hash_name] }).to_a

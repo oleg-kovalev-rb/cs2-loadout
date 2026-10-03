@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Steam::PriceLogBuilder do
+RSpec.describe PriceLogBuilder do
   describe ".build" do
     it "converts a fully-populated price DTO into cents/volume and keeps the item_id" do
       price_data = Steam::Response::Data::ItemPriceData.new(

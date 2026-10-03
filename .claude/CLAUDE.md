@@ -6,8 +6,8 @@ Monorepo, two Rails 7.2 apps sharing a Postgres/Redis stack (see
 - `app_fetcher/` — API-only service. Fetches, parses, and stores Steam
   Store/market data (items, prices) via scheduled Sidekiq jobs, exposes it
   internally over an API. Sorbet for type checking.
-  - `app/parsers/steam/` — parse raw Steam API responses;
-  - `app/builders/steam/` — build domain records from parsed data;
+  - `app/parsers/` — parse raw Steam API responses;
+  - `app/builders/` — build domain records from parsed data;
   - `app/workers/` — Sidekiq jobs (list/price updates);
   - `app/schedulers/` — recurring job scheduling (sidekiq-cron);
   - `app/controllers/api/` — internal API consumed by `app_core`.
