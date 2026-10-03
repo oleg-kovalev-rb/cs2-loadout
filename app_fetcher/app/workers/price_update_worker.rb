@@ -19,9 +19,9 @@ class PriceUpdateWorker
       return
     end
 
-    result = PriceUpdateService.call(item, T.must(response.data))
+    PriceUpdateService.call(item, T.must(response.data))
     update_related_cache(item.market_hash_name)
-    publish_to_stream(item.market_hash_name, result.price_log.lowest_price_cents, result.change_24h_cents)
+    publish_to_stream(item.market_hash_name, item.current_price_cents, item.change_24h_cents)
   end
 
   private

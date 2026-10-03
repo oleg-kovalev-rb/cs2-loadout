@@ -8,6 +8,6 @@ class InventoryValueUpdateWorker
 
   sig { params(steam_id: String).void }
   def perform(steam_id)
-    InventoryValueRecordingService.new(steam_id).call!
+    InventoryValueRecordingService.call(steam_id)
   end
 end

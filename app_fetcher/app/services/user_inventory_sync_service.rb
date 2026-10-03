@@ -3,6 +3,10 @@
 class UserInventorySyncService
   extend T::Sig
 
+  # Temporary: this Result shape is defined inline per-service (see also
+  # PriceUpdateService). Revisit extracting a shared base-service/Result
+  # abstraction once app/services/ has enough members to show what that
+  # shape should actually be.
   class Result < T::Struct
     const :success, T::Boolean
     const :error, T.nilable(String)

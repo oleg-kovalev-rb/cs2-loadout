@@ -3,18 +3,10 @@
 class PriceUpdateService
   extend T::Sig
 
-  class Result < T::Struct
-    const :success, T::Boolean
-    const :price_log, PriceLog
-    const :item, Item
-    const :change_24h_cents, Integer
-    const :error, T.nilable(String)
-  end
-
   class << self
     extend T::Sig
 
-    sig { params(item: Item, price_data: Steam::Response::Data::ItemPriceData).returns(PriceUpdateService::Result) }
+    sig { params(item: Item, price_data: Steam::Response::Data::ItemPriceData).void }
     def call(item, price_data)
       price_log = PriceLogBuilder.build(item.id, price_data)
 
@@ -29,14 +21,6 @@ class PriceUpdateService
         price_log.save!
         item.update!(current_price_cents: price_log.lowest_price_cents, change_24h_cents: change_24h_cents)
       end
-
-      Result.new(
-        success: true,
-        price_log: price_log,
-        item: item,
-        change_24h_cents: change_24h_cents,
-        error: nil
-      )
     end
   end
 end

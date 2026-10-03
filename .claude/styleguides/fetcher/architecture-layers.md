@@ -205,15 +205,20 @@ available for a future, similar case — it just no longer describes what
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
   `InventoryValueRecordingService`, called identically from
   `InventoryValuesController#index`'s cold-start seed (Scenario 1) and
-  `InventoryValueUpdateWorker` (Scenario 3); an instance-method class
-  (`.new(steam_id).call!`) rather than `UserInventorySyncService`'s
-  class-method shape — both are valid for this layer, pick whichever
-  reads better for a given service.
+  `InventoryValueUpdateWorker` (Scenario 3); class-method `.call`, the
+  mandated shape for this layer (see
+  `.claude/adr/fetcher/cross-scenario-service-layer.md`'s Implementation
+  Constraints) — same as `UserInventorySyncService`.
 - `app_fetcher/app/services/price_update_service.rb` —
   `PriceUpdateService`, called from `PriceUpdateWorker` (Scenario 3);
   a single-Scenario service extracted for SRP — keeps `perform` as thin
   orchestration glue by moving the 24h-change calculation and DB
-  transaction out of the worker.
+  transaction out of the worker. `.call` returns `void`; it has no
+  failure branch (its writes are bang methods that raise rather than
+  returning a false/error result), so it doesn't return a `Result`
+  object the way `UserInventorySyncService` does — the caller reads the
+  updated price/change fields directly off the same `Item` instance it
+  passed in.
 
 ## Related ADR
 

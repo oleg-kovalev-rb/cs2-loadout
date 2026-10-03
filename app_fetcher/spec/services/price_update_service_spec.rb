@@ -13,16 +13,13 @@ RSpec.describe PriceUpdateService do
     context "with no prior price log" do
       let(:item) { create(:item, :without_price) }
 
-      it "creates the first price log, updates the item, and returns a result with change_24h_cents of 0" do
-        result = described_class.call(item, price_data)
+      it "creates the first price log, updates the item, and computes change_24h_cents of 0" do
+        described_class.call(item, price_data)
         item.reload
 
         aggregate_failures do
-          expect(result.success).to be(true)
-          expect(result.price_log).to be_persisted
-          expect(result.price_log.lowest_price_cents).to eq(3845)
-          expect(result.item.current_price_cents).to eq(3845)
-          expect(result.change_24h_cents).to eq(0)
+          expect(item.price_logs.last).to be_persisted
+          expect(item.price_logs.last.lowest_price_cents).to eq(3845)
           expect(item.current_price_cents).to eq(3845)
           expect(item.change_24h_cents).to eq(0)
         end
@@ -35,11 +32,10 @@ RSpec.describe PriceUpdateService do
       before { create(:price_log, :old, item:, lowest_price_cents: 3000) }
 
       it "computes change_24h_cents against that price log" do
-        result = described_class.call(item, price_data)
+        described_class.call(item, price_data)
 
         aggregate_failures do
-          expect(result.success).to be(true)
-          expect(result.change_24h_cents).to eq(845)
+          expect(item.change_24h_cents).to eq(845)
           expect(item.price_logs.count).to eq(2)
         end
       end

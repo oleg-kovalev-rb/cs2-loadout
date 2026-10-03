@@ -22,7 +22,7 @@ module Api
         logs = InventoryValueLog.where(steam_id: current_steam_id).order(:log_date)
 
         if logs.empty?
-          InventoryValueRecordingService.new(current_steam_id).call!
+          InventoryValueRecordingService.call(current_steam_id)
           logs = InventoryValueLog.where(steam_id: current_steam_id).order(:log_date)
         end
 

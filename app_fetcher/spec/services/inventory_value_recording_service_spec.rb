@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe InventoryValueRecordingService do
-  subject(:record) { described_class.new(steam_id).call! }
+  subject(:record) { described_class.call(steam_id) }
 
   let(:steam_id) { "76561198000000001" }
 

@@ -73,11 +73,14 @@ Steam call at all, just a DB read/sum/upsert, needed identically by
 `InventoryValuesController#index`'s cold-start seed and
 `InventoryValueUpdateWorker`'s nightly fan-out — confirming the
 qualifying criterion really is cross-Scenario reuse, not "touches
-Steam." Unlike `UserInventorySyncService.call` (a class method), it's
-called as `InventoryValueRecordingService.new(steam_id).call!` — an
-instance method is just as valid a shape for a class in this layer; pick
-whichever reads better for the specific service, there's no single
-mandated call convention.
+Steam." It's called as `InventoryValueRecordingService.call(steam_id)` —
+the same class-method `.call` shape as `UserInventorySyncService.call`
+and `PriceUpdateService.call`. (It originally shipped as an instance
+method, `.new(steam_id).call!`, on the reasoning that either shape was
+equally valid for this layer; revised to the mandated class-method `.call`
+shape below once the resulting split call convention across this
+layer's three members turned out to read as inconsistent in practice,
+not merely stylistically different.)
 
 This is deliberately **not** a re-introduction of `app_core`'s
 `app/actions/` layer. `app_core`'s actions exist as a general
@@ -222,6 +225,12 @@ layer on its own.
   code itself).
 - A class in this layer may call `Steam::Client` directly and persist
   models — the two things parsers and builders may not do.
+- Exposed as a class-method `self.call` (or `class << self; def call;
+  ...; end; end`), mirroring `PriceUpdateService`/`UserInventorySyncService`
+  — not an instance method (`.new(...).call!`). Originally left
+  unmandated (see Decision); fixed to this one shape once the per-service
+  variation it allowed read as inconsistent rather than as a meaningful
+  choice.
 - May be called synchronously, inline, from a controller action before
   rendering (Scenario 1) — restricted to the named call sites above,
   not a general permission for any controller.
