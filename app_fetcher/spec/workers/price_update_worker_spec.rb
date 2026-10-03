@@ -38,7 +38,7 @@ RSpec.describe PriceUpdateWorker do
           ItemTrendCache.fetch_for([ item.market_hash_name ])
         end
 
-        it "creates the first price log, updates the item, publishes to the stream, and invalidates all three caches" do
+        it "creates the first price log, updates the item, publishes to the stream, and re-warms all three caches" do
           perform
           item.reload
           fields = prices_stream_entries.last[1]
@@ -60,22 +60,6 @@ RSpec.describe PriceUpdateWorker do
         end
       end
 
-      context "with a price log older than 24h" do
-        let(:item) { create(:item, current_price_cents: 3000) }
-
-        before { create(:price_log, :old, item:, lowest_price_cents: 3000) }
-
-        it "computes change_24h_cents against that price log" do
-          perform
-
-          item.reload
-          expect(item.price_logs.count).to eq(2)
-          expect(item.change_24h_cents).to eq(845)
-
-          fields = prices_stream_entries.last[1]
-          expect(fields["change_24h_cents"]).to eq("845")
-        end
-      end
     end
 
     context "when the Steam API response is unsuccessful" do

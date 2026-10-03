@@ -94,12 +94,14 @@ Models (app/models/, write)
   `<Noun>Service` — e.g. `UserInventorySyncService` — not namespaced
   under `Steam::` even when calling `Steam::Client`, the same exception
   `background-jobs.md` already carves out for workers/schedulers):
-  the one layer that spans Scenarios instead of belonging to a single
-  one. Reserved for a sequence genuinely needed,
-  unmodified, from **two or more** of Scenario 1/2/3 — not a default
-  home for any non-trivial controller or worker logic. See
-  `.claude/adr/fetcher/cross-scenario-service-layer.md` for why this
-  layer exists and how it differs from `app_core`'s `app/actions/`.
+  for non-trivial business logic that warrants its own class — either
+  because the same sequence is needed from more than one Scenario, or
+  because extracting it keeps a worker's `perform` as thin orchestration
+  glue rather than mixed-responsibility logic. Not a catch-all for any
+  multi-step logic: reach for a service when the extracted sequence has
+  clear, independently-testable boundaries. See
+  `.claude/adr/fetcher/cross-scenario-service-layer.md` for the
+  layer's origin and how it differs from `app_core`'s `app/actions/`.
   Unlike parsers/builders, a class here may call `Steam::Client`
   directly and persist models; unlike every other Scenario-1 rule, it
   may be called synchronously, inline, from a controller action before
@@ -128,11 +130,11 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   (both synchronous) and workers (async enqueue via `.perform_async`,
   never a call) — and, under the carve-out below, a parser directly
   (synchronous).
-- Services (the cross-Scenario layer) may depend on `Steam::Client`,
-  the Caching layer (`ItemPriceCache`/`PriceHistoryCache`), parsers,
-  and models — the same dependency set a worker already has, just
-  reachable from a controller too, synchronously, for the specific
-  named call sites in `cross-scenario-service-layer.md`.
+- Services may depend on `Steam::Client`, the Caching layer
+  (`ItemPriceCache`/`PriceHistoryCache`), parsers, and models — the
+  same dependency set a worker already has. May also be called
+  synchronously from a controller (Scenario 1) for the specific named
+  call sites in `cross-scenario-service-layer.md`.
 
 ## Rules
 
@@ -167,7 +169,8 @@ in a separate worker execution.
 
 ```text
 sidekiq-cron ⇢ PriceScheduler#perform ⇢ PriceUpdateWorker#perform
-    → Steam::Client → Steam::PriceLogBuilder → transaction (save)
+    → Steam::Client → PriceUpdateService.call
+        → Steam::PriceLogBuilder → transaction (save)
 
 Api::V1::InventoriesController#show / #refresh
     → UserInventorySyncService.call(steam_id)  (the one collaborator —
@@ -196,9 +199,9 @@ available for a future, similar case — it just no longer describes what
 - `app_fetcher/app/schedulers/price_scheduler.rb`
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
 - `app_fetcher/app/services/user_inventory_sync_service.rb` —
-  `UserInventorySyncService`, this layer's first implementation; called
-  identically from `InventoriesController#show`/`#refresh` (Scenario 1)
-  and `UserInventorySyncWorker` (Scenario 3).
+  `UserInventorySyncService`, called identically from
+  `InventoriesController#show`/`#refresh` (Scenario 1) and
+  `UserInventorySyncWorker` (Scenario 3).
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
   `InventoryValueRecordingService`, called identically from
   `InventoryValuesController#index`'s cold-start seed (Scenario 1) and
@@ -206,6 +209,11 @@ available for a future, similar case — it just no longer describes what
   (`.new(steam_id).call!`) rather than `UserInventorySyncService`'s
   class-method shape — both are valid for this layer, pick whichever
   reads better for a given service.
+- `app_fetcher/app/services/price_update_service.rb` —
+  `PriceUpdateService`, called from `PriceUpdateWorker` (Scenario 3);
+  a single-Scenario service extracted for SRP — keeps `perform` as thin
+  orchestration glue by moving the 24h-change calculation and DB
+  transaction out of the worker.
 
 ## Related ADR
 

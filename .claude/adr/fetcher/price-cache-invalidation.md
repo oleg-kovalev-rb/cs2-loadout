@@ -79,7 +79,15 @@ shape changes, instead of a manual cache-wide flush.
 Invalidation is explicit, by key, and owned solely by `PriceUpdateWorker`
 — called immediately after its existing successful transaction (`price_
 log.save!` + `item.update!`), never when the wrapped Steam call fails.
-TTL (15 minutes, both caches) exists only as a safety net for a missed or
+After a successful transaction, the worker re-warms all three caches with
+a uniform `invalidate(name)` → `fetch_for([name])` sequence:
+`ItemPriceCache`, `PriceHistoryCache`, and `ItemTrendCache`. Because the
+transaction has already committed before either call, `fetch_for` always
+reads fresh data. This eliminates the cache-miss window that a bare
+`invalidate`-only approach leaves between invalidation and the next
+request.
+
+TTL (15 minutes, all caches) exists only as a safety net for a missed or
 buggy invalidation, not as the primary freshness mechanism.
 
 `price_histories` caching covers only the no-`since` (default-window)
@@ -208,10 +216,11 @@ insufficient in practice.
 - `ItemPriceCache`/`PriceHistoryCache` may call `Item`/`PriceLog` (read on
   a cache miss) but must never be called *from* those models —
   Controller/Worker → Caching → Models stays one-directional.
-- Only `PriceUpdateWorker` calls `.invalidate`. If a future writer of
-  `Item#current_price_cents`/`PriceLog` rows is introduced, it must call
-  the same invalidation entry points — don't let a second, uninvalidated
-  write path reintroduce staleness.
+- Only `PriceUpdateWorker` calls `.invalidate` and `.fetch_for` as a
+  re-warm pair. If a future writer of `Item#current_price_cents`/`PriceLog`
+  rows is introduced, it must follow the same `invalidate + fetch_for`
+  sequence on all three caches — don't let a second write path skip the
+  re-warm and reintroduce a cache-miss window.
 - Cache keys are versioned arrays (`[namespace, version,
   market_hash_name]`); bump the version segment on any change to the
   cached payload's shape instead of a manual full-cache flush.

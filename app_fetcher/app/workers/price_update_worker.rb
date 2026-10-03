@@ -14,36 +14,29 @@ class PriceUpdateWorker
     client = Steam::Client.new
     response = client.fetch_item_price(item.market_hash_name)
 
-    if response.success?
-      price_log = Steam::PriceLogBuilder.build(item_id, response.data)
-
-      price_24h_ago = item.price_logs
-                    .where("created_at <= ?", 24.hours.ago)
-                    .order(created_at: :desc)
-                    .first
-
-      change_24h_cents = price_24h_ago.nil? ? 0 : (price_log.lowest_price_cents - price_24h_ago.lowest_price_cents).to_i
-
-      Item.transaction do
-        price_log.save!
-        item.update!(current_price_cents: price_log.lowest_price_cents, change_24h_cents: change_24h_cents)
-      end
-
-      ItemPriceCache.invalidate(item.market_hash_name)
-      PriceHistoryCache.invalidate(item.market_hash_name)
-      ItemTrendCache.invalidate(item.market_hash_name)
-
-      publish_to_stream(
-        item.market_hash_name,
-        price_log.lowest_price_cents,
-        change_24h_cents
-      )
-    else
+    unless response.success?
       Rails.logger.warn("[PriceUpdateWorker] Failed for #{item.market_hash_name}: #{response.error}")
+      return
     end
+
+    result = PriceUpdateService.call(item, T.must(response.data))
+    update_related_cache(item.market_hash_name)
+    publish_to_stream(item.market_hash_name, result.price_log.lowest_price_cents, result.change_24h_cents)
   end
 
   private
+
+  sig { params(market_hash_name: String).void }
+  def update_related_cache(market_hash_name)
+    ItemPriceCache.invalidate(market_hash_name)
+    ItemPriceCache.fetch_for([market_hash_name])
+
+    PriceHistoryCache.invalidate(market_hash_name)
+    PriceHistoryCache.fetch_for([market_hash_name])
+
+    ItemTrendCache.invalidate(market_hash_name)
+    ItemTrendCache.fetch_for([market_hash_name])
+  end
 
   sig { params(market_hash_name: String, price: Integer, change_24h: Integer).void }
   def publish_to_stream(market_hash_name, price, change_24h)
