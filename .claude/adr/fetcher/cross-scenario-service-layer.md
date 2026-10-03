@@ -59,13 +59,25 @@ behavioral difference between the two call sites. Classes here are
 flat, top-level (not domain-namespaced under `Steam::`), the same
 exception `background-jobs.md` already carves out for workers and
 schedulers that call `Steam::Client` without being Steam-domain parsing
-themselves (see Implementation Constraints). Its first (and, as of this
-decision, only) class is `UserInventorySyncService`
+themselves (see Implementation Constraints). Calling `Steam::Client` is
+a capability this layer *permits*, not a requirement for membership in
+it — the qualifying criterion is purely "needed identically by two or
+more Scenarios." Its first class is `UserInventorySyncService`
 (`app_fetcher/app/services/user_inventory_sync_service.rb`): it calls
 `Steam::Client#fetch_user_inventory`, resolves known vs. missing items,
 backfills missing `Item` rows, persists `user_inventories`/
 `user_inventory_items`, and returns a `Result` (`success`/`error`/
-`items`).
+`items`). Its second is `InventoryValueRecordingService`
+(`app_fetcher/app/services/inventory_value_recording_service.rb`): no
+Steam call at all, just a DB read/sum/upsert, needed identically by
+`InventoryValuesController#index`'s cold-start seed and
+`InventoryValueUpdateWorker`'s nightly fan-out — confirming the
+qualifying criterion really is cross-Scenario reuse, not "touches
+Steam." Unlike `UserInventorySyncService.call` (a class method), it's
+called as `InventoryValueRecordingService.new(steam_id).call!` — an
+instance method is just as valid a shape for a class in this layer; pick
+whichever reads better for the specific service, there's no single
+mandated call convention.
 
 This is deliberately **not** a re-introduction of `app_core`'s
 `app/actions/` layer. `app_core`'s actions exist as a general
@@ -80,12 +92,16 @@ what does and doesn't qualify.
 A class in this layer may do two things parsers and builders may not:
 call `Steam::Client` directly, and persist models. And a controller
 action may call it **synchronously, inline, before rendering** — the
-one sanctioned case in `app_fetcher` where Scenario-1 code triggers
-real persistence itself, rather than deferring to an async worker. This
-carve-out is scoped specifically to `UserInventorySyncService` being
-called from `InventoriesController#show`'s cold-start branch and
-`#refresh`. It does not generalize to any other controller action
-without its own explicit decision through this same process.
+sanctioned case in `app_fetcher` where Scenario-1 code triggers real
+persistence itself, rather than deferring to an async worker. This
+carve-out is scoped specifically to the two named call sites below. It
+does not generalize to any other controller action without its own
+explicit decision through this same process:
+
+- `UserInventorySyncService` from `InventoriesController#show`'s
+  cold-start branch and `#refresh`.
+- `InventoryValueRecordingService` from `InventoryValuesController#index`'s
+  cold-start seed (first-ever request for a `steam_id`, no log rows yet).
 
 Everything else in `layered-ingestion-pipeline.md` is unchanged: the
 general "only a worker persists" rule, `ItemsListUpdateWorker`'s own
@@ -161,9 +177,10 @@ layer on its own.
   call sites.
 - One place owns the fetch→resolve→backfill→persist sequence, instead
   of two independently-maintained copies that could drift.
-- Gives `app_fetcher` a scoped, precedented place for a *second* genuine
-  cross-scenario case, should one arise, without re-deciding the shape
-  from zero.
+- Gave `app_fetcher` a scoped, precedented place for a second genuine
+  cross-scenario case without re-deciding the shape from zero —
+  materialized as `InventoryValueRecordingService` shortly after this
+  decision.
 
 ### Negative
 
@@ -189,10 +206,9 @@ layer on its own.
   in an existing layer.
 - The controller-persistence carve-out could be misread as a general
   loosening of "controllers don't persist." It is not — it applies only
-  to `UserInventorySyncService`'s two named call sites in
-  `InventoriesController`. Any other controller wanting to persist
-  synchronously needs its own explicit decision through this same
-  process, not an appeal to this ADR by analogy.
+  to the named call sites listed above. Any other controller wanting to
+  persist synchronously needs its own explicit decision through this
+  same process, not an appeal to this ADR by analogy.
 
 ## Implementation Constraints
 
@@ -218,7 +234,15 @@ layer on its own.
 - `UserInventory.sync!` (the model-level bulk-replace step
   `UserInventorySyncService` calls) stays a plain model method per
   `rails-layering.md` — this ADR does not change where that specific
-  step lives, only what calls into the service that calls it.
+  step lives, only what calls into the service that calls it. Contrast
+  with `InventoryValueRecordingService`, which *did* move an equivalent
+  pure-DB read/sum/upsert step (formerly `InventoryValueLog.record_for!`)
+  out of the model and into this layer — the distinguishing factor
+  between the two is not "does it touch external I/O," it's "is it
+  called directly by more than one Scenario." `UserInventory.sync!` has
+  exactly one caller (`UserInventorySyncService` itself); the recording
+  step had two (`InventoryValuesController` and
+  `InventoryValueUpdateWorker`) before this layer existed.
 
 ## Related
 

@@ -1,15 +1,21 @@
 import { RangeToggle } from './RangeToggle'
 import { HeroChart } from './HeroChart'
-import { itemSeries } from '../utils/itemSeries'
 import { fmtUSD, fmtPrice, centsToUSD, conditionAbbr } from '../utils/format'
+import { PORTFOLIO_RANGES, ITEM_RANGES } from '../chartConfig'
 
-export function PortfolioTile({ portfolio, range, mode, selectedItem, onRangeChange, onBack }) {
+export function PortfolioTile({ portfolioSeries, itemHistorySeries, itemHistoryStatus, range, mode, selectedItem, onRangeChange, onBack }) {
   const isItemMode = mode === 'item' && Boolean(selectedItem)
-  const values = isItemMode ? itemSeries(selectedItem, range) : portfolio.series[range]
-  const isTradable = !isItemMode || selectedItem.currentPriceCents !== 0
+  const ranges = isItemMode ? ITEM_RANGES : PORTFOLIO_RANGES
+  const values = isItemMode ? itemHistorySeries : portfolioSeries
+  const isLoadingItemHistory = isItemMode && itemHistoryStatus === 'pending'
+  const isTradable = !isItemMode || (selectedItem.currentPriceCents != null && selectedItem.currentPriceCents !== 0)
 
-  const hasData = values.length > 0
-  const last = hasData ? values[values.length - 1].value : isItemMode ? selectedItem.currentPriceCents : portfolio.currentValueCents
+  const hasData = values.length > 0 && !isLoadingItemHistory
+  const last = hasData
+    ? values[values.length - 1].value
+    : isItemMode
+      ? selectedItem.currentPriceCents ?? 0
+      : 0
   const first = hasData ? values[0].value : last
   const delta = last - first
   const pct = first ? (delta / first) * 100 : 0
@@ -39,7 +45,7 @@ export function PortfolioTile({ portfolio, range, mode, selectedItem, onRangeCha
             </span>
           )}
         </div>
-        <RangeToggle range={range} onChange={onRangeChange} />
+        <RangeToggle ranges={ranges} range={range} onChange={onRangeChange} />
       </header>
 
       <div className="hero-value-row">

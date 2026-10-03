@@ -5,8 +5,8 @@ describe('marketVolume', () => {
   test('sums volume across items into hourly buckets', () => {
     const now = Date.now()
     const items = [
-      { priceHistory: [{ at: new Date(now - 60 * 60 * 1000).toISOString(), volume: 50 }] },
-      { priceHistory: [{ at: new Date(now - 60 * 60 * 1000).toISOString(), volume: 30 }] },
+      { trendPoints: [{ at: new Date(now - 60 * 60 * 1000).toISOString(), volume: 50 }] },
+      { trendPoints: [{ at: new Date(now - 60 * 60 * 1000).toISOString(), volume: 30 }] },
     ]
 
     expect(marketVolume(items).sparkline).toEqual([80])
@@ -16,7 +16,7 @@ describe('marketVolume', () => {
     const now = Date.now()
     const items = [
       {
-        priceHistory: [
+        trendPoints: [
           { at: new Date(now - 10 * 60 * 60 * 1000).toISOString(), volume: 20 },
           { at: new Date(now - 1 * 60 * 60 * 1000).toISOString(), volume: 99 },
         ],
@@ -28,7 +28,7 @@ describe('marketVolume', () => {
 
   test('drops points older than the 15-hour window', () => {
     const now = Date.now()
-    const items = [{ priceHistory: [{ at: new Date(now - 20 * 60 * 60 * 1000).toISOString(), volume: 999 }] }]
+    const items = [{ trendPoints: [{ at: new Date(now - 20 * 60 * 60 * 1000).toISOString(), volume: 999 }] }]
 
     const result = marketVolume(items)
     expect(result.sparkline).toEqual([])

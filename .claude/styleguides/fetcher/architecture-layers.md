@@ -199,6 +199,13 @@ available for a future, similar case — it just no longer describes what
   `UserInventorySyncService`, this layer's first implementation; called
   identically from `InventoriesController#show`/`#refresh` (Scenario 1)
   and `UserInventorySyncWorker` (Scenario 3).
+- `app_fetcher/app/services/inventory_value_recording_service.rb` —
+  `InventoryValueRecordingService`, called identically from
+  `InventoryValuesController#index`'s cold-start seed (Scenario 1) and
+  `InventoryValueUpdateWorker` (Scenario 3); an instance-method class
+  (`.new(steam_id).call!`) rather than `UserInventorySyncService`'s
+  class-method shape — both are valid for this layer, pick whichever
+  reads better for a given service.
 
 ## Related ADR
 

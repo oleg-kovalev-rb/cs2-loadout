@@ -5,7 +5,9 @@ import { generateAxisLabels, Y_AXIS_TICK_COUNT, RANGE_MS } from '../chartConfig'
 
 export function HeroChart({ values, range }) {
   const now = Date.now()
-  const start = now - RANGE_MS[range]
+  // 'all' has no fixed span — bound the domain to the actual data instead
+  // of a known duration, since RANGE_MS has no entry for it.
+  const domain = range === 'all' ? ['dataMin', 'dataMax'] : [now - RANGE_MS[range], now]
   const data = values.map(({ at, value }) => ({ at, cents: value }))
   const xLabels = generateAxisLabels(range)
 
@@ -22,7 +24,7 @@ export function HeroChart({ values, range }) {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(139,148,171,0.09)" vertical={false} />
-              <XAxis dataKey="at" type="number" domain={[start, now]} hide />
+              <XAxis dataKey="at" type="number" domain={domain} hide />
               <YAxis
                 domain={['dataMin', 'dataMax']}
                 tickCount={Y_AXIS_TICK_COUNT}

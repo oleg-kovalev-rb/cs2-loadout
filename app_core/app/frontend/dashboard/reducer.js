@@ -2,7 +2,8 @@ export const PAGE_SIZE = 8
 
 export const initialState = {
   mode: 'portfolio', // 'portfolio' | 'item'
-  range: '7d', // '24h' | '7d' | '30d'
+  portfolioRange: '7d', // '7d' | '30d' | '1y' | 'all'
+  itemRange: '7d', // '24h' | '7d' | '30d' | '1y' | 'all'
   selectedItem: null,
   sort: 'delta_desc',
   filters: { weapons: new Set(), conditions: new Set(), stattrakOnly: false },
@@ -19,8 +20,11 @@ function toggleSetMember(set, value) {
 
 export function dashboardReducer(state, action) {
   switch (action.type) {
-    case 'RANGE_CHANGED':
-      return { ...state, range: action.range }
+    case 'PORTFOLIO_RANGE_CHANGED':
+      return { ...state, portfolioRange: action.range }
+
+    case 'ITEM_RANGE_CHANGED':
+      return { ...state, itemRange: action.range }
 
     case 'ITEM_ROW_CLICKED': {
       const alreadySelected = state.selectedItem?.marketHashName === action.item.marketHashName

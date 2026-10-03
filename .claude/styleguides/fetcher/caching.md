@@ -109,13 +109,15 @@ query on a cache miss — bulk for the bulk variant, single-record for the
 single-key variant). Must never be called *from* a model — dependency
 direction is Controller/Worker/Service → Caching → Models, one-way, same
 as every other layer in `.claude/styleguides/rails-layering.md`. Callers:
-`Api::V1::InventoriesController`/`Api::V1::PriceHistoriesController` on
-the read side for the bulk variant (`ItemPriceCache`/`PriceHistoryCache`);
-`Api::V1::InventoriesController` (warm path) on the read side and
-`UserInventorySyncService` on the invalidate side for the single-key
-variant (`UserInventoryCache`) — mirroring `PriceUpdateWorker`'s role for
-the bulk variant, just from the cross-Scenario service layer instead of a
-worker (see
+`Api::V1::ItemPricesController#dynamics`/`#trend`/`#history` and
+`UserInventorySyncService` (internally, to resolve known vs. missing
+items) on the read side for the bulk variant (`ItemPriceCache`/
+`PriceHistoryCache`/`ItemTrendCache`), invalidated by `PriceUpdateWorker`
+after a successful price update; `Api::V1::InventoriesController` (warm
+path) on the read side and `UserInventorySyncService` on the invalidate
+side for the single-key variant (`UserInventoryCache`) — mirroring
+`PriceUpdateWorker`'s role for the bulk variant, just from the
+cross-Scenario service layer instead of a worker (see
 `.claude/adr/fetcher/cross-scenario-service-layer.md`).
 
 ## Rules
@@ -197,13 +199,18 @@ cache-read-through pattern above):
 ## Interaction With Other Layers
 
 ```text
-Api::V1::InventoriesController#show          Api::V1::PriceHistoriesController#index
-    ↓ ItemPriceCache.fetch_for(names)             ↓ PriceHistoryCache.fetch_for(names)  (no-`since` only)
+Api::V1::ItemPricesController#dynamics       Api::V1::ItemPricesController#history
+    ↓ ItemPriceCache.fetch_for(names)             ↓ PriceHistoryCache.fetch_for(names)  (default period only)
     ↓ (miss → bulk Item query → write_multi)       ↓ (miss → bulk PriceLog query → write_multi)
+
+Api::V1::ItemPricesController#trend
+    ↓ ItemTrendCache.fetch_for(names)
+    ↓ (miss → bulk Item + PriceLog query → cursor downsample → write_multi)
 
 PriceUpdateWorker#perform  (after successful transaction)
     ↓ ItemPriceCache.invalidate(market_hash_name)
     ↓ PriceHistoryCache.invalidate(market_hash_name)
+    ↓ ItemTrendCache.invalidate(market_hash_name)
 
 Api::V1::InventoriesController#show (warm path)
     ↓ UserInventoryCache.fetch(steam_id)
@@ -239,13 +246,15 @@ section only adds what's specific to caching.
 ## Canonical Implementations
 
 - Bulk read-through + invalidation: `app_fetcher/app/caching/item_price_cache.rb`,
-  `app_fetcher/app/caching/price_history_cache.rb`.
+  `app_fetcher/app/caching/price_history_cache.rb`,
+  `app_fetcher/app/caching/item_trend_cache.rb`.
 - Single-key read-through + invalidation: `app_fetcher/app/caching/user_inventory_cache.rb`.
 - TTL-only: no current implementation — see When to Use for why
   `UserInventoryCache` is no longer this variant's example.
 
 `ItemPriceCache`/`PriceHistoryCache` are tracked in
-`.claude/plans/fetcher-price-caching.md`; `UserInventoryCache`'s
+`.claude/plans/fetcher-price-caching.md`; `ItemTrendCache` is tracked in
+`.claude/plans/dashboard-api-redesign.md`; `UserInventoryCache`'s
 single-key read-through shape is tracked in
 `.claude/plans/user-inventory-persistence.md`. Prop's use of
 `Rails.cache` for rate-limiting, in `config/initializers/prop.rb`,

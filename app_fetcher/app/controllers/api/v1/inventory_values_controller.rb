@@ -5,27 +5,31 @@ module Api
     class InventoryValuesController < ApplicationController
       extend T::Sig
 
-      SEED_DEDUP_TTL = T.let(90.seconds, ActiveSupport::Duration)
+      ALLOWED_PERIODS = T.let(
+        [ PricePeriod::SevenDays, PricePeriod::ThirtyDays, PricePeriod::OneYear, PricePeriod::All ].freeze,
+        T::Array[PricePeriod]
+      )
 
       sig { void }
       def index
+        period = PricePeriod.try_deserialize(params[:period].presence || "all")
+
+        unless period && ALLOWED_PERIODS.include?(period)
+          render json: { message: "Unsupported period: #{params[:period]}" }, status: :bad_request
+          return
+        end
+
         logs = InventoryValueLog.where(steam_id: current_steam_id).order(:log_date)
 
-        enqueue_first_value_seed if logs.empty?
+        if logs.empty?
+          InventoryValueRecordingService.new(current_steam_id).call!
+          logs = InventoryValueLog.where(steam_id: current_steam_id).order(:log_date)
+        end
 
-        render json: {
-          points: logs.map { |log| { log_date: log.log_date.iso8601, total_value_cents: log.total_value_cents } }
-        }, status: :ok
-      end
+        since = period.duration&.ago&.to_date
+        logs_in_period = since ? logs.select { |log| log.log_date >= since } : logs
 
-      private
-
-      sig { void }
-      def enqueue_first_value_seed
-        dedup_key = "inventory_value_seed_pending:#{current_steam_id}"
-        return unless Rails.cache.write(dedup_key, true, unless_exist: true, expires_in: SEED_DEDUP_TTL)
-
-        InventoryValueUpdateWorker.perform_async(current_steam_id)
+        render json: logs_in_period.map { |log| { date: log.log_date.iso8601, total_value_cents: log.total_value_cents } }, status: :ok
       end
     end
   end

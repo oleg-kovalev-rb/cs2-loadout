@@ -31,6 +31,7 @@ class PriceUpdateWorker
 
       ItemPriceCache.invalidate(item.market_hash_name)
       PriceHistoryCache.invalidate(item.market_hash_name)
+      ItemTrendCache.invalidate(item.market_hash_name)
 
       publish_to_stream(
         item.market_hash_name,

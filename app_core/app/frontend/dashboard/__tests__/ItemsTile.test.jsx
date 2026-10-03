@@ -5,16 +5,12 @@ import { describe, test, expect } from 'vitest'
 import { ItemsTile } from '../components/ItemsTile'
 import { dashboardReducer, initialState } from '../reducer'
 
-function hoursAgo(hours) {
-  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
-}
-
 const items = [
-  { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000, changeCents: 300, priceHistory: [{ at: hoursAgo(23), priceCents: 3700 }] },
-  { marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true, currentPriceCents: 14500, changeCents: -200, priceHistory: [{ at: hoursAgo(23), priceCents: 14700 }] },
-  { marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false, currentPriceCents: 5800, changeCents: 100, priceHistory: [{ at: hoursAgo(23), priceCents: 5700 }] },
-  { marketHashName: 'AWP | Neo-Noir (FN)', weaponType: 'AWP', itemName: 'Neo-Noir', condition: 'Factory New', stattrak: false, currentPriceCents: 7600, changeCents: 50, priceHistory: [{ at: hoursAgo(23), priceCents: 7550 }] },
-  { marketHashName: 'M4A4 | Howl (MW)', weaponType: 'M4A4', itemName: 'Howl', condition: 'Minimal Wear', stattrak: false, currentPriceCents: 285000, changeCents: -1000, priceHistory: [{ at: hoursAgo(23), priceCents: 286000 }] },
+  { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000, changeCents: 300, change24hPercent: 8.11, trendPoints: [] },
+  { marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true, currentPriceCents: 14500, changeCents: -200, change24hPercent: -1.36, trendPoints: [] },
+  { marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false, currentPriceCents: 5800, changeCents: 100, change24hPercent: 1.75, trendPoints: [] },
+  { marketHashName: 'AWP | Neo-Noir (FN)', weaponType: 'AWP', itemName: 'Neo-Noir', condition: 'Factory New', stattrak: false, currentPriceCents: 7600, changeCents: 50, change24hPercent: 0.66, trendPoints: [] },
+  { marketHashName: 'M4A4 | Howl (MW)', weaponType: 'M4A4', itemName: 'Howl', condition: 'Minimal Wear', stattrak: false, currentPriceCents: 285000, changeCents: -1000, change24hPercent: -0.35, trendPoints: [] },
 ]
 
 // A thin harness that owns the real reducer, exactly like Dashboard.jsx does —
@@ -99,8 +95,8 @@ describe('ItemsTile (filter -> sort -> paginate integration)', () => {
   })
 })
 
-describe('ItemsTile (item with no price history yet)', () => {
-  const noHistoryItems = [
+describe('ItemsTile (item not yet priced by item_prices/dynamics)', () => {
+  const unpricedItems = [
     ...items,
     {
       marketHashName: 'Glock-18 | Fade (FN)',
@@ -108,17 +104,18 @@ describe('ItemsTile (item with no price history yet)', () => {
       itemName: 'Fade',
       condition: 'Factory New',
       stattrak: false,
-      currentPriceCents: 9000,
+      currentPriceCents: null,
       changeCents: 0,
-      priceHistory: [],
+      change24hPercent: 0,
+      trendPoints: [],
     },
   ]
 
-  test('renders its price with no delta badge, and participates in sort without crashing', () => {
-    render(<Harness items={noHistoryItems} />)
+  test('renders a placeholder price with no delta badge, and participates in sort without crashing', () => {
+    render(<Harness items={unpricedItems} />)
 
     const row = screen.getByRole('button', { name: /Fade/ })
-    expect(within(row).getByText('$90.00')).toBeInTheDocument()
+    expect(within(row).getByText('—')).toBeInTheDocument()
     expect(within(row).queryByText(/▲|▼/)).not.toBeInTheDocument()
   })
 })

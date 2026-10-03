@@ -24,8 +24,8 @@ that doesn't need bridge-token auth — see MUST NOT below.
   `Api::V1::<X>Controller`, mirroring the `namespace :api do; namespace
   :v1 do; ...; end; end` block in `config/routes.rb`.
 - Routes are declared explicitly (`get "inventories/me", to:
-  "inventories#show"`, `post "price_histories", to:
-  "price_histories#index"`) — never a bare `resources :x`, since these
+  "inventories#show"`, `get "item_prices/dynamics", to:
+  "item_prices#dynamics"`) — never a bare `resources :x`, since these
   aren't CRUD resources.
 - `ApplicationController < ActionController::API` (no views, sessions,
   or cookies — a pure JSON API base) applies `before_action
@@ -63,9 +63,10 @@ request — no injection) and enqueue Sidekiq workers directly
 (`PriceUpdateWorker.perform_async`). Relies on `ApplicationController`
 for auth; never re-implements token verification in a specific
 controller. See `.claude/adr/fetcher/cross-scenario-service-layer.md`
-for the one exception: `InventoriesController#show`'s cold-start branch
-and `#refresh` call `UserInventorySyncService` synchronously instead of
-enqueuing.
+for the two named exceptions: `InventoriesController#show`'s cold-start
+branch and `#refresh` call `UserInventorySyncService` synchronously
+instead of enqueuing, and `InventoryValuesController#index`'s cold-start
+seed calls `InventoryValueRecordingService` the same way.
 
 ## Rules
 
@@ -80,14 +81,21 @@ enqueuing.
   `:ok` on success, `{ message: response.error }` with `:bad_request` on
   failure (see `InventoriesController#show`). If the action only reads
   local data via ActiveRecord, a plain `:ok` render with no failure
-  branch is correct (see `PriceHistoriesController#index`) — don't add a
-  defensive rescue/branch for something that can't fail.
+  branch is correct (see `InventoryValuesController#index`,
+  `ItemPricesController#dynamics`/`#trend`) — don't add a defensive
+  rescue/branch for something that can't fail.
 - Use `current_steam_id` for anything identity-scoped — never a
   client-supplied identifier.
 - Use `POST`, not `GET`, when the request needs a body — e.g. an array of
-  `market_hash_names` too unwieldy for query params (see the
-  `price_histories` route and its request spec) — even when the action
-  itself is a read (`index`), not a create.
+  `market_hash_names` too unwieldy for query params — even when the
+  action itself is a read (`index`), not a create. No current controller
+  action needs this (the retired `price_histories` route was this rule's
+  original example; `item_prices#dynamics`/`#trend` turned out not to
+  need any params at all, since they derive their item set from
+  `current_steam_id` via `UserInventoryCache` instead of a client-supplied
+  list — see `.claude/plans/dashboard-api-redesign.md`'s "Why endpoints
+  2/3 need no params"); this rule still applies the moment an action
+  needs to accept a body-shaped input again.
 
 ### SHOULD
 
@@ -138,7 +146,7 @@ render json: { ... }, status: :some_symbol
 
 - `app_fetcher/app/controllers/application_controller.rb`
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
-- `app_fetcher/app/controllers/api/v1/price_histories_controller.rb`
+- `app_fetcher/app/controllers/api/v1/item_prices_controller.rb`
 - `app_fetcher/config/routes.rb`
 - `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
-  `app_fetcher/spec/requests/api/v1/price_histories_spec.rb`
+  `app_fetcher/spec/requests/api/v1/item_prices_spec.rb`

@@ -4,7 +4,9 @@ import { PortfolioTile } from '../components/PortfolioTile'
 
 function renderTile(overrides = {}) {
   const props = {
-    portfolio: { currentValueCents: 0, series: { '24h': [], '7d': [], '30d': [] } },
+    portfolioSeries: [],
+    itemHistorySeries: [],
+    itemHistoryStatus: 'pending',
     range: '7d',
     mode: 'portfolio',
     selectedItem: null,
@@ -16,24 +18,57 @@ function renderTile(overrides = {}) {
 }
 
 describe('PortfolioTile', () => {
-  test('renders the known current value even when the series has no points yet', () => {
-    const { container } = renderTile({
-      portfolio: { currentValueCents: 15000, series: { '24h': [], '7d': [], '30d': [] } },
-    })
+  test('portfolio mode: shows a zero value and no delta when the series has no points yet', () => {
+    const { container } = renderTile({ portfolioSeries: [] })
 
-    expect(screen.getByText('$150.00')).toBeInTheDocument()
+    expect(screen.getByText('$0.00')).toBeInTheDocument()
     expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
   })
 
-  test('renders the last series value and a delta once the series has points', () => {
+  test('portfolio mode: renders the last series value and a delta once the series has points', () => {
     const { container } = renderTile({
-      portfolio: {
-        currentValueCents: 15000,
-        series: { '24h': [], '7d': [{ at: 1, value: 14000 }, { at: 2, value: 15000 }], '30d': [] },
-      },
+      portfolioSeries: [{ at: 1, value: 14000 }, { at: 2, value: 15000 }],
     })
 
     expect(screen.getByText('$150.00')).toBeInTheDocument()
     expect(container.querySelector('.hero-delta')).toBeInTheDocument()
+  })
+
+  test('item mode: shows a loading state while item history is pending, not a zero', () => {
+    const { container } = renderTile({
+      mode: 'item',
+      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+      itemHistorySeries: [],
+      itemHistoryStatus: 'pending',
+    })
+
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('item mode: renders the item series once history has loaded', () => {
+    const { container } = renderTile({
+      mode: 'item',
+      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+      itemHistorySeries: [{ at: 1, value: 3700 }, { at: 2, value: 4000 }],
+      itemHistoryStatus: 'ready',
+    })
+
+    expect(screen.getByText('$40.00')).toBeInTheDocument()
+    expect(container.querySelector('.hero-delta')).toBeInTheDocument()
+  })
+
+  test('portfolio mode: the range toggle has no 24H option', () => {
+    renderTile({ mode: 'portfolio' })
+
+    expect(screen.queryByRole('button', { name: '24H' })).not.toBeInTheDocument()
+  })
+
+  test('item mode: the range toggle includes a 24H option', () => {
+    renderTile({
+      mode: 'item',
+      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+    })
+
+    expect(screen.getByRole('button', { name: '24H' })).toBeInTheDocument()
   })
 })

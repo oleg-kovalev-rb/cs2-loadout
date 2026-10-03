@@ -13,9 +13,17 @@ const item = (overrides = {}) => ({
 })
 
 describe('dashboardReducer', () => {
-  test('RANGE_CHANGED only updates range', () => {
-    const next = dashboardReducer(initialState, { type: 'RANGE_CHANGED', range: '30d' })
-    expect(next.range).toBe('30d')
+  test('PORTFOLIO_RANGE_CHANGED only updates portfolioRange', () => {
+    const next = dashboardReducer(initialState, { type: 'PORTFOLIO_RANGE_CHANGED', range: '30d' })
+    expect(next.portfolioRange).toBe('30d')
+    expect(next.itemRange).toBe(initialState.itemRange)
+    expect(next.mode).toBe(initialState.mode)
+  })
+
+  test('ITEM_RANGE_CHANGED only updates itemRange', () => {
+    const next = dashboardReducer(initialState, { type: 'ITEM_RANGE_CHANGED', range: '24h' })
+    expect(next.itemRange).toBe('24h')
+    expect(next.portfolioRange).toBe(initialState.portfolioRange)
     expect(next.mode).toBe(initialState.mode)
   })
 

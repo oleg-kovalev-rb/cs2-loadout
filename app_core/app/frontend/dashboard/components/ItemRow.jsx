@@ -1,16 +1,15 @@
 import { Sparkline } from './Sparkline'
-import { itemSeries } from '../utils/itemSeries'
 import { fmtPrice, conditionAbbr } from '../utils/format'
 import { changePct } from '../utils/filters'
 
 export function ItemRow({ item, isSelected, onSelect }) {
+  const hasPrice = item.currentPriceCents != null
   const isTradable = item.currentPriceCents !== 0
-  const hasHistory = item.priceHistory.length > 0
-  const showDelta = isTradable && hasHistory
-  const pct = changePct(item) * 100
+  const showDelta = isTradable && hasPrice
+  const pct = changePct(item)
   const direction = pct >= 0 ? 'up' : 'down'
   const arrow = pct >= 0 ? '▲' : '▼'
-  const sparkValues = itemSeries(item, '7d').map((point) => point.value)
+  const sparkValues = item.trendPoints.map((point) => point.priceCents)
 
   return (
     <li>

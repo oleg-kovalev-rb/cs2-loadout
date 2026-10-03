@@ -5,8 +5,6 @@ module Api
     class InventoriesController < ApplicationController
       extend T::Sig
 
-      WARMUP_CAP = T.let(20, Integer)
-      WARMUP_DEDUP_TTL = T.let(90.seconds, ActiveSupport::Duration)
       REFRESH_DEDUP_TTL = T.let(1.day, ActiveSupport::Duration)
 
       sig { void }
@@ -45,27 +43,13 @@ module Api
 
       sig { params(items: T::Array[Item]).void }
       def render_inventory(items)
-        enqueue_price_warmup(items)
-
         render json: {
           items_count: items.size,
           items: items.as_json(only: [
             :market_hash_name,
-            :metadata,
-            :current_price_cents,
-            :change_24h_cents
+            :metadata
           ])
         }, status: :ok
-      end
-
-      sig { params(items: T::Array[Item]).void }
-      def enqueue_price_warmup(items)
-        items.select { |item| item.current_price_cents.nil? }.first(WARMUP_CAP).each do |item|
-          dedup_key = "price_warmup_pending:#{item.id}"
-          next unless Rails.cache.write(dedup_key, true, unless_exist: true, expires_in: WARMUP_DEDUP_TTL)
-
-          PriceUpdateWorker.perform_async(item.id)
-        end
       end
     end
   end

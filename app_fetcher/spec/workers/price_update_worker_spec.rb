@@ -35,9 +35,10 @@ RSpec.describe PriceUpdateWorker do
         before do
           ItemPriceCache.fetch_for([ item.market_hash_name ])
           PriceHistoryCache.fetch_for([ item.market_hash_name ])
+          ItemTrendCache.fetch_for([ item.market_hash_name ])
         end
 
-        it "creates the first price log, updates the item, publishes to the stream, and invalidates both caches" do
+        it "creates the first price log, updates the item, publishes to the stream, and invalidates all three caches" do
           perform
           item.reload
           fields = prices_stream_entries.last[1]
@@ -54,6 +55,7 @@ RSpec.describe PriceUpdateWorker do
             cached_price = ItemPriceCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]
             expect(cached_price.current_price_cents).to eq(3845)
             expect(PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]).not_to be_empty
+            expect(ItemTrendCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]).not_to be_empty
           end
         end
       end
@@ -85,9 +87,10 @@ RSpec.describe PriceUpdateWorker do
           .to_return(status: 200, body: { success: false }.to_json, headers: { "Content-Type" => "application/json" })
         ItemPriceCache.fetch_for([ item.market_hash_name ])
         PriceHistoryCache.fetch_for([ item.market_hash_name ])
+        ItemTrendCache.fetch_for([ item.market_hash_name ])
       end
 
-      it "does not write a price log, does not touch the item, does not publish, and does not invalidate either cache" do
+      it "does not write a price log, does not touch the item, does not publish, and does not invalidate any cache" do
         perform
 
         item.reload
@@ -98,6 +101,7 @@ RSpec.describe PriceUpdateWorker do
           expect(prices_stream_entries).to be_empty
           expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
           expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+          expect(count_queries(model: PriceLog) { ItemTrendCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
         end
       end
     end
@@ -110,9 +114,10 @@ RSpec.describe PriceUpdateWorker do
         stub_request(:get, %r{steamcommunity\.com/market/priceoverview/}).to_return(status: 429)
         ItemPriceCache.fetch_for([ item.market_hash_name ])
         PriceHistoryCache.fetch_for([ item.market_hash_name ])
+        ItemTrendCache.fetch_for([ item.market_hash_name ])
       end
 
-      it "does not write a price log, does not touch the item, does not publish, and does not invalidate either cache" do
+      it "does not write a price log, does not touch the item, does not publish, and does not invalidate any cache" do
         perform
 
         item.reload
@@ -123,6 +128,7 @@ RSpec.describe PriceUpdateWorker do
           expect(prices_stream_entries).to be_empty
           expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
           expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+          expect(count_queries(model: PriceLog) { ItemTrendCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
         end
       end
     end

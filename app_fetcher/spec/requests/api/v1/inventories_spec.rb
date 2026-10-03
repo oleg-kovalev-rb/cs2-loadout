@@ -54,6 +54,13 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
       expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made
     end
 
+    it "does not include price fields in the response" do
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      item_json = JSON.parse(response.body)["items"].first
+      expect(item_json.keys).to contain_exactly("market_hash_name", "metadata")
+    end
+
     it "persists the user's inventory to the DB before responding" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
 
@@ -110,39 +117,10 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
         )
     end
 
-    it "enqueues PriceUpdateWorker for the unpriced item" do
+    it "does not enqueue a price warmup from this endpoint (relocated to item_prices#dynamics)" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
 
-      enqueued_ids = PriceUpdateWorker.jobs.map { |job| job["args"].first }
-      expect(enqueued_ids).to include(unpriced_item.id)
-    end
-
-    it "does not enqueue a duplicate job for a repeat request within the dedup window" do
-      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
-      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
-
-      enqueued_for_item = PriceUpdateWorker.jobs.select { |job| job["args"].first == unpriced_item.id }
-      expect(enqueued_for_item.size).to eq(1)
-    end
-
-    it "caps the number of warmup jobs enqueued per request at 20" do
-      extra_unpriced_items = create_list(:item, 20, :without_price)
-      all_unpriced = [ unpriced_item ] + extra_unpriced_items
-
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: all_unpriced.each_index.map { |i| { classid: i.to_s } },
-            descriptions: all_unpriced.each_with_index.map { |item, i| { classid: i.to_s, market_hash_name: item.market_hash_name } }
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-
-      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
-
-      expect(PriceUpdateWorker.jobs.size).to eq(20)
+      expect(PriceUpdateWorker.jobs).to be_empty
     end
   end
 
@@ -201,7 +179,9 @@ RSpec.describe "POST /api/v1/inventories/refresh", type: :request do
 
       aggregate_failures do
         expect(response).to have_http_status(:success)
-        expect(JSON.parse(response.body)["items_count"]).to eq(1)
+        json = JSON.parse(response.body)
+        expect(json["items_count"]).to eq(1)
+        expect(json["items"].first.keys).to contain_exactly("market_hash_name", "metadata")
         expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made.once
         expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(new_item)
       end

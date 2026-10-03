@@ -1,5 +1,3 @@
-import { itemSeries } from './itemSeries'
-
 // Fixed vocabulary and display order — shown in full regardless of which
 // conditions are actually present in the current inventory.
 export const CONDITIONS = ['Factory New', 'Minimal Wear', 'Field-Tested', 'Well-Worn', 'Battle-Scarred']
@@ -14,12 +12,7 @@ export function applyFilters(items, filters) {
 }
 
 export function changePct(item) {
-  const points = itemSeries(item, '24h')
-  if (points.length === 0) return 0
-
-  const first = points[0].value
-  const last = points[points.length - 1].value
-  return first ? (last - first) / first : 0
+  return item.change24hPercent || 0
 }
 
 export const SORTERS = {

@@ -70,6 +70,19 @@ gain real custom logic.
   `DataClassMethods#from_hash`.
 - Nilable values are `T.nilable(X)`, never a bare type with an implicit
   possible-nil.
+- For a closed set of string tags that each carry their own associated
+  behavior/value (not just a fixed-keys *hash*, which the shape-type rule
+  above covers), use a `T::Enum` instead of a plain
+  `T::Hash[String, ...]` constant — see `PricePeriod`
+  (`app_fetcher/app/models/price_period.rb`): one member per period tag
+  (`"24h"`, `"7d"`, ...), with a `#duration` instance method mapping each
+  to its `ActiveSupport::Duration` (or `nil` for `"all"`). Parse an
+  incoming param with `.try_deserialize` (returns `nil` for an unknown
+  value — branch on that, don't rescue `KeyError` from `.deserialize`).
+  Reuse the same enum class across multiple controllers/endpoints that
+  share the same tag vocabulary, even if each endpoint only accepts a
+  subset of members — declare that subset as the endpoint's own
+  `ALLOWED_PERIODS`-style array rather than forking the enum.
 - Private class methods are declared inside `class << self; extend
   T::Sig; private; ...; end` (see `Steam::PriceLogBuilder`), not
   `private_class_method`.
@@ -115,3 +128,5 @@ method needs to be guarded.
   `app_core/lib/steam/profile_fetcher.rb`
 - `app_core/app/actions/steam/login_user.rb`,
   `app_core/app/models/user.rb`
+- `app_fetcher/app/models/price_period.rb` — the `T::Enum` pattern for a
+  closed set of API-param tags

@@ -82,6 +82,30 @@ RSpec.describe UserInventorySyncService do
     end
   end
 
+  context "when Steam signals the inventory was truncated" do
+    let(:item) { create(:item) }
+
+    before do
+      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+        .to_return(
+          status: 200,
+          body: {
+            success: 1,
+            assets: [ { classid: "1" } ],
+            descriptions: [ { classid: "1", market_hash_name: item.market_hash_name } ],
+            more_items: 1
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "logs a warning including the steam_id" do
+      expect(Rails.logger).to receive(:warn).with(/\[UserInventorySyncService\].*#{steam_id}/)
+
+      call
+    end
+  end
+
   context "when the Steam call fails" do
     before do
       stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})

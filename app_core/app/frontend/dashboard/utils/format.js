@@ -11,6 +11,15 @@ export function fmtPrice(cents) {
   return fmtUSD(centsToUSD(cents))
 }
 
+export function fmtDateTime(epochMs) {
+  return new Date(epochMs).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 const CONDITION_ABBR = {
   'Factory New': 'FN',
   'Minimal Wear': 'MW',

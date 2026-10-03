@@ -12,8 +12,10 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "inventories/me", to: "inventories#show"
       post "inventories/refresh", to: "inventories#refresh"
-      post "price_histories", to: "price_histories#index"
       get "inventory_values", to: "inventory_values#index"
+      get "item_prices/dynamics", to: "item_prices#dynamics"
+      get "item_prices/trend", to: "item_prices#trend"
+      get "item_prices/:market_hash_name/history", to: "item_prices#history"
     end
   end
 end

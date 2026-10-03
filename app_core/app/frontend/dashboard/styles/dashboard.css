@@ -271,6 +271,7 @@ body{
   color:var(--text); font-family:var(--font-mono); font-size:11px;
   padding:3px 7px; border-radius:4px; pointer-events:none; white-space:nowrap;
 }
+.dash-root .chart-tooltip-at{ color:var(--text-faint); font-size:10px; margin-top:1px; }
 
 .dash-root .chart-xaxis-row{ display:flex; margin-top:6px; }
 .dash-root .chart-xaxis-spacer{ width:54px; flex-shrink:0; }

@@ -776,13 +776,14 @@ trading activity on Steam's platform, which this app has no write path
 into and therefore nothing to explicitly invalidate. `UserInventoryCache`
 uses a `.read`/`.write` interface instead and is TTL-only (5 minutes) by
 design. **The styleguide itself was not updated to reflect this new
-shape** — `.claude/styleguides/fetcher/caching.md` still describes only
-the `.fetch_for`/`.invalidate` shape. This is a known gap: a future
-`styleguides-check` pass (or a direct edit) should either broaden
-`caching.md`'s Interface/When-to-Use sections to explicitly cover a
-TTL-only, externally-driven-staleness variant, or add a second styleguide
-entry for it, so the next cache added under `app/caching/` doesn't have
-to re-derive this distinction from scratch.
+shape** at the time — `.claude/styleguides/fetcher/caching.md` described
+only the `.fetch_for`/`.invalidate` shape. **Fixed 2026-09-29**: the
+styleguide's When to Use/Structure/Interface/Rules/Canonical
+Implementations sections now explicitly document two variants —
+read-through + invalidation (`.fetch_for`/`.invalidate`, e.g.
+`ItemPriceCache`) and TTL-only (`.read`/`.write`, e.g.
+`UserInventoryCache`) — so the next cache added under `app/caching/`
+doesn't have to re-derive this distinction from scratch.
 
 **Also still open, per the user's explicit "for now" framing**:
 `ItemPriceCache`/`PriceHistoryCache` still fall back to a direct DB query
