@@ -66,6 +66,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       REDIS_URL_SIDEKIQ: redis://redis:6379/1
       REDIS_URL_STREAM: redis://redis:6379/2
+      APP_CORE_ORIGIN: ${APP_CORE_ORIGIN:?set this in .env, see .env.example}
+      APP_BRIDGE_JWT_SECRET: ${APP_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
 
 networks:
   default:
