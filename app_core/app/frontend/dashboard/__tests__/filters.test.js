@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { applyFilters, applySort } from '../utils/filters'
+import { applyFilters, applySort, weaponTypesPresent, conditionsPresent, stattrakPresent } from '../utils/filters'
 
 const items = [
   {
@@ -88,5 +88,59 @@ describe('applySort', () => {
     const original = [...items]
     applySort(items, 'price_desc')
     expect(items).toEqual(original)
+  })
+})
+
+describe('weaponTypesPresent', () => {
+  test('empty items returns an empty list', () => {
+    expect(weaponTypesPresent([])).toEqual([])
+  })
+
+  test('dedupes and alphabetically sorts the weapon types actually present', () => {
+    expect(weaponTypesPresent(items)).toEqual(['AK-47', 'AWP'])
+  })
+
+  test('excludes items with no weaponType (knives, gloves, stickers, cases) instead of producing a blank entry', () => {
+    const withKnife = [...items, { marketHashName: 'Karambit | Doppler', itemName: 'Karambit | Doppler', condition: 'Factory New', stattrak: false }]
+    expect(weaponTypesPresent(withKnife)).toEqual(['AK-47', 'AWP'])
+  })
+})
+
+describe('conditionsPresent', () => {
+  test('empty items returns an empty list', () => {
+    expect(conditionsPresent([])).toEqual([])
+  })
+
+  test('returns only the conditions actually present, in canonical wear order rather than insertion or alphabetical order', () => {
+    // Insertion order here is Well-Worn, Factory New, Battle-Scarred — alphabetical
+    // would be Battle-Scarred, Factory New, Well-Worn. Canonical CONDITIONS order
+    // (Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred) gives a
+    // third, different ordering — so this fixture only passes an implementation
+    // that actually orders by CONDITIONS, not one that sorts/dedupes any other way.
+    const present = [
+      { marketHashName: 'a', condition: 'Well-Worn' },
+      { marketHashName: 'b', condition: 'Factory New' },
+      { marketHashName: 'c', condition: 'Battle-Scarred' },
+    ]
+    expect(conditionsPresent(present)).toEqual(['Factory New', 'Well-Worn', 'Battle-Scarred'])
+  })
+
+  test('excludes items with no condition (stickers, cases, agents) instead of producing a blank entry', () => {
+    const withSticker = [...items, { marketHashName: 'Sticker | Katowice 2014', itemName: 'Sticker | Katowice 2014', stattrak: false }]
+    expect(conditionsPresent(withSticker)).toEqual(['Minimal Wear', 'Field-Tested', 'Battle-Scarred'])
+  })
+})
+
+describe('stattrakPresent', () => {
+  test('empty items returns false', () => {
+    expect(stattrakPresent([])).toBe(false)
+  })
+
+  test('returns false when no item is StatTrak', () => {
+    expect(stattrakPresent(items.filter((i) => !i.stattrak))).toBe(false)
+  })
+
+  test('returns true when at least one item is StatTrak', () => {
+    expect(stattrakPresent(items)).toBe(true)
   })
 })

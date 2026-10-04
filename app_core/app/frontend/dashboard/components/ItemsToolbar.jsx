@@ -10,6 +10,8 @@ export function ItemsToolbar({
   onSortChange,
   filters,
   weaponTypes,
+  conditions,
+  showStattrak,
   onWeaponToggle,
   onConditionToggle,
   onStattrakToggle,
@@ -42,6 +44,8 @@ export function ItemsToolbar({
         onToggle={() => onDropdownToggle('filter')}
         filters={filters}
         weaponTypes={weaponTypes}
+        conditions={conditions}
+        showStattrak={showStattrak}
         onWeaponToggle={onWeaponToggle}
         onConditionToggle={onConditionToggle}
         onStattrakToggle={onStattrakToggle}

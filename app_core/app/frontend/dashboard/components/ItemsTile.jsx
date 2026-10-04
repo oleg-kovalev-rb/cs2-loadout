@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { ItemsToolbar } from './ItemsToolbar'
 import { ItemRow } from './ItemRow'
 import { Pagination } from './Pagination'
-import { applyFilters, applySort } from '../utils/filters'
+import { applyFilters, applySort, weaponTypesPresent, conditionsPresent, stattrakPresent } from '../utils/filters'
 import { PAGE_SIZE } from '../reducer'
 
 export function ItemsTile({
@@ -22,8 +22,12 @@ export function ItemsTile({
   onDropdownsClosed,
   onPageChange,
 }) {
-  const weaponTypes = useMemo(
-    () => [...new Set(items.map((item) => item.weaponType))].sort(),
+  const { weaponTypes, conditions, showStattrak } = useMemo(
+    () => ({
+      weaponTypes: weaponTypesPresent(items),
+      conditions: conditionsPresent(items),
+      showStattrak: stattrakPresent(items),
+    }),
     [items]
   )
 
@@ -56,6 +60,8 @@ export function ItemsTile({
         onSortChange={onSortChange}
         filters={filters}
         weaponTypes={weaponTypes}
+        conditions={conditions}
+        showStattrak={showStattrak}
         onWeaponToggle={onWeaponToggle}
         onConditionToggle={onConditionToggle}
         onStattrakToggle={onStattrakToggle}

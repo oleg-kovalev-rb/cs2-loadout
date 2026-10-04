@@ -1,5 +1,6 @@
-// Fixed vocabulary and display order — shown in full regardless of which
-// conditions are actually present in the current inventory.
+// Canonical wear-order vocabulary, used both to filter and to order
+// whichever of these are actually present in a given inventory (see
+// conditionsPresent) — not shown in full regardless of inventory contents.
 export const CONDITIONS = ['Factory New', 'Minimal Wear', 'Field-Tested', 'Well-Worn', 'Battle-Scarred']
 
 export function applyFilters(items, filters) {
@@ -9,6 +10,19 @@ export function applyFilters(items, filters) {
     if (filters.stattrakOnly && !item.stattrak) return false
     return true
   })
+}
+
+export function weaponTypesPresent(items) {
+  return [...new Set(items.map((item) => item.weaponType))].filter(Boolean).sort()
+}
+
+export function conditionsPresent(items) {
+  const present = new Set(items.map((item) => item.condition))
+  return CONDITIONS.filter((condition) => present.has(condition))
+}
+
+export function stattrakPresent(items) {
+  return items.some((item) => item.stattrak)
 }
 
 export function changePct(item) {

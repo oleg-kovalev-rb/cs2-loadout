@@ -1,8 +1,7 @@
-import { CONDITIONS } from '../utils/filters'
 import { conditionAbbr } from '../utils/format'
 import { activeFilterCount } from '../reducer'
 
-export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, onWeaponToggle, onConditionToggle, onStattrakToggle, onClear }) {
+export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditions, showStattrak, onWeaponToggle, onConditionToggle, onStattrakToggle, onClear }) {
   const count = activeFilterCount(filters)
 
   return (
@@ -32,7 +31,7 @@ export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, onWeapo
           <div className="filter-group">
             <span className="filter-group-label">Condition</span>
             <div className="chip-row">
-              {CONDITIONS.map((condition) => (
+              {conditions.map((condition) => (
                 <button
                   key={condition}
                   type="button"
@@ -44,14 +43,16 @@ export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, onWeapo
               ))}
             </div>
           </div>
-          <div className="filter-group">
-            <span className="filter-group-label">Special</span>
-            <div className="chip-row">
-              <button type="button" className={`chip${filters.stattrakOnly ? ' is-active' : ''}`} onClick={onStattrakToggle}>
-                StatTrak™
-              </button>
+          {showStattrak && (
+            <div className="filter-group">
+              <span className="filter-group-label">Special</span>
+              <div className="chip-row">
+                <button type="button" className={`chip${filters.stattrakOnly ? ' is-active' : ''}`} onClick={onStattrakToggle}>
+                  StatTrak™
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           <button type="button" className="filter-clear" onClick={onClear}>
             Clear filters
           </button>
