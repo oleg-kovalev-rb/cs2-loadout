@@ -7,8 +7,10 @@ export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditi
   return (
     <div className={`dropdown${isOpen ? ' is-open' : ''}`}>
       <button type="button" className={`toolbar-btn${count > 0 ? ' has-active' : ''}`} onClick={onToggle}>
-        <span>Filters</span>
-        {count > 0 && <span className="filter-badge">{count}</span>}
+        <span className="toolbar-btn-label">
+          Filters
+          {count > 0 && <span className="filter-badge">{count}</span>}
+        </span>
         <Chevron />
       </button>
       {isOpen && (

@@ -368,6 +368,7 @@ body{
   overflow:hidden;
 }
 .dash-root .toolbar-btn span{ overflow:hidden; text-overflow:ellipsis; }
+.dash-root .toolbar-btn-label{ display:flex; align-items:center; gap:5px; min-width:0; }
 .dash-root .toolbar-btn:hover{ color:var(--text); border-color:#39435c; }
 .dash-root .toolbar-btn.has-active{ color:var(--accent); border-color:rgba(131,104,255,0.4); }
 .dash-root .toolbar-btn .chev{ flex-shrink:0; opacity:0.6; transition:transform .15s ease; }
