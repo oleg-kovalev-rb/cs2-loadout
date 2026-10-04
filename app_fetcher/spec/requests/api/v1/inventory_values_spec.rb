@@ -118,5 +118,23 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
         expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
       end
     end
+
+    context "when an unhandled error escapes the action" do
+      before do
+        allow_any_instance_of(Api::V1::InventoryValuesController)
+          .to receive(:current_steam_id).and_raise(StandardError, "boom")
+        allow(Rails.logger).to receive(:error)
+      end
+
+      it "returns a generic internal_server_error body and logs the exception" do
+        get "/api/v1/inventory_values", headers: headers
+
+        aggregate_failures do
+          expect(response).to have_http_status(:internal_server_error)
+          expect(JSON.parse(response.body)["message"]).to eq("Internal error")
+          expect(Rails.logger).to have_received(:error)
+        end
+      end
+    end
   end
 end

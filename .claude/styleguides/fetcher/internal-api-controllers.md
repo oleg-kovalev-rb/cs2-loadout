@@ -83,7 +83,10 @@ seed calls `InventoryValueRecordingService` the same way.
   local data via ActiveRecord, a plain `:ok` render with no failure
   branch is correct (see `InventoryValuesController#index`,
   `ItemPricesController#dynamics`/`#trend`) — don't add a defensive
-  rescue/branch for something that can't fail.
+  rescue/branch, in a specific action, for a specific exception class
+  that has no live trigger in today's call sites (e.g. no `rescue_from
+  ActiveRecord::RecordNotFound` — see Error Handling for why this is a
+  different case from the global `StandardError` catch-all).
 - Use `current_steam_id` for anything identity-scoped — never a
   client-supplied identifier.
 - Use `POST`, not `GET`, when the request needs a body — e.g. an array of
@@ -121,13 +124,45 @@ seed calls `InventoryValueRecordingService` the same way.
 
 ## Error Handling
 
-Two authentication failure shapes, both `:unauthorized` with a `{
-message: "..." }` body: missing token vs. invalid/expired token
-(`JWT::ExpiredSignature`, `JWT::DecodeError`, `JWT::VerificationError`
-all rescued together in `authenticate_bridge_token!`). Beyond auth, only
-`InventoriesController` has a failure path today — the wrapped
-`Steam::Client` call — mapped to `:bad_request` with `{ message:
-response.error }`.
+Three failure shapes:
+
+1. **Auth failures** — both `:unauthorized` with a `{ message: "..." }`
+   body: missing token vs. invalid/expired token
+   (`JWT::ExpiredSignature`, `JWT::DecodeError`, `JWT::VerificationError`
+   all rescued together in `authenticate_bridge_token!`).
+2. **Explicit per-action failure branch** — today, only
+   `InventoriesController`'s wrapped `Steam::Client` call: branch on
+   `response.success?`, `:bad_request` with `{ message: response.error
+   }`.
+3. **Unhandled/infra-level failures** — a single `rescue_from
+   StandardError` on `ApplicationController`, catching anything that
+   escapes an action un-rescued (a lost DB connection, any other
+   unexpected runtime error — never a specific, named exception class).
+   Always `{ message: "Internal error" }` with `:internal_server_error`
+   — never the exception's own message or backtrace — and always logged
+   first via `Rails.logger.error` (exception class, message,
+   backtrace). The logging is required, not optional: `app_fetcher` has
+   no error-tracking gem (Sentry/Rollbar/etc.), and Rails' own
+   middleware-level exception logging is skipped once a `rescue_from`
+   inside the controller has already handled the exception —
+   `Rails.logger.error` is the only thing standing between this and a
+   silently lost failure.
+
+Shape 3 is a different category from the `MUST` rule above against a
+defensive per-action rescue/branch for something that can't fail: that
+rule targets a *speculative* branch for a *specific* exception class
+with no live trigger in today's code (e.g. `ActiveRecord::RecordNotFound`
+— no `find`/`find_by!` call exists anywhere in `Api::V1::`, only
+`find_by`, so there is deliberately no `rescue_from` for it). The
+`StandardError` catch-all is the opposite case: one single, global
+handler for failures that are *never* "a condition that can't occur" —
+unexpected infrastructure failures are unpredictable by definition, not
+a branch added speculatively for a condition the code can't actually hit.
+It never shadows an existing explicit branch: `InventoriesController`'s
+`Steam::Client` failure path still renders its own `:bad_request`
+directly, since that's a handled `response.success? == false`, not a
+raised exception — `rescue_from` only ever fires for whatever reaches it
+un-rescued.
 
 ## Interaction With Other Layers
 

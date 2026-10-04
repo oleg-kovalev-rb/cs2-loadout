@@ -6,6 +6,7 @@ class ApplicationController < ActionController::API
   extend T::Sig
 
   before_action :authenticate_bridge_token!
+  rescue_from StandardError, with: :render_internal_server_error
 
   private
 
@@ -27,5 +28,11 @@ class ApplicationController < ActionController::API
     @current_steam_id = T.let(payload.fetch("steam_id"), T.nilable(String))
   rescue JWT::ExpiredSignature, JWT::DecodeError, JWT::VerificationError
     render json: { message: "Invalid bridge token" }, status: :unauthorized
+  end
+
+  sig { params(exception: StandardError).void }
+  def render_internal_server_error(exception)
+    Rails.logger.error("#{exception.class}: #{exception.message}\n#{exception.backtrace&.join("\n")}")
+    render json: { message: "Internal error" }, status: :internal_server_error
   end
 end
