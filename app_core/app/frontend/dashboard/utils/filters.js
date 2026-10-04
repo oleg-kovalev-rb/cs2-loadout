@@ -24,8 +24,8 @@ export const SORTERS = {
 }
 
 export const SORT_LABELS = {
-  delta_desc: '24H Δ ↓',
-  delta_asc: '24H Δ ↑',
+  delta_desc: '24h Δ ↓',
+  delta_asc: '24h Δ ↑',
   price_desc: 'Price ↓',
   price_asc: 'Price ↑',
   name_asc: 'Name A–Z',

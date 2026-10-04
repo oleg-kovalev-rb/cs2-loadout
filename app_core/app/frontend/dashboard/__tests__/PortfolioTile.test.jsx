@@ -57,18 +57,18 @@ describe('PortfolioTile', () => {
     expect(container.querySelector('.hero-delta')).toBeInTheDocument()
   })
 
-  test('portfolio mode: the range toggle has no 24H option', () => {
+  test('portfolio mode: the range toggle has no 24h option', () => {
     renderTile({ mode: 'portfolio' })
 
-    expect(screen.queryByRole('button', { name: '24H' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '24h' })).not.toBeInTheDocument()
   })
 
-  test('item mode: the range toggle includes a 24H option', () => {
+  test('item mode: the range toggle includes a 24h option', () => {
     renderTile({
       mode: 'item',
       selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
     })
 
-    expect(screen.getByRole('button', { name: '24H' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '24h' })).toBeInTheDocument()
   })
 })

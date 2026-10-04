@@ -75,27 +75,14 @@ a change's scope just because an unrelated file is flagged here.
 - `app_core/lib/steam/authenticator.rb` — missing a Sorbet `# typed:`
   sigil entirely; every sibling in `lib/steam/` (`bridge_token.rb`,
   `profile_fetcher.rb`) is `typed: strict`.
-- `app_core/app/controllers/application_controller.rb`,
-  `app_core/app/controllers/home_pages_controller.rb` — no Sorbet sigil at
-  all.
-- `app_core/app/controllers/sessions_controller.rb`,
-  `app_core/app/controllers/dashboards_controller.rb` — `typed: true`
+- `app_core/app/controllers/application_controller.rb` — no Sorbet sigil
+  at all.
+- `app_core/app/controllers/sessions_controller.rb` — `typed: true`
   instead of `typed: strict`.
-  All four are real, hand-written controllers with actual logic, not
+  Both are real, hand-written controllers with actual logic, not
   boilerplate — `app_fetcher`'s controllers prove `strict` works fine on
   controllers, so this isn't a justified exception, just drift. See
   `.claude/styleguides/ruby-sorbet.md`.
-- `app_core/spec/controllers/dashboards_controller_spec.rb` — uses
-  `type: :controller`, which `.claude/styleguides/rspec-conventions.md`
-  no longer allows for new specs (request specs cover the same ground
-  while exercising the real Rack middleware/session stack a controller
-  spec bypasses, and render views by default with no `render_views`
-  call needed). This is the one existing precedent the new convention
-  deliberately did not extend — see
-  `.claude/adr/fetcher/rspec-testing-strategy.md`'s "Alternative: Keep
-  `type: :controller`..." section. Not rewritten here since this file
-  wasn't otherwise being touched; migrate to `type: :request` next time
-  it's edited.
 - `app_core/spec/fixtures/users.yml` — Rails fixture; same deviation and
   same rationale as the `app_fetcher` fixtures entry above. Existing
   `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`

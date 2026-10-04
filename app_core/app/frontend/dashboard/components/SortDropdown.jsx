@@ -1,12 +1,6 @@
 import { SORT_LABELS } from '../utils/filters'
 
-const SORT_OPTIONS = [
-  { key: 'delta_desc', label: '24H Δ — high to low' },
-  { key: 'delta_asc', label: '24H Δ — low to high' },
-  { key: 'price_desc', label: 'Price — high to low' },
-  { key: 'price_asc', label: 'Price — low to high' },
-  { key: 'name_asc', label: 'Name — A to Z' },
-]
+const SORT_OPTIONS = ['delta_desc', 'delta_asc', 'price_desc', 'price_asc', 'name_asc']
 
 export function SortDropdown({ isOpen, onToggle, sort, onSortChange }) {
   return (
@@ -17,14 +11,14 @@ export function SortDropdown({ isOpen, onToggle, sort, onSortChange }) {
       </button>
       {isOpen && (
         <div className="dropdown-panel">
-          {SORT_OPTIONS.map((option) => (
+          {SORT_OPTIONS.map((key) => (
             <button
-              key={option.key}
+              key={key}
               type="button"
-              className={`sort-option${option.key === sort ? ' is-active' : ''}`}
-              onClick={() => onSortChange(option.key)}
+              className={`sort-option${key === sort ? ' is-active' : ''}`}
+              onClick={() => onSortChange(key)}
             >
-              {option.label}
+              {SORT_LABELS[key]}
             </button>
           ))}
         </div>

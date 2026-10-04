@@ -21,10 +21,6 @@ export function DashboardSkeleton() {
         <Bar width="100%" height={40} />
         <Bar width="100%" height={40} />
       </section>
-      <section className="tile tile-volume">
-        <Bar width="120px" height={60} />
-        <Bar width="60%" height={40} />
-      </section>
     </main>
   )
 }

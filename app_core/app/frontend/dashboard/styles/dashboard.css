@@ -146,6 +146,39 @@ body{
 }
 .dash-root .profile-name{ font-size:12px; font-weight:600; }
 
+.dash-root .topbar-signin{
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+  background:none;
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:inherit; font-size:12px; font-weight:600;
+  padding:6px 14px;
+  border-radius:999px;
+}
+.dash-root .topbar-signin:hover{ border-color:#39435c; background:var(--surface); }
+
+.dash-root .profile-menu{ position:relative; }
+.dash-root .profile-menu summary{ list-style:none; cursor:pointer; }
+.dash-root .profile-menu summary::-webkit-details-marker{ display:none; }
+.dash-root .profile-menu-panel{
+  position:absolute; top:calc(100% + 6px); right:0;
+  min-width:140px;
+  background:var(--surface-raised);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:6px;
+  z-index:30;
+  box-shadow:0 12px 28px rgba(0,0,0,0.4);
+}
+.dash-root .profile-menu-signout{
+  display:block; width:100%; text-align:left;
+  background:none; border:none; color:var(--text-muted);
+  font-family:inherit; font-size:12px;
+  padding:7px 10px; border-radius:6px; cursor:pointer;
+}
+.dash-root .profile-menu-signout:hover{ background:rgba(255,255,255,0.05); color:var(--text); }
+
 .dash-root .dash-loading{
   color:var(--text-muted);
   font-family:var(--font-mono);
@@ -156,12 +189,16 @@ body{
 .dash-root .dash-loading-error{ color:var(--down); }
 
 /* ---------- grid ---------- */
+/* align-items:start (not stretch) is what keeps .tile-items's height from
+   following .tile-hero's — each tile sizes to its own content instead of
+   both being forced to match the tallest cell in a shared row track, so
+   PortfolioTile's header growing/shrinking between portfolio and item mode
+   can't push the items list around. */
 .dash-root .dashboard{
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  grid-auto-rows:minmax(128px, auto);
+  grid-template-columns:repeat(3, 1fr);
   gap:16px;
-  align-items:stretch;
+  align-items:start;
 }
 
 .dash-root .tile{
@@ -201,9 +238,41 @@ body{
   white-space:nowrap;
 }
 
-.dash-root .tile-hero{ grid-column:1/4; grid-row:1/3; }
-.dash-root .tile-items{ grid-column:4/5; grid-row:1/4; }
-.dash-root .tile-volume{ grid-column:1/4; grid-row:3/4; flex-direction:row; align-items:center; gap:28px; }
+.dash-root .tile-hero{ grid-column:1/3; }
+.dash-root .tile-items{ grid-column:3/4; }
+
+/* ---------- signed-out state ---------- */
+.dash-root .signin-stage{
+  display:flex; align-items:center; justify-content:center;
+  min-height:420px;
+  padding:40px 20px;
+}
+.dash-root .signin-card{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  gap:14px;
+  max-width:360px;
+}
+.dash-root .signin-icon{
+  width:52px; height:52px; border-radius:50%;
+  background:var(--accent-soft);
+  border:1px solid rgba(131,104,255,0.4);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--accent);
+}
+.dash-root .signin-title{
+  font-family:var(--font-display); font-weight:800; font-size:26px;
+}
+.dash-root .signin-subtitle{
+  font-size:13.5px; color:var(--text-muted); line-height:1.5; margin:0;
+}
+.dash-root .signin-cta{
+  appearance:none; cursor:pointer;
+  background:var(--accent); color:#fff; border:none;
+  font-family:inherit; font-size:13.5px; font-weight:600;
+  padding:11px 20px; border-radius:var(--radius-md);
+}
+.dash-root .signin-cta:hover{ background:#7256f0; }
+.dash-root .signin-note{ font-size:11px; color:var(--text-faint); }
 
 /* ---------- hero tile ---------- */
 .dash-root .hero-eyebrow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -309,7 +378,8 @@ body{
 }
 
 .dash-root .dropdown-panel{
-  position:absolute; top:calc(100% + 6px); left:0; right:0;
+  position:absolute; top:calc(100% + 6px); left:0;
+  min-width:220px;
   background:var(--surface-raised);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
@@ -345,6 +415,7 @@ body{
   padding:5px 9px;
   border-radius:999px;
   cursor:pointer;
+  white-space:nowrap;
 }
 .dash-root .chip:hover{ border-color:#39435c; color:var(--text); }
 .dash-root .chip.is-active{ background:var(--accent-soft); border-color:rgba(131,104,255,0.5); color:var(--accent); }
@@ -430,15 +501,6 @@ body{
 .dash-root .pager-btn:disabled{ color:var(--text-faint); opacity:0.4; cursor:default; }
 .dash-root .pager-page{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); min-width:44px; text-align:center; }
 
-/* ---------- volume strip ---------- */
-.dash-root .volume-stat{ display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
-.dash-root .volume-stat .tile-label{
-  font-size:11px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-muted); font-weight:600;
-}
-.dash-root .stat-big{ font-family:var(--font-display); font-weight:800; font-size:30px; line-height:1; }
-.dash-root .stat-sub{ font-size:11.5px; color:var(--text-faint); }
-.dash-root .mini-spark{ flex:1; height:70px; overflow:visible; min-width:0; }
-
 /* ---------- footer ---------- */
 .dash-root .dash-footer{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -460,19 +522,17 @@ body{
 /* ---------- responsive ---------- */
 @media (max-width:920px){
   .dash-root .dashboard{ grid-template-columns:repeat(2, 1fr); }
-  .dash-root .tile-hero{ grid-column:1/3; grid-row:auto; }
-  .dash-root .tile-items{ grid-column:1/3; grid-row:auto; }
+  .dash-root .tile-hero{ grid-column:1/3; }
+  .dash-root .tile-items{ grid-column:1/3; }
   .dash-root .items-list{ max-height:420px; }
-  .dash-root .tile-volume{ grid-column:1/3; grid-row:auto; }
 }
 @media (max-width:600px){
   .dash-root{ padding:18px 16px 32px; }
   .dash-root .dashboard{ grid-template-columns:1fr; }
-  .dash-root .tile-hero,.dash-root .tile-items,.dash-root .tile-volume{ grid-column:1/2; grid-row:auto; }
+  .dash-root .tile-hero,.dash-root .tile-items{ grid-column:1/2; }
   .dash-root .hero-value{ font-size:34px; }
   .dash-root .chart-yaxis, .dash-root .chart-xaxis-spacer{ width:40px; }
   .dash-root .chart-yaxis{ font-size:9px; }
   .dash-root .topbar{ gap:14px; }
   .dash-root .items-toolbar{ flex-direction:column; }
-  .dash-root .tile-volume{ flex-direction:column; align-items:stretch; }
 }

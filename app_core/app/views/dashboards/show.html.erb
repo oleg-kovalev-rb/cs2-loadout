@@ -1,4 +1,4 @@
-<% content_for :title, "Dashboard — FLOAT" %>
+<% content_for :title, current_user ? "Dashboard — FLOAT" : "FLOAT" %>
 
 <div class="dash-root">
   <div class="bg-fx" aria-hidden="true"></div>
@@ -8,22 +8,50 @@
       <span class="brand-mark">FLOAT<span>/</span></span>
       <span class="brand-sub">Steam market intelligence</span>
     </div>
-    <div class="profile-chip">
-      <span class="avatar" aria-hidden="true"><%= current_user.nickname.to_s.first.presence&.upcase || "?" %></span>
-      <span class="profile-name"><%= current_user.nickname.presence || "Player" %></span>
-    </div>
+    <% if current_user %>
+      <details class="profile-menu">
+        <summary class="profile-chip">
+          <span class="avatar" aria-hidden="true"><%= current_user.nickname.to_s.first.presence&.upcase || "?" %></span>
+          <span class="profile-name"><%= current_user.nickname.presence || "Player" %></span>
+        </summary>
+        <div class="profile-menu-panel">
+          <%= button_to "Sign out", session_path, method: :delete, data: { turbo: false }, class: "profile-menu-signout" %>
+        </div>
+      </details>
+    <% else %>
+      <%= button_to "Sign in", session_path, method: :post, data: { turbo: false }, class: "topbar-signin" %>
+    <% end %>
   </header>
 
-  <div
-    id="dashboard-root"
-    data-bridge-token="<%= @bridge_token %>"
-    data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
-  ></div>
+  <% if current_user %>
+    <div
+      id="dashboard-root"
+      data-bridge-token="<%= @bridge_token %>"
+      data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
+    ></div>
 
-  <footer class="dash-footer">
-    <span class="sync-pill"><span class="pulse-dot" aria-hidden="true"></span>Snapshot loaded just now</span>
-    <span class="footer-note">Auto-refresh isn&rsquo;t wired up yet &mdash; reload the page for the latest prices</span>
-  </footer>
+    <footer class="dash-footer">
+      <span class="sync-pill"><span class="pulse-dot" aria-hidden="true"></span>Snapshot loaded just now</span>
+      <span class="footer-note">Auto-refresh isn&rsquo;t wired up yet &mdash; reload the page for the latest prices</span>
+    </footer>
+  <% else %>
+    <div class="signin-stage">
+      <div class="signin-card">
+        <span class="signin-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M4 17V13.5L9 9.5L13 12.5L20 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 20H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <h1 class="signin-title">See where your inventory stands</h1>
+        <p class="signin-subtitle">Connect your Steam account to pull in your CS2 inventory and track what it&rsquo;s worth over time.</p>
+        <%= button_to session_path, method: :post, data: { turbo: false }, class: "signin-cta" do %>
+          Sign in through Steam
+        <% end %>
+        <span class="signin-note">We only read your public inventory &mdash; nothing is posted on your behalf.</span>
+      </div>
+    </div>
+  <% end %>
 </div>
 
 <% content_for :vite_entrypoint do %>

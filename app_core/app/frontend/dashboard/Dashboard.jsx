@@ -8,8 +8,6 @@ import { useItemHistory } from './hooks/useItemHistory'
 import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
-import { MarketVolumeTile } from './components/MarketVolumeTile'
-import { marketVolume } from './utils/marketVolume'
 
 export function Dashboard({ fetcherUrl, bridgeToken }) {
   const { data, status, error } = useDashboardData(fetcherUrl, bridgeToken)
@@ -22,7 +20,7 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   const names = useMemo(() => (data ? data.items.map((item) => item.marketHashName) : []), [data])
 
   const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, names)
-  const { trendByName, status: trendStatus } = useItemTrend(fetcherUrl, bridgeToken, names)
+  const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
   const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioRange)
   const itemHistory = useItemHistory(fetcherUrl, bridgeToken, state.selectedItem?.marketHashName ?? null, state.itemRange)
 
@@ -79,8 +77,6 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
         onDropdownsClosed={() => dispatch({ type: 'DROPDOWNS_CLOSED' })}
         onPageChange={(page) => dispatch({ type: 'PAGE_CHANGED', page })}
       />
-
-      <MarketVolumeTile marketVolume={marketVolume(items)} historyStatus={trendStatus} />
     </main>
   )
 }

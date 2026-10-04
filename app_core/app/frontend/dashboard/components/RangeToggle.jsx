@@ -1,4 +1,4 @@
-const RANGE_LABELS = { '24h': '24H', '7d': '7D', '30d': '30D', '1y': '1Y', all: 'ALL' }
+const RANGE_LABELS = { '24h': '24h', '7d': '7d', '30d': '30d', '1y': '1y', all: 'all' }
 
 export function RangeToggle({ ranges, range, onChange }) {
   return (

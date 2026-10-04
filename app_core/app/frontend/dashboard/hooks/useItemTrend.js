@@ -14,9 +14,6 @@ function mapTrend(raw) {
 // takes no params.
 export function useItemTrend(fetcherUrl, bridgeToken, names) {
   const [trendByName, setTrendByName] = useState({})
-  // 'pending' | 'ready' | 'error' — matches MarketVolumeTile's existing
-  // historyStatus prop contract directly, so Dashboard.jsx can pass this
-  // hook's status straight through with no vocabulary translation.
   const [status, setStatus] = useState('pending')
 
   useEffect(() => {
