@@ -50,6 +50,16 @@ body{
   background:#0c111b;
 }
 
+/* Same reasoning as the body rule above — dashboard-page-only. Fluid root
+   font-size so the rem-based type scale below grows on wide viewports
+   instead of leaving a wider .dash-root's extra room empty: holds at
+   today's 16px up to a 1280px-wide viewport, scales up to 20px (+25%,
+   matching what a 125% browser zoom already looked like) by 1920px, and
+   stays capped at 20px on anything wider than that. */
+html{
+  font-size: clamp(16px, calc(16px + (100vw - 1280px) * 0.00625), 20px);
+}
+
 .dash-root{
   --bg:#0c111b;
   --surface:#141a28;
@@ -76,7 +86,7 @@ body{
   position:relative;
   min-height:100%;
   padding:24px 32px 40px;
-  max-width:1180px;
+  max-width:1440px;
   margin:0 auto;
   background:var(--bg);
   color:var(--text);
@@ -116,14 +126,14 @@ body{
 .dash-root .brand-mark{
   font-family:var(--font-display);
   font-weight:800;
-  font-size:25px;
+  font-size:1.5625rem;
   letter-spacing:0.5px;
   line-height:1;
   color:var(--text);
 }
 .dash-root .brand-mark span{ color:var(--accent); }
 .dash-root .brand-sub{
-  font-size:10.5px;
+  font-size:0.65625rem;
   color:var(--text-faint);
   text-transform:uppercase;
   letter-spacing:1.1px;
@@ -138,14 +148,14 @@ body{
   width:26px; height:26px; border-radius:50%;
   background:linear-gradient(155deg,var(--accent),#4a3aa8);
   display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-display); font-weight:800; font-size:12px;
+  font-family:var(--font-display); font-weight:800; font-size:0.75rem;
   color:#fff; flex-shrink:0;
 }
 .dash-root .avatar-img{
   width:26px; height:26px; border-radius:50%;
   object-fit:cover; flex-shrink:0;
 }
-.dash-root .profile-name{ font-size:12px; font-weight:600; }
+.dash-root .profile-name{ font-size:0.75rem; font-weight:600; }
 
 .dash-root .profile-signout{
   cursor:pointer;
@@ -174,18 +184,18 @@ body{
   max-width:280px;
   text-align:center;
 }
-.dash-root .confirm-card-text{ font-size:13.5px; margin:0 0 16px; }
+.dash-root .confirm-card-text{ font-size:0.84375rem; margin:0 0 16px; }
 .dash-root .confirm-card-actions{ display:flex; justify-content:center; gap:10px; }
 .dash-root .confirm-cancel{
   display:flex; align-items:center;
-  color:var(--text-muted); font-size:12.5px;
+  color:var(--text-muted); font-size:0.78125rem;
   padding:8px 14px; border-radius:var(--radius-sm); cursor:pointer;
 }
 .dash-root .confirm-cancel:hover{ background:var(--surface); color:var(--text); }
 .dash-root .confirm-signout{
   appearance:none; cursor:pointer;
   background:var(--down); color:#fff; border:none;
-  font-family:inherit; font-size:12.5px; font-weight:600;
+  font-family:inherit; font-size:0.78125rem; font-weight:600;
   padding:8px 14px; border-radius:var(--radius-sm);
 }
 .dash-root .confirm-signout:hover{ background:#d9475c; }
@@ -193,7 +203,7 @@ body{
 .dash-root .dash-loading{
   color:var(--text-muted);
   font-family:var(--font-mono);
-  font-size:13px;
+  font-size:0.8125rem;
   padding:40px 0;
   text-align:center;
 }
@@ -232,7 +242,7 @@ body{
   margin-bottom:14px;
 }
 .dash-root .tile-head h2{
-  font-size:11px;
+  font-size:0.6875rem;
   text-transform:uppercase;
   letter-spacing:1.1px;
   color:var(--text-muted);
@@ -240,7 +250,7 @@ body{
 }
 .dash-root .tile-tag{
   font-family:var(--font-mono);
-  font-size:10px;
+  font-size:0.625rem;
   color:var(--text-faint);
   background:var(--surface-raised);
   border:1px solid var(--border);
@@ -271,19 +281,19 @@ body{
   color:var(--accent);
 }
 .dash-root .signin-title{
-  font-family:var(--font-display); font-weight:800; font-size:26px;
+  font-family:var(--font-display); font-weight:800; font-size:1.625rem;
 }
 .dash-root .signin-subtitle{
-  font-size:13.5px; color:var(--text-muted); line-height:1.5; margin:0;
+  font-size:0.84375rem; color:var(--text-muted); line-height:1.5; margin:0;
 }
 .dash-root .signin-cta{
   appearance:none; cursor:pointer;
   background:var(--accent); color:#fff; border:none;
-  font-family:inherit; font-size:13.5px; font-weight:600;
+  font-family:inherit; font-size:0.84375rem; font-weight:600;
   padding:11px 20px; border-radius:var(--radius-md);
 }
 .dash-root .signin-cta:hover{ background:#7256f0; }
-.dash-root .signin-note{ font-size:11px; color:var(--text-faint); }
+.dash-root .signin-note{ font-size:0.6875rem; color:var(--text-faint); }
 
 /* ---------- hero tile ---------- */
 .dash-root .hero-eyebrow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -296,7 +306,7 @@ body{
   border:none;
   color:var(--accent);
   font-family:var(--font-mono);
-  font-size:11px;
+  font-size:0.6875rem;
   cursor:pointer;
   padding:2px 4px 2px 0;
 }
@@ -313,7 +323,7 @@ body{
 }
 .dash-root .range-btn{
   appearance:none; border:none; background:transparent;
-  color:var(--text-faint); font-family:var(--font-mono); font-size:11px;
+  color:var(--text-faint); font-family:var(--font-mono); font-size:0.6875rem;
   padding:4px 9px; border-radius:4px; cursor:pointer;
 }
 .dash-root .range-btn:hover{ color:var(--text); }
@@ -324,10 +334,10 @@ body{
 }
 .dash-root .hero-value{
   font-family:var(--font-display); font-weight:800;
-  font-size:46px; letter-spacing:0.3px; line-height:1;
+  font-size:2.875rem; letter-spacing:0.3px; line-height:1;
 }
 .dash-root .hero-delta{
-  font-family:var(--font-mono); font-size:13px;
+  font-family:var(--font-mono); font-size:0.8125rem;
   padding:3px 8px; border-radius:var(--radius-sm);
 }
 .dash-root .hero-delta.is-up{ color:var(--up); background:var(--up-soft); }
@@ -348,16 +358,16 @@ body{
 
 .dash-root .chart-tooltip{
   background:var(--surface-raised); border:1px solid var(--border);
-  color:var(--text); font-family:var(--font-mono); font-size:11px;
+  color:var(--text); font-family:var(--font-mono); font-size:0.6875rem;
   padding:3px 7px; border-radius:4px; pointer-events:none; white-space:nowrap;
 }
-.dash-root .chart-tooltip-at{ color:var(--text-faint); font-size:10px; margin-top:1px; }
+.dash-root .chart-tooltip-at{ color:var(--text-faint); font-size:0.625rem; margin-top:1px; }
 
 .dash-root .chart-xaxis-row{ display:flex; margin-top:6px; }
 .dash-root .chart-xaxis-spacer{ width:54px; flex-shrink:0; }
 .dash-root .chart-xaxis{
   flex:1; display:flex; justify-content:space-between;
-  font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+  font-family:var(--font-mono); font-size:0.625rem; color:var(--text-faint);
 }
 
 /* ---------- items toolbar (sort + filters) ---------- */
@@ -371,7 +381,7 @@ body{
   border:1px solid var(--border);
   color:var(--text-muted);
   font-family:var(--font-mono);
-  font-size:10.5px;
+  font-size:0.65625rem;
   padding:7px 9px;
   border-radius:var(--radius-sm);
   cursor:pointer;
@@ -385,7 +395,7 @@ body{
 .dash-root .toolbar-btn .chev{ flex-shrink:0; opacity:0.6; transition:transform .15s ease; }
 .dash-root .dropdown.is-open .toolbar-btn .chev{ transform:rotate(180deg); }
 .dash-root .filter-badge{
-  background:var(--accent); color:#fff; font-size:9px; border-radius:999px;
+  background:var(--accent); color:#fff; font-size:0.5625rem; border-radius:999px;
   padding:0 5px; line-height:14px; flex-shrink:0;
 }
 
@@ -405,7 +415,7 @@ body{
 .dash-root .sort-option{
   display:block; width:100%; text-align:left;
   background:none; border:none; color:var(--text-muted);
-  font-family:var(--font-body); font-size:12px;
+  font-family:var(--font-body); font-size:0.75rem;
   padding:7px 8px; border-radius:6px; cursor:pointer;
 }
 .dash-root .sort-option:hover{ background:rgba(255,255,255,0.05); color:var(--text); }
@@ -414,7 +424,7 @@ body{
 .dash-root .filter-group{ margin-bottom:12px; }
 .dash-root .filter-group:last-of-type{ margin-bottom:8px; }
 .dash-root .filter-group-label{
-  display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.8px;
+  display:block; font-size:0.625rem; text-transform:uppercase; letter-spacing:0.8px;
   color:var(--text-faint); margin-bottom:7px;
 }
 .dash-root .chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -423,7 +433,7 @@ body{
   border:1px solid var(--border);
   color:var(--text-muted);
   font-family:var(--font-body);
-  font-size:11px;
+  font-size:0.6875rem;
   padding:5px 9px;
   border-radius:999px;
   cursor:pointer;
@@ -433,7 +443,7 @@ body{
 .dash-root .chip.is-active{ background:var(--accent-soft); border-color:rgba(131,104,255,0.5); color:var(--accent); }
 .dash-root .filter-clear{
   background:none; border:none; color:var(--text-faint);
-  font-family:var(--font-mono); font-size:10.5px; text-decoration:underline;
+  font-family:var(--font-mono); font-size:0.65625rem; text-decoration:underline;
   cursor:pointer; padding:2px 0;
 }
 .dash-root .filter-clear:hover{ color:var(--text); }
@@ -452,7 +462,7 @@ body{
 
 .dash-root .empty-state{
   flex:1; display:flex; align-items:center; justify-content:center;
-  text-align:center; color:var(--text-faint); font-size:12px; padding:24px 12px;
+  text-align:center; color:var(--text-faint); font-size:0.75rem; padding:24px 12px;
 }
 
 .dash-root .mover-row{
@@ -476,10 +486,10 @@ body{
 }
 
 .dash-root .mover-id{ min-width:0; display:flex; flex-direction:column; gap:3px; }
-.dash-root .mover-name{ font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dash-root .mover-name{ font-size:0.78125rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dash-root .mover-tags{ display:flex; gap:5px; align-items:center; }
 .dash-root .tag{
-  font-family:var(--font-mono); font-size:9.5px; font-weight:500;
+  font-family:var(--font-mono); font-size:0.59375rem; font-weight:500;
   padding:1px 5px; border-radius:4px;
 }
 .dash-root .tag-stattrak{ color:var(--stattrak); background:var(--stattrak-soft); }
@@ -488,8 +498,8 @@ body{
 .dash-root .row-spark{ width:38px; height:24px; overflow:visible; flex-shrink:0; }
 
 .dash-root .mover-figures{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
-.dash-root .mover-price{ font-family:var(--font-mono); font-size:12.5px; }
-.dash-root .mover-delta{ font-family:var(--font-mono); font-size:10.5px; }
+.dash-root .mover-price{ font-family:var(--font-mono); font-size:0.78125rem; }
+.dash-root .mover-delta{ font-family:var(--font-mono); font-size:0.65625rem; }
 .dash-root .mover-delta.up{ color:var(--up); }
 .dash-root .mover-delta.down{ color:var(--down); }
 
@@ -498,7 +508,7 @@ body{
   gap:10px; margin-top:10px; padding-top:12px; border-top:1px solid var(--border);
   flex-shrink:0;
 }
-.dash-root .pager-range{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); }
+.dash-root .pager-range{ font-family:var(--font-mono); font-size:0.65625rem; color:var(--text-faint); }
 .dash-root .pager-btns{
   display:flex; align-items:center; gap:8px;
   background:var(--surface-raised); border:1px solid var(--border);
@@ -506,19 +516,19 @@ body{
 }
 .dash-root .pager-btn{
   appearance:none; border:none; background:transparent; color:var(--text);
-  font-family:var(--font-mono); font-size:13px; width:20px; height:20px;
+  font-family:var(--font-mono); font-size:0.8125rem; width:20px; height:20px;
   border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center;
 }
 .dash-root .pager-btn:hover:not(:disabled){ background:var(--accent-soft); color:var(--accent); }
 .dash-root .pager-btn:disabled{ color:var(--text-faint); opacity:0.4; cursor:default; }
-.dash-root .pager-page{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); min-width:44px; text-align:center; }
+.dash-root .pager-page{ font-family:var(--font-mono); font-size:0.65625rem; color:var(--text-muted); min-width:44px; text-align:center; }
 
 /* ---------- footer ---------- */
 .dash-root .dash-footer{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   margin-top:16px; padding-top:16px; border-top:1px solid var(--border); flex-wrap:wrap;
 }
-.dash-root .sync-pill{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12px; color:var(--text-muted); }
+.dash-root .sync-pill{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted); }
 .dash-root .pulse-dot{
   width:8px; height:8px; border-radius:50%; background:var(--up);
   box-shadow:0 0 0 0 var(--up-soft); animation:dash-pulse 2.4s ease-out infinite;
@@ -529,7 +539,7 @@ body{
   100%{ box-shadow:0 0 0 0 rgba(63,184,120,0); }
 }
 @media (prefers-reduced-motion:reduce){ .dash-root .pulse-dot{ animation:none; } }
-.dash-root .footer-note{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
+.dash-root .footer-note{ font-family:var(--font-mono); font-size:0.6875rem; color:var(--text-faint); }
 
 /* ---------- responsive ---------- */
 @media (max-width:920px){
@@ -542,9 +552,9 @@ body{
   .dash-root{ padding:18px 16px 32px; }
   .dash-root .dashboard{ grid-template-columns:1fr; }
   .dash-root .tile-hero,.dash-root .tile-items{ grid-column:1/2; }
-  .dash-root .hero-value{ font-size:34px; }
+  .dash-root .hero-value{ font-size:2.125rem; }
   .dash-root .chart-yaxis, .dash-root .chart-xaxis-spacer{ width:40px; }
-  .dash-root .chart-yaxis{ font-size:9px; }
+  .dash-root .chart-yaxis{ font-size:0.5625rem; }
   .dash-root .topbar{ gap:14px; }
   .dash-root .items-toolbar{ flex-direction:column; }
 }
