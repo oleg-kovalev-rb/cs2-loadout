@@ -36,6 +36,31 @@ RSpec.describe "GET /", type: :request do
         expect(response.body).to match(/name="_method"\s+value="delete"/)
       end
     end
+
+    it "gates sign-out behind a confirm overlay instead of triggering it directly" do
+      get root_path
+
+      expect(response.body).to match(/<a[^>]+href="#signout-confirm"[^>]*aria-label="Sign out"/)
+    end
+
+    it "renders the user's real avatar when avatar_url is present" do
+      get root_path
+
+      expect(response.body).to include(%(src="#{user.avatar_url}"))
+    end
+
+    context "when the user has no avatar_url" do
+      let(:user) { create(:user, avatar_url: nil) }
+
+      it "falls back to the letter-circle avatar instead of an image" do
+        get root_path
+
+        aggregate_failures do
+          expect(response.body).not_to match(/<img[^>]+class="avatar-img"/)
+          expect(response.body).to match(/class="avatar"[^>]*>[^<]*#{user.nickname[0]}/)
+        end
+      end
+    end
   end
 
   describe "DELETE /session" do

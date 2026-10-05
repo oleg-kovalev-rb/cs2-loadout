@@ -36,6 +36,7 @@ services:
       REDIS_URL_STREAM: redis://redis:6379/2
       APP_FETCHER_PUBLIC_URL: ${APP_FETCHER_PUBLIC_URL:?set this in .env, see .env.example}
       APP_BRIDGE_JWT_SECRET: ${APP_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
+      STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
 
   app_fetcher:
     build: ./app_fetcher

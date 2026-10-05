@@ -9,17 +9,36 @@
       <span class="brand-sub">Steam market intelligence</span>
     </div>
     <% if current_user %>
-      <details class="profile-menu">
-        <summary class="profile-chip">
-          <span class="avatar" aria-hidden="true"><%= current_user.nickname.to_s.first.presence&.upcase || "?" %></span>
+      <div class="profile-group">
+        <span class="profile-chip">
+          <% if current_user.avatar_url.present? %>
+            <%= image_tag current_user.avatar_url, alt: "", class: "avatar-img" %>
+          <% else %>
+            <span class="avatar" aria-hidden="true"><%= current_user.nickname.to_s.first.presence&.upcase || "?" %></span>
+          <% end %>
           <span class="profile-name"><%= current_user.nickname.presence || "Player" %></span>
-        </summary>
-        <div class="profile-menu-panel">
-          <%= button_to "Sign out", session_path, method: :delete, data: { turbo: false }, class: "profile-menu-signout" %>
+        </span>
+        <a href="#signout-confirm" class="profile-signout" aria-label="Sign out">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M6 3H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13.5 8H6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <div id="signout-confirm" class="confirm-overlay">
+        <a href="#" class="confirm-overlay-backdrop" aria-hidden="true"></a>
+        <div class="confirm-card">
+          <p class="confirm-card-text">Sign out of FLOAT?</p>
+          <div class="confirm-card-actions">
+            <a href="#" class="confirm-cancel">Cancel</a>
+            <%= button_to session_path, method: :delete, data: { turbo: false }, class: "confirm-signout" do %>
+              Sign out
+            <% end %>
+          </div>
         </div>
-      </details>
-    <% else %>
-      <%= button_to "Sign in", session_path, method: :post, data: { turbo: false }, class: "topbar-signin" %>
+      </div>
     <% end %>
   </header>
 
