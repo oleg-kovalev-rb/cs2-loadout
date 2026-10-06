@@ -19,13 +19,14 @@ class ItemParser
         item_name: String,
         condition: T.nilable(String),
         stattrak: T::Boolean,
-        souvenir: T::Boolean
+        souvenir: T::Boolean,
+        icon_url: T.nilable(String)
       }
     }
   end
 
-  sig { params(market_hash_name: String).returns(ItemDto) }
-  def self.parse(market_hash_name)
+  sig { params(market_hash_name: String, icon_url: T.nilable(String)).returns(ItemDto) }
+  def self.parse(market_hash_name, icon_url: nil)
     stattrak = market_hash_name.include?(STAT_TRACK_MARKER)
     souvenir = market_hash_name.include?(SOUVENIR_MARKER)
 
@@ -46,7 +47,8 @@ class ItemParser
           item_name:,
           condition:,
           stattrak:,
-          souvenir:
+          souvenir:,
+          icon_url:
         }
       }
     else
@@ -57,7 +59,8 @@ class ItemParser
           condition: nil,
           item_name: clean_name,
           stattrak:,
-          souvenir:
+          souvenir:,
+          icon_url:
         }
       }
     end

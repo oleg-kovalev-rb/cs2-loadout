@@ -7,7 +7,13 @@ const INVENTORY_BODY = {
   items: [
     {
       market_hash_name: 'AK-47 | Redline (Field-Tested)',
-      metadata: { weapon_type: 'AK-47', item_name: 'Redline', condition: 'Field-Tested', stattrak: false },
+      metadata: {
+        weapon_type: 'AK-47',
+        item_name: 'Redline',
+        condition: 'Field-Tested',
+        stattrak: false,
+        icon_url: 'https://community.akamai.steamstatic.com/economy/image/abc123',
+      },
     },
   ],
 }
@@ -40,6 +46,7 @@ describe('useDashboardData', () => {
       itemName: 'Redline',
       condition: 'Field-Tested',
       stattrak: false,
+      iconUrl: 'https://community.akamai.steamstatic.com/economy/image/abc123',
       currentPriceCents: null,
       changeCents: 0,
       change24hPercent: 0,

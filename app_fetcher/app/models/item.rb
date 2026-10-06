@@ -3,7 +3,7 @@
 class Item < ApplicationRecord
   has_many :price_logs, dependent: :destroy
 
-  store_accessor :metadata, :weapon_type, :item_name, :condition, :stattrak, :souvenir
+  store_accessor :metadata, :weapon_type, :item_name, :condition, :stattrak, :souvenir, :icon_url
 
   validates :market_hash_name, presence: true
   validates :market_hash_name, uniqueness: true

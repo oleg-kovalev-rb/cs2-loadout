@@ -75,6 +75,32 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
+  context "with a valid token, cold start, unknown item carries an icon" do
+    let(:steam_id) { "76561198000000004" }
+    let(:token) { bridge_token_for(steam_id) }
+    let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+    before do
+      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+        .to_return(
+          status: 200,
+          body: {
+            success: 1,
+            assets: [ { classid: "1" } ],
+            descriptions: [ { classid: "1", market_hash_name: unknown_name, icon_url: "abc123" } ]
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "includes the resolved icon URL in the backfilled item's metadata" do
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      item_json = JSON.parse(response.body)["items"].first
+      expect(item_json["metadata"]["icon_url"]).to eq("https://community.akamai.steamstatic.com/economy/image/abc123")
+    end
+  end
+
   context "with a valid token, already synced and cache-warm" do
     let(:steam_id) { "76561198000000001" }
     let(:token) { bridge_token_for(steam_id) }

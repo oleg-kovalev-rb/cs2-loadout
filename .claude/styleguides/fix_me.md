@@ -35,13 +35,23 @@ a change's scope just because an unrelated file is flagged here.
 
 ## `app_fetcher`
 
-- `app_fetcher/app/parsers/steam/item_parser.rb` — `CONDITION_EXTRACT_REGEX`
-  and `CONDITION_CLEANUP_REGEX` are plain `Regexp#freeze` literals, not
-  wrapped in `T.let`, unlike every other constant-bearing file in the
-  codebase (`Steam::Client::BASE_URL`, `Steam::PriceLogBuilder::PRICE_REGEXP`,
-  etc.). Confirmed as a real `srb tc` error (`7027: Constants must have
-  type annotations with T.let when specifying # typed: strict`), not just
-  a style nit.
+- `app_fetcher/app/parsers/item_parser.rb` (current flat path — not
+  `app/parsers/steam/`, see the `architecture-layers.md`/`ruby-sorbet.md`
+  entries below) — `CONDITION_EXTRACT_REGEX` and `CONDITION_CLEANUP_REGEX`
+  are plain `Regexp#freeze` literals, not wrapped in `T.let`, unlike every
+  other constant-bearing file in the codebase (`Steam::Client::BASE_URL`,
+  `PriceLogBuilder::PRICE_REGEXP`, etc.). Confirmed as a real `srb tc`
+  error (`7027: Constants must have type annotations with T.let when
+  specifying # typed: strict`), not just a style nit. Separately,
+  `.parse`'s `else` branch (no `WEAPON_TYPE_SEPARATOR` in the name)
+  returns `item_name: clean_name`, which Sorbet infers as
+  `T.nilable(String)` even though `String#gsub` never returns `nil` —
+  confirmed as a real, pre-existing `srb tc` error (`7005`, result-type
+  mismatch against `ItemDto`'s `item_name: String`) that predates the
+  `icon_url` key added to `ItemDto` for item-icon support; discovered
+  while adding that key, not introduced by it. Root cause (why Sorbet
+  widens `clean_name`'s type across the two `gsub` reassignments) wasn't
+  investigated — out of scope for that change.
 - `app_fetcher/app/models/item.rb` — the `stattrak` override method has no
   `sig` and the class has no `extend T::Sig`, unlike every other method in
   a `typed: strict` file. Confirmed as a real `srb tc` error (`7017: The
@@ -63,6 +73,19 @@ a change's scope just because an unrelated file is flagged here.
   `redline_recent`, etc.) stay loaded and referenced by their current
   specs; don't add new fixture rows here — use a factory instead. See
   `.claude/adr/fetcher/rspec-testing-strategy.md`.
+- `app_fetcher/app/services/user_inventory_sync_service.rb` — `#call`
+  reads `response.data.more_items`/`.market_hash_names` (and, since
+  item-icon support, `.icon_urls_by_name`) after only checking
+  `response.success?`, not narrowing `response.data` itself; Sorbet can't
+  infer that a `200` status implies a non-nil `data` on
+  `Steam::Response`, so all three calls are real `srb tc` errors (`7003`,
+  method on `NilClass` component of `T.nilable(...)`) that autocorrect
+  would wrap in `T.must(response.data)`. The first two predate item-icon
+  support; the third (`icon_urls_by_name`) was added alongside it,
+  matching the file's existing (unfixed) pattern rather than fixing only
+  the new call site. Fixing this properly means either restructuring
+  `Steam::Response` so success implies non-nil data, or widening every
+  call site here — both out of scope for a one-field addition.
 - `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
   `price_histories_spec.rb` — `inventories_spec.rb` hand-writes a
   `WebMock` `stub_request` body for a Steam API call at the request

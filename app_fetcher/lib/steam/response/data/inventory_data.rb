@@ -4,6 +4,8 @@ class Steam::Response::Data::InventoryData < T::Struct
   extend T::Sig
   extend Steam::Response::DataClassMethods
 
+  ICON_CDN_BASE_URL = T.let("https://community.akamai.steamstatic.com/economy/image/".freeze, String)
+
   const :assets, T::Array[T::Hash[String, T.untyped]]
   const :descriptions, T::Array[T::Hash[String, T.untyped]]
   const :more_items, T::Boolean
@@ -20,5 +22,16 @@ class Steam::Response::Data::InventoryData < T::Struct
   sig { returns(T::Array[String]) }
   def market_hash_names
     descriptions.map { |desc| desc["market_hash_name"] }.compact.uniq
+  end
+
+  sig { returns(T::Hash[String, T.nilable(String)]) }
+  def icon_urls_by_name
+    descriptions.each_with_object({}) do |desc, acc|
+      name = desc["market_hash_name"]
+      next unless name
+
+      icon = desc["icon_url"]
+      acc[name] = icon.nil? ? nil : "#{ICON_CDN_BASE_URL}#{icon}"
+    end
   end
 end

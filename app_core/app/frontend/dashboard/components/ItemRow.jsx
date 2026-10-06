@@ -18,6 +18,11 @@ export function ItemRow({ item, isSelected, onSelect }) {
         className={`mover-row${isSelected ? ' is-selected' : ''}`}
         onClick={() => onSelect(item)}
       >
+        {item.iconUrl ? (
+          <img className="mover-icon" src={item.iconUrl} alt="" />
+        ) : (
+          <span className="mover-icon" aria-hidden="true" />
+        )}
         <span className="mover-id">
           <span className="mover-name">
             {item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}

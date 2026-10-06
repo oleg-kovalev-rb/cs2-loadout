@@ -348,7 +348,7 @@ html{
   display:flex;
   flex-direction:row;
   flex:1;
-  min-height:150px;
+  min-height:360px;
   margin-top:10px;
 }
 .dash-root .chart-plot{ position:relative; flex:1; min-width:0; }
@@ -467,7 +467,7 @@ html{
 
 .dash-root .mover-row{
   display:grid;
-  grid-template-columns:1fr 38px auto;
+  grid-template-columns:64px 1fr 38px auto;
   align-items:center;
   gap:9px;
   padding:9px 8px;
@@ -483,6 +483,11 @@ html{
 .dash-root .mover-row.is-selected{
   background:var(--accent-soft);
   border-color:rgba(131,104,255,0.4);
+}
+
+.dash-root .mover-icon{
+  width:64px; height:64px; border-radius:var(--radius-sm);
+  object-fit:contain; flex-shrink:0;
 }
 
 .dash-root .mover-id{ min-width:0; display:flex; flex-direction:column; gap:3px; }

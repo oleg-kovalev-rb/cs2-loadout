@@ -55,6 +55,54 @@ RSpec.describe UserInventorySyncService do
       end
     end
 
+    context "when the unknown item's description carries an icon_url" do
+      let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+      before do
+        stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+          .to_return(
+            status: 200,
+            body: {
+              success: 1,
+              assets: [ { classid: "1" } ],
+              descriptions: [ { classid: "1", market_hash_name: unknown_name, icon_url: "abc123" } ]
+            }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "stores the resolved icon URL on the backfilled Item" do
+        call
+
+        backfilled = Item.find_by(market_hash_name: unknown_name)
+        expect(backfilled.icon_url).to eq("https://community.akamai.steamstatic.com/economy/image/abc123")
+      end
+    end
+
+    context "when the unknown item's description has no icon_url" do
+      let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+      before do
+        stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+          .to_return(
+            status: 200,
+            body: {
+              success: 1,
+              assets: [ { classid: "1" } ],
+              descriptions: [ { classid: "1", market_hash_name: unknown_name } ]
+            }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "backfills the Item with a nil icon_url instead of failing" do
+        call
+
+        backfilled = Item.find_by(market_hash_name: unknown_name)
+        expect(backfilled.icon_url).to be_nil
+      end
+    end
+
     context "on a second call with a different item set" do
       let(:first_item) { create(:item) }
       let(:second_item) { create(:item) }

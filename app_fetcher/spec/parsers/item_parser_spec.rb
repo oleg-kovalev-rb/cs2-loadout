@@ -41,6 +41,18 @@ RSpec.describe ItemParser do
 
       expect(result[:metadata][:condition]).to be_nil
     end
+
+    it "includes a given icon_url in the metadata" do
+      result = described_class.parse("AK-47 | Redline (Field-Tested)", icon_url: "https://example.com/icon.png")
+
+      expect(result[:metadata][:icon_url]).to eq("https://example.com/icon.png")
+    end
+
+    it "defaults icon_url to nil when not given" do
+      result = described_class.parse("AK-47 | Redline (Field-Tested)")
+
+      expect(result[:metadata][:icon_url]).to be_nil
+    end
   end
 
   describe ".parse_collection" do
