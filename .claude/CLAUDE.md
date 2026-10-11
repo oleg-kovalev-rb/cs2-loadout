@@ -27,9 +27,11 @@ new integration — not one-line fixes or pure formatting), follow this order:
 
 1. `research-codebase` — understand current behavior, relevant files, tests.
 2. `create-dev-plan` — turn research into a concrete plan.
-3. `styleguides-check` — gate the plan against styleguides; if guides are
-   missing, create them (`create-styleguide` / `create-styleguide-from-scratch`)
-   before moving on.
+3. `styleguides-check` — gate the plan against styleguides; if a guide is
+   missing entirely, create it (`create-styleguide` /
+   `create-styleguide-from-scratch`); if a guide already exists and applies
+   but doesn't cover a case the plan needs, amend it (`update-styleguide`)
+   — before moving on.
 4. `implement-plan` — implement with TDD, following the checked plan.
 
 Do not jump straight to implementation for non-trivial work. If a stage

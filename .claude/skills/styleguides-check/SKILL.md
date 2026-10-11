@@ -33,9 +33,10 @@ The implementation must not begin until this process is complete.
 - The final development plan must explicitly reference all applicable styleguides and technical constraints.
 - Updating the plan file's `status` frontmatter field and its `Missing
   Styleguides`/`Applicable Styleguides` sections is the exclusive
-  responsibility of this skill — `create-styleguide` and
-  `create-styleguide-from-scratch` only produce and get user approval for
-  the styleguide/ADR artifacts; they must not modify the plan file.
+  responsibility of this skill — `create-styleguide`,
+  `create-styleguide-from-scratch`, and `update-styleguide` only produce or
+  amend and get user approval for the styleguide/ADR artifacts; they must
+  not modify the plan file.
 
 ## Workflow
 
@@ -106,15 +107,16 @@ Do not treat generic or unrelated documentation as sufficient guidance.
 
 ### 4. Identify missing or insufficient styleguides
 
-Create a complete list of styleguides that are:
+For every gap found, classify it as one of two kinds — they get resolved by
+different skills in step 6:
 
-- missing;
-- empty;
-- too vague;
-- outdated for the planned implementation;
-- missing critical rules required by the plan.
+- **Missing**: no styleguide file exists yet for this technical area.
+- **Insufficient**: a styleguide file exists and already applies to this
+  area, but it is empty, too vague, outdated for the planned
+  implementation, or missing a critical rule the plan needs — e.g. the plan
+  hits a specific case the guide's current rules don't address.
 
-Do not create them automatically during this step.
+Do not create or amend them automatically during this step.
 
 The purpose of this step is to identify what is required before implementation can proceed.
 
@@ -129,6 +131,10 @@ If any required styleguides are missing or insufficient:
 Output a `Missing Styleguides` section containing, for every missing or insufficient styleguide:
 
 - expected file path;
+- whether it's missing or insufficient (per the classification in step 4) —
+  this determines which skill resolves it in step 6;
+- for insufficient guides, which existing section it falls under and what
+  specifically the guide fails to cover;
 - reason it is required;
 - topics it must cover;
 - which part of the development plan depends on it.
@@ -140,6 +146,8 @@ Example:
 
 ### `.claude/styleguides/fetcher/background-jobs.md`
 
+Status: missing.
+
 Required because the plan introduces a new background job.
 
 Must define:
@@ -150,6 +158,14 @@ Must define:
 - error handling;
 - database transaction rules;
 - testing conventions.
+
+### `.claude/styleguides/fetcher/rate-limiting.md`
+
+Status: insufficient — exists and already applies, but its "Backoff"
+section doesn't cover exponential backoff on `429` responses, which the
+plan's retry logic depends on.
+
+Required because the plan adds a call path that can be rate-limited.
 ```
 
 Write this `Missing Styleguides` section into the plan file itself (see
@@ -157,21 +173,28 @@ step 8), and set the plan's `status` frontmatter field to `blocked`. This
 makes the blocked state visible to anyone (or any future session) opening
 the plan file, not just visible in this conversation.
 
-### 6. Wait for styleguides to be created
+### 6. Wait for styleguides to be created or updated
 
-Do not create the missing styleguides yourself as part of this skill —
-that belongs to `create-styleguide` or `create-styleguide-from-scratch`.
-Those skills only produce the styleguide (and ADR, when applicable) and
-wait for user approval — they do not touch the plan file. Updating it
-happens only in step 8 below, and only by this skill.
+Do not create or amend the flagged styleguides yourself as part of this
+skill:
+
+- for guides classified **missing**, that belongs to `create-styleguide` or
+  `create-styleguide-from-scratch`;
+- for guides classified **insufficient** (they already exist and already
+  apply, but don't cover something the plan needs), that belongs to
+  `update-styleguide`.
+
+Those skills only produce or amend the styleguide (and ADR, when
+applicable) and wait for user approval — they do not touch the plan file.
+Updating it happens only in step 8 below, and only by this skill.
 
 Resume this skill only after the missing or insufficient styleguides have
-been added, completed, and approved by the user.
+been created, amended, and approved by the user.
 
 ### 7. Re-check the plan
 
-Once the missing styleguides exist, repeat steps 2-4 against the updated
-styleguide set.
+Once the flagged styleguides have been created or amended, repeat steps 2-4
+against the updated styleguide set.
 
 If any styleguide is still missing or insufficient, return to step 5.
 
