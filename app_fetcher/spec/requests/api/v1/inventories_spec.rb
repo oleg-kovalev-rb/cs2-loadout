@@ -101,6 +101,45 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
+  context "with a valid token, cold start, unknown item carries marketable/tradable/rarity" do
+    let(:steam_id) { "76561198000000005" }
+    let(:token) { bridge_token_for(steam_id) }
+    let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+    before do
+      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+        .to_return(
+          status: 200,
+          body: {
+            success: 1,
+            assets: [ { classid: "1" } ],
+            descriptions: [
+              {
+                classid: "1",
+                market_hash_name: unknown_name,
+                marketable: 1,
+                tradable: 0,
+                tags: [ { category: "Rarity", localized_tag_name: "Classified" } ]
+              }
+            ]
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "includes the resolved marketable/tradable/rarity values in the backfilled item's metadata" do
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      item_json = JSON.parse(response.body)["items"].first
+
+      aggregate_failures do
+        expect(item_json["metadata"]["marketable"]).to be(true)
+        expect(item_json["metadata"]["tradable"]).to be(false)
+        expect(item_json["metadata"]["rarity"]).to eq("Classified")
+      end
+    end
+  end
+
   context "with a valid token, already synced and cache-warm" do
     let(:steam_id) { "76561198000000001" }
     let(:token) { bridge_token_for(steam_id) }

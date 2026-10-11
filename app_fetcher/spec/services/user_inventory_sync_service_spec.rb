@@ -103,6 +103,74 @@ RSpec.describe UserInventorySyncService do
       end
     end
 
+    context "when the unknown item's description carries marketable/tradable/rarity" do
+      let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+      before do
+        stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+          .to_return(
+            status: 200,
+            body: {
+              success: 1,
+              assets: [ { classid: "1" } ],
+              descriptions: [
+                {
+                  classid: "1",
+                  market_hash_name: unknown_name,
+                  marketable: 1,
+                  tradable: 0,
+                  tags: [ { category: "Rarity", localized_tag_name: "Classified" } ]
+                }
+              ]
+            }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "stores the resolved marketable/tradable/rarity values on the backfilled Item" do
+        call
+
+        backfilled = Item.find_by(market_hash_name: unknown_name)
+
+        aggregate_failures do
+          expect(backfilled.metadata["marketable"]).to be(true)
+          expect(backfilled.metadata["tradable"]).to be(false)
+          expect(backfilled.metadata["rarity"]).to eq("Classified")
+        end
+      end
+    end
+
+    context "when the unknown item's description has marketable/tradable both 0 and no Rarity tag" do
+      let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
+
+      before do
+        stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
+          .to_return(
+            status: 200,
+            body: {
+              success: 1,
+              assets: [ { classid: "1" } ],
+              descriptions: [
+                { classid: "1", market_hash_name: unknown_name, marketable: 0, tradable: 0 }
+              ]
+            }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "stores both flags as false (not true) and rarity as nil" do
+        call
+
+        backfilled = Item.find_by(market_hash_name: unknown_name)
+
+        aggregate_failures do
+          expect(backfilled.metadata["marketable"]).to be(false)
+          expect(backfilled.metadata["tradable"]).to be(false)
+          expect(backfilled.metadata["rarity"]).to be_nil
+        end
+      end
+    end
+
     context "on a second call with a different item set" do
       let(:first_item) { create(:item) }
       let(:second_item) { create(:item) }

@@ -8,8 +8,8 @@ class ItemParser
   WEAPON_TYPE_SEPARATOR = " | "
 
   MARKERS_REGEXP = /StatTrak™\s*|Souvenir\s*/
-  CONDITION_EXTRACT_REGEX = /\((.+?)\)$/.freeze
-  CONDITION_CLEANUP_REGEX = /\s*\(.+?\)$/.freeze
+  CONDITION_EXTRACT_REGEX = T.let(/\((.+?)\)$/.freeze, Regexp)
+  CONDITION_CLEANUP_REGEX = T.let(/\s*\(.+?\)$/.freeze, Regexp)
 
   ItemDto = T.type_alias do
     {
@@ -20,13 +20,24 @@ class ItemParser
         condition: T.nilable(String),
         stattrak: T::Boolean,
         souvenir: T::Boolean,
-        icon_url: T.nilable(String)
+        icon_url: T.nilable(String),
+        marketable: T::Boolean,
+        tradable: T::Boolean,
+        rarity: T.nilable(String)
       }
     }
   end
 
-  sig { params(market_hash_name: String, icon_url: T.nilable(String)).returns(ItemDto) }
-  def self.parse(market_hash_name, icon_url: nil)
+  sig do
+    params(
+      market_hash_name: String,
+      icon_url: T.nilable(String),
+      marketable: T::Boolean,
+      tradable: T::Boolean,
+      rarity: T.nilable(String)
+    ).returns(ItemDto)
+  end
+  def self.parse(market_hash_name, icon_url: nil, marketable: false, tradable: false, rarity: nil)
     stattrak = market_hash_name.include?(STAT_TRACK_MARKER)
     souvenir = market_hash_name.include?(SOUVENIR_MARKER)
 
@@ -48,7 +59,10 @@ class ItemParser
           condition:,
           stattrak:,
           souvenir:,
-          icon_url:
+          icon_url:,
+          marketable:,
+          tradable:,
+          rarity:
         }
       }
     else
@@ -60,7 +74,10 @@ class ItemParser
           item_name: clean_name,
           stattrak:,
           souvenir:,
-          icon_url:
+          icon_url:,
+          marketable:,
+          tradable:,
+          rarity:
         }
       }
     end

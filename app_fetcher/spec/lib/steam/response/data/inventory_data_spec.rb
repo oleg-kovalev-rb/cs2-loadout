@@ -69,4 +69,109 @@ RSpec.describe Steam::Response::Data::InventoryData do
       end
     end
   end
+
+  describe "#item_attributes_by_name" do
+    subject(:item_attributes_by_name) { described_class.from_hash(hash).item_attributes_by_name }
+
+    context "when a description has marketable, tradable, and a Rarity tag" do
+      let(:hash) do
+        {
+          "assets" => [],
+          "descriptions" => [
+            {
+              "market_hash_name" => "AK-47 | Redline (Field-Tested)",
+              "marketable" => 1,
+              "tradable" => 0,
+              "tags" => [
+                { "category" => "Type", "localized_tag_name" => "Rifle" },
+                { "category" => "Rarity", "localized_tag_name" => "Classified" }
+              ]
+            }
+          ]
+        }
+      end
+
+      it "resolves marketable/tradable as booleans and rarity from the Rarity-category tag" do
+        expect(item_attributes_by_name).to eq(
+          "AK-47 | Redline (Field-Tested)" => { marketable: true, tradable: false, rarity: "Classified" }
+        )
+      end
+    end
+
+    context "when marketable/tradable are both 0 and there is no Rarity tag" do
+      let(:hash) do
+        {
+          "assets" => [],
+          "descriptions" => [
+            {
+              "market_hash_name" => "AWP | Asiimov (Battle-Scarred)",
+              "marketable" => 0,
+              "tradable" => 0,
+              "tags" => [ { "category" => "Type", "localized_tag_name" => "Sniper Rifle" } ]
+            }
+          ]
+        }
+      end
+
+      it "resolves both flags to false (not truthy-on-integer-0) and rarity to nil" do
+        expect(item_attributes_by_name).to eq(
+          "AWP | Asiimov (Battle-Scarred)" => { marketable: false, tradable: false, rarity: nil }
+        )
+      end
+    end
+
+    context "when a description has no tags key at all" do
+      let(:hash) do
+        {
+          "assets" => [],
+          "descriptions" => [
+            { "market_hash_name" => "Fracture Case", "marketable" => 1, "tradable" => 1 }
+          ]
+        }
+      end
+
+      it "treats it the same as an empty tags array, resolving rarity to nil" do
+        expect(item_attributes_by_name).to eq(
+          "Fracture Case" => { marketable: true, tradable: true, rarity: nil }
+        )
+      end
+    end
+
+    context "when the Rarity tag is not the first element of tags" do
+      let(:hash) do
+        {
+          "assets" => [],
+          "descriptions" => [
+            {
+              "market_hash_name" => "Sticker | Scorch Loop",
+              "marketable" => 1,
+              "tradable" => 1,
+              "tags" => [
+                { "category" => "Type", "localized_tag_name" => "Sticker" },
+                { "category" => "Quality", "localized_tag_name" => "Normal" },
+                { "category" => "Rarity", "localized_tag_name" => "High Grade" },
+                { "category" => "StickerCapsule", "localized_tag_name" => "Elemental Craft Sticker Pack" }
+              ]
+            }
+          ]
+        }
+      end
+
+      it "still finds the Rarity tag regardless of its position" do
+        expect(item_attributes_by_name).to eq(
+          "Sticker | Scorch Loop" => { marketable: true, tradable: true, rarity: "High Grade" }
+        )
+      end
+    end
+
+    context "when a description has no market_hash_name" do
+      let(:hash) do
+        { "assets" => [], "descriptions" => [ { "marketable" => 1, "tradable" => 1 } ] }
+      end
+
+      it "is skipped" do
+        expect(item_attributes_by_name).to eq({})
+      end
+    end
+  end
 end
