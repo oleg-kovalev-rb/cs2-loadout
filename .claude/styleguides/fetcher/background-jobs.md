@@ -71,6 +71,14 @@ stream.
   a worker that calls the rate-limited, occasionally-flaky Steam API
   gets more retries (`PriceUpdateWorker`: 5) than one that only writes
   to Postgres (`InventoryValueUpdateWorker`: 3).
+  This applies equally to schedulers under `app/schedulers/` — per
+  "Structure" above, a scheduler is itself a `Sidekiq::Worker`, just one
+  `sidekiq-cron` enqueues on a timer instead of another job enqueueing
+  it, so the same default-retry-count risk applies to it (see
+  `UserInventorySyncScheduler`'s explicit `retry: 3`). A scheduler's
+  query-only `perform` is less failure-prone than a worker's Steam call,
+  so its `N` is typically on the low end, but it's still set explicitly,
+  not left to Sidekiq's default.
 - Route work that calls `Steam::Client` onto its own queue (`:prices`),
   separate from cheap orchestration work (`:default`) — see
   `config/sidekiq.yml`'s queue list and `PriceUpdateWorker`/
