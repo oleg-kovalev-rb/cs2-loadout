@@ -29,13 +29,14 @@ class UserInventorySyncService
       icon_by_name = response.data.icon_urls_by_name
       item_attributes_by_name = response.data.item_attributes_by_name
       missing_attrs = missing_names.map do |name|
-        attrs = item_attributes_by_name[name] || { marketable: false, tradable: false, rarity: nil }
+        attrs = item_attributes_by_name[name] || { marketable: false, tradable: false, rarity: nil, category: nil }
         ItemParser.parse(
           name,
           icon_url: icon_by_name[name],
           marketable: attrs[:marketable],
           tradable: attrs[:tradable],
-          rarity: attrs[:rarity]
+          rarity: attrs[:rarity],
+          category: attrs[:category]
         )
       end
 

@@ -136,6 +136,18 @@ cross-Scenario service layer instead of a worker (see
   `["user_inventory", 2, steam_id]`). Bump the version segment whenever
   the cached payload's shape changes — never reuse a version number for a
   differently-shaped value.
+- When a cached resource has no single natural identifier — a result
+  keyed by several independent, caller-supplied filter/sort inputs
+  rather than one id like `market_hash_name`/`steam_id` — normalize the
+  inputs *before* building the `id` component, not after: sort any
+  array-valued input and case-fold any string input, so two requests
+  differing only in param order or case still resolve to the same key.
+  Then use `Digest::SHA256.hexdigest` of that normalized representation
+  as `id` in the same versioned-array shape above, e.g.
+  `["items_catalog", 1, Digest::SHA256.hexdigest(normalized_filters.to_json)]`.
+  Hashing an un-normalized input first would defeat the point — two
+  equivalent-but-differently-ordered requests would hash to different
+  digests and silently fragment the cache.
 - Invalidate with a single `Rails.cache.delete(key)` per id — no
   bulk/wildcard delete, no version-bump-instead-of-delete (see the ADR's
   rejected alternatives).

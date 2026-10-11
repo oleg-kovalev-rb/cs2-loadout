@@ -385,6 +385,12 @@ class Item
     def arel_columns(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def by_categories(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def by_rarities(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def create_with(*args, &blk); end
 
     sig { params(value: T::Boolean).returns(PrivateAssociationRelation) }
@@ -445,6 +451,9 @@ class Item
     def marketable(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def matching_search(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def merge(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
@@ -497,7 +506,13 @@ class Item
     def select(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def sorted_by(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def stale_or_unpriced(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
+    def stattrak_only(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateAssociationRelation) }
     def strict_loading(*args, &blk); end
@@ -1001,6 +1016,12 @@ class Item
     def arel_columns(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def by_categories(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def by_rarities(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def create_with(*args, &blk); end
 
     sig { params(value: T::Boolean).returns(PrivateRelation) }
@@ -1061,6 +1082,9 @@ class Item
     def marketable(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def matching_search(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def merge(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
@@ -1113,7 +1137,13 @@ class Item
     def select(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def sorted_by(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def stale_or_unpriced(*args, &blk); end
+
+    sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
+    def stattrak_only(*args, &blk); end
 
     sig { params(args: T.untyped, blk: T.untyped).returns(PrivateRelation) }
     def strict_loading(*args, &blk); end
@@ -1146,6 +1176,24 @@ class Item
   end
 
   module GeneratedStoredAttributesMethods
+    sig { returns(T.untyped) }
+    def category; end
+
+    sig { params(value: T.untyped).returns(T.untyped) }
+    def category=(value); end
+
+    sig { returns(T.untyped) }
+    def category_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def category_change; end
+
+    sig { returns(T::Boolean) }
+    def category_changed?; end
+
+    sig { returns(T.untyped) }
+    def category_was; end
+
     sig { returns(T.untyped) }
     def condition; end
 
@@ -1235,6 +1283,12 @@ class Item
 
     sig { returns(T.untyped) }
     def rarity_was; end
+
+    sig { returns(T.untyped) }
+    def saved_change_to_category; end
+
+    sig { returns(T::Boolean) }
+    def saved_change_to_category?; end
 
     sig { returns(T.untyped) }
     def saved_change_to_condition; end

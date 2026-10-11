@@ -54,28 +54,31 @@ RSpec.describe ItemParser do
       expect(result[:metadata][:icon_url]).to be_nil
     end
 
-    it "includes given marketable/tradable/rarity values in the metadata" do
+    it "includes given marketable/tradable/rarity/category values in the metadata" do
       result = described_class.parse(
         "AK-47 | Redline (Field-Tested)",
         marketable: true,
         tradable: false,
-        rarity: "Classified"
+        rarity: "Classified",
+        category: "Rifle"
       )
 
       aggregate_failures do
         expect(result[:metadata][:marketable]).to eq(true)
         expect(result[:metadata][:tradable]).to eq(false)
         expect(result[:metadata][:rarity]).to eq("Classified")
+        expect(result[:metadata][:category]).to eq("Rifle")
       end
     end
 
-    it "defaults marketable/tradable to false and rarity to nil when not given" do
+    it "defaults marketable/tradable to false and rarity/category to nil when not given" do
       result = described_class.parse("AK-47 | Redline (Field-Tested)")
 
       aggregate_failures do
         expect(result[:metadata][:marketable]).to eq(false)
         expect(result[:metadata][:tradable]).to eq(false)
         expect(result[:metadata][:rarity]).to be_nil
+        expect(result[:metadata][:category]).to be_nil
       end
     end
   end

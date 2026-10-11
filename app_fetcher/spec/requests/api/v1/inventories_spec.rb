@@ -101,7 +101,7 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
-  context "with a valid token, cold start, unknown item carries marketable/tradable/rarity" do
+  context "with a valid token, cold start, unknown item carries marketable/tradable/rarity/category" do
     let(:steam_id) { "76561198000000005" }
     let(:token) { bridge_token_for(steam_id) }
     let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
@@ -119,7 +119,10 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
                 market_hash_name: unknown_name,
                 marketable: 1,
                 tradable: 0,
-                tags: [ { category: "Rarity", localized_tag_name: "Classified" } ]
+                tags: [
+                  { category: "Type", localized_tag_name: "Rifle" },
+                  { category: "Rarity", localized_tag_name: "Classified" }
+                ]
               }
             ]
           }.to_json,
@@ -127,7 +130,7 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
         )
     end
 
-    it "includes the resolved marketable/tradable/rarity values in the backfilled item's metadata" do
+    it "includes the resolved marketable/tradable/rarity/category values in the backfilled item's metadata" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
 
       item_json = JSON.parse(response.body)["items"].first
@@ -136,6 +139,7 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
         expect(item_json["metadata"]["marketable"]).to be(true)
         expect(item_json["metadata"]["tradable"]).to be(false)
         expect(item_json["metadata"]["rarity"]).to eq("Classified")
+        expect(item_json["metadata"]["category"]).to eq("Rifle")
       end
     end
   end

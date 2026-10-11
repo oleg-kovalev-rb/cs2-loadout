@@ -17,5 +17,9 @@ Rails.application.routes.draw do
       get "item_prices/trend", to: "item_prices#trend"
       get "item_prices/:market_hash_name/history", to: "item_prices#history"
     end
+
+    namespace :public do
+      get "items/catalog", to: "items#catalog"
+    end
   end
 end

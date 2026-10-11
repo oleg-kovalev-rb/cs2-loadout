@@ -15,8 +15,12 @@ consumer, `app_core`.
 
 Use this pattern when `app_core` needs to read Steam-derived data that
 lives in `app_fetcher`. Not for anything a public/external client would
-call directly (no such endpoint exists today), and not for an endpoint
-that doesn't need bridge-token auth — see MUST NOT below.
+call directly, and not for an endpoint that doesn't need bridge-token
+auth — see MUST NOT below. A genuinely public, unauthenticated endpoint
+now lives in a sibling namespace instead: see
+`.claude/styleguides/fetcher/public-api-controllers.md` and
+`.claude/adr/fetcher/public-api-namespace.md` for that namespace's own
+conventions and why it's separate rather than an opt-out here.
 
 ## Structure
 

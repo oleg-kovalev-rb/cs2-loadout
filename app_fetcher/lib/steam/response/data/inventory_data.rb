@@ -6,9 +6,10 @@ class Steam::Response::Data::InventoryData < T::Struct
 
   ICON_CDN_BASE_URL = T.let("https://community.akamai.steamstatic.com/economy/image/".freeze, String)
   RARITY_TAG_CATEGORY = T.let("Rarity".freeze, String)
+  TYPE_TAG_CATEGORY = T.let("Type".freeze, String)
 
   ItemAttributes = T.type_alias do
-    { marketable: T::Boolean, tradable: T::Boolean, rarity: T.nilable(String) }
+    { marketable: T::Boolean, tradable: T::Boolean, rarity: T.nilable(String), category: T.nilable(String) }
   end
 
   const :assets, T::Array[T::Hash[String, T.untyped]]
@@ -49,7 +50,8 @@ class Steam::Response::Data::InventoryData < T::Struct
       acc[name] = {
         marketable: desc["marketable"] == 1,
         tradable: desc["tradable"] == 1,
-        rarity: rarity_tag(desc)
+        rarity: rarity_tag(desc),
+        category: category_tag(desc)
       }
     end
   end
@@ -60,5 +62,11 @@ class Steam::Response::Data::InventoryData < T::Struct
   def rarity_tag(desc)
     tags = desc["tags"] || []
     tags.find { |tag| tag["category"] == RARITY_TAG_CATEGORY }&.dig("localized_tag_name")
+  end
+
+  sig { params(desc: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+  def category_tag(desc)
+    tags = desc["tags"] || []
+    tags.find { |tag| tag["category"] == TYPE_TAG_CATEGORY }&.dig("localized_tag_name")
   end
 end

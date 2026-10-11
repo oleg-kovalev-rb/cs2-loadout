@@ -23,7 +23,8 @@ class ItemParser
         icon_url: T.nilable(String),
         marketable: T::Boolean,
         tradable: T::Boolean,
-        rarity: T.nilable(String)
+        rarity: T.nilable(String),
+        category: T.nilable(String)
       }
     }
   end
@@ -34,10 +35,11 @@ class ItemParser
       icon_url: T.nilable(String),
       marketable: T::Boolean,
       tradable: T::Boolean,
-      rarity: T.nilable(String)
+      rarity: T.nilable(String),
+      category: T.nilable(String)
     ).returns(ItemDto)
   end
-  def self.parse(market_hash_name, icon_url: nil, marketable: false, tradable: false, rarity: nil)
+  def self.parse(market_hash_name, icon_url: nil, marketable: false, tradable: false, rarity: nil, category: nil)
     stattrak = market_hash_name.include?(STAT_TRACK_MARKER)
     souvenir = market_hash_name.include?(SOUVENIR_MARKER)
 
@@ -62,7 +64,8 @@ class ItemParser
           icon_url:,
           marketable:,
           tradable:,
-          rarity:
+          rarity:,
+          category:
         }
       }
     else
@@ -77,7 +80,8 @@ class ItemParser
           icon_url:,
           marketable:,
           tradable:,
-          rarity:
+          rarity:,
+          category:
         }
       }
     end

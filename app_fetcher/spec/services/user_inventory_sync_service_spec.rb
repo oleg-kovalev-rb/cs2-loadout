@@ -103,7 +103,7 @@ RSpec.describe UserInventorySyncService do
       end
     end
 
-    context "when the unknown item's description carries marketable/tradable/rarity" do
+    context "when the unknown item's description carries marketable/tradable/rarity/category" do
       let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
 
       before do
@@ -119,7 +119,10 @@ RSpec.describe UserInventorySyncService do
                   market_hash_name: unknown_name,
                   marketable: 1,
                   tradable: 0,
-                  tags: [ { category: "Rarity", localized_tag_name: "Classified" } ]
+                  tags: [
+                    { category: "Type", localized_tag_name: "Rifle" },
+                    { category: "Rarity", localized_tag_name: "Classified" }
+                  ]
                 }
               ]
             }.to_json,
@@ -127,7 +130,7 @@ RSpec.describe UserInventorySyncService do
           )
       end
 
-      it "stores the resolved marketable/tradable/rarity values on the backfilled Item" do
+      it "stores the resolved marketable/tradable/rarity/category values on the backfilled Item" do
         call
 
         backfilled = Item.find_by(market_hash_name: unknown_name)
@@ -136,11 +139,12 @@ RSpec.describe UserInventorySyncService do
           expect(backfilled.metadata["marketable"]).to be(true)
           expect(backfilled.metadata["tradable"]).to be(false)
           expect(backfilled.metadata["rarity"]).to eq("Classified")
+          expect(backfilled.metadata["category"]).to eq("Rifle")
         end
       end
     end
 
-    context "when the unknown item's description has marketable/tradable both 0 and no Rarity tag" do
+    context "when the unknown item's description has marketable/tradable both 0 and no Rarity/Type tags" do
       let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
 
       before do
@@ -158,7 +162,7 @@ RSpec.describe UserInventorySyncService do
           )
       end
 
-      it "stores both flags as false (not true) and rarity as nil" do
+      it "stores both flags as false (not true) and rarity/category as nil" do
         call
 
         backfilled = Item.find_by(market_hash_name: unknown_name)
@@ -167,6 +171,7 @@ RSpec.describe UserInventorySyncService do
           expect(backfilled.metadata["marketable"]).to be(false)
           expect(backfilled.metadata["tradable"]).to be(false)
           expect(backfilled.metadata["rarity"]).to be_nil
+          expect(backfilled.metadata["category"]).to be_nil
         end
       end
     end

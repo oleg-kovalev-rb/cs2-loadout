@@ -91,9 +91,11 @@ RSpec.describe Steam::Response::Data::InventoryData do
         }
       end
 
-      it "resolves marketable/tradable as booleans and rarity from the Rarity-category tag" do
+      it "resolves marketable/tradable as booleans, rarity from the Rarity-category tag, and category from the Type-category tag" do
         expect(item_attributes_by_name).to eq(
-          "AK-47 | Redline (Field-Tested)" => { marketable: true, tradable: false, rarity: "Classified" }
+          "AK-47 | Redline (Field-Tested)" => {
+            marketable: true, tradable: false, rarity: "Classified", category: "Rifle"
+          }
         )
       end
     end
@@ -113,9 +115,11 @@ RSpec.describe Steam::Response::Data::InventoryData do
         }
       end
 
-      it "resolves both flags to false (not truthy-on-integer-0) and rarity to nil" do
+      it "resolves both flags to false (not truthy-on-integer-0), rarity to nil, and category from the Type tag" do
         expect(item_attributes_by_name).to eq(
-          "AWP | Asiimov (Battle-Scarred)" => { marketable: false, tradable: false, rarity: nil }
+          "AWP | Asiimov (Battle-Scarred)" => {
+            marketable: false, tradable: false, rarity: nil, category: "Sniper Rifle"
+          }
         )
       end
     end
@@ -130,9 +134,9 @@ RSpec.describe Steam::Response::Data::InventoryData do
         }
       end
 
-      it "treats it the same as an empty tags array, resolving rarity to nil" do
+      it "treats it the same as an empty tags array, resolving rarity and category to nil" do
         expect(item_attributes_by_name).to eq(
-          "Fracture Case" => { marketable: true, tradable: true, rarity: nil }
+          "Fracture Case" => { marketable: true, tradable: true, rarity: nil, category: nil }
         )
       end
     end
@@ -159,7 +163,33 @@ RSpec.describe Steam::Response::Data::InventoryData do
 
       it "still finds the Rarity tag regardless of its position" do
         expect(item_attributes_by_name).to eq(
-          "Sticker | Scorch Loop" => { marketable: true, tradable: true, rarity: "High Grade" }
+          "Sticker | Scorch Loop" => { marketable: true, tradable: true, rarity: "High Grade", category: "Sticker" }
+        )
+      end
+    end
+
+    context "when the Type tag is not the first element of tags" do
+      let(:hash) do
+        {
+          "assets" => [],
+          "descriptions" => [
+            {
+              "market_hash_name" => "Karambit | Fade (Factory New)",
+              "marketable" => 1,
+              "tradable" => 1,
+              "tags" => [
+                { "category" => "Rarity", "localized_tag_name" => "Covert" },
+                { "category" => "Quality", "localized_tag_name" => "Normal" },
+                { "category" => "Type", "localized_tag_name" => "Knife" }
+              ]
+            }
+          ]
+        }
+      end
+
+      it "still finds the Type tag regardless of its position" do
+        expect(item_attributes_by_name).to eq(
+          "Karambit | Fade (Factory New)" => { marketable: true, tradable: true, rarity: "Covert", category: "Knife" }
         )
       end
     end
