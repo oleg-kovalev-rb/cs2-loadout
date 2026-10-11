@@ -44,6 +44,16 @@ this namespace exists specifically to honor rather than work around.
   `rescue_from StandardError, with: :render_internal_server_error`,
   independent of `Api::V1::ApplicationController`'s (see ADR for why
   this is duplicated rather than shared).
+- `lib/api/public/unsupported_param_error.rb` — `Api::Public::
+  UnsupportedParamError < StandardError`. One shared exception type for
+  every "caller supplied an unrecognized closed-enum value" case raised
+  from inside the query-objects layer across this whole namespace — not
+  one subclass per param name, since the response shape is identical
+  regardless of which param was invalid. This is a namespace-level
+  concern (hence living here, under `lib/api/public/`, rather than under
+  `.claude/styleguides/fetcher/list-query-objects.md`'s layer) — any
+  future `Api::Public::` code that needs to signal the same kind of
+  failure raises this same class, not a new one.
 
 ## Interface
 
@@ -78,7 +88,13 @@ distinct param shapes, each with its own validation posture:
   `ALLOWED_PERIODS` pattern). An unrecognized value **is** an error:
   `render json: { message: "Unsupported <param_name>: <value>" },
   status: :bad_request`, same shape as `history`'s own "Unsupported
-  period" message.
+  period" message. For a list endpoint built on
+  `.claude/styleguides/fetcher/list-query-objects.md`'s query-objects
+  layer, this same validation is resolved and raised by
+  `Appliers::SortApplier` (or an `Options::*` value's own `#apply`),
+  not an inline per-action guard clause — see that file's Interface
+  section and this file's own Error Handling section below for the
+  resulting response shape, which is identical either way.
 - **Boolean params** (e.g. `stattrak`): compare the raw string against
   exactly `"true"` to mean "apply this filter." Any other value,
   including `"false"`, and absence, all mean "don't apply this filter"
@@ -91,12 +107,18 @@ distinct param shapes, each with its own validation posture:
 ## Responsibilities
 
 Same shape as `internal-api-controllers.md`'s Responsibilities section:
-a controller action parses/normalizes params, calls its collaborator(s)
-(a model scope chain, a cache-class `.read`/`.write` pair), and renders
-JSON based on the result. It does not invent new business logic beyond
-assembling the response hash — filtering/sorting criteria live on the
-model as scopes (`rails-layering.md`), not as ad hoc `where` calls
-inlined in the action.
+a controller action parses/normalizes params, calls its collaborator(s),
+and renders JSON based on the result. It does not invent new business
+logic — filtering/sorting criteria live on the model as scopes
+(`rails-layering.md`), not as ad hoc `where` calls inlined in the
+action, and assembling the response hash is not the controller's job
+either for a list endpoint built on the query-objects layer (see
+`.claude/styleguides/fetcher/list-query-objects.md`): that belongs to
+the corresponding `app/serializers/` class. A simpler, single-lookup
+action may still assemble its own small response hash directly, same as
+today — this only changes once an action's response shape comes from
+that layer's `<Resource>CatalogQuery`/`<Resource>CatalogSerializer`
+pair.
 
 ## Dependencies
 
@@ -128,13 +150,25 @@ sign the endpoint belongs under `Api::V1::` instead.
 
 ### SHOULD
 
-- Keep exactly one collaborator call per action, same as
+- For a plain single-lookup action with no sibling needing the same
+  mechanics, keep exactly one collaborator call per action, same as
   `internal-api-controllers.md`'s SHOULD rule — if an action needs more
   than one model-scope chain, that's a sign of a missing scope
   composition, not a reason to add a second collaborator layer (see
   `architecture-layers.md`'s carve-out for plain read-only listing
   controllers — no `app/services/` class is warranted here, that layer
   is reserved for logic needed identically by more than one Scenario).
+- For a list endpoint built on the query-objects layer
+  (`.claude/styleguides/fetcher/list-query-objects.md`), the expected
+  shape is instead a fixed, explicit sequence, not one collaborator:
+  cache read (`<Resource>Cache.read`) → on miss, `<Resource>CatalogQuery.call`
+  → `<Resource>CatalogSerializer.call` → cache write
+  (`<Resource>Cache.write`) → `stale?`/render. This is not a violation of
+  the single-lookup rule above — it's a different, equally fixed shape
+  for a different kind of action, chosen because caching and
+  conditional-GET must stay in the controller (see that file's
+  Responsibilities section) while query/serialization are delegated.
+  Don't add steps to this sequence beyond what that file documents.
 
 ### MUST NOT
 
@@ -147,13 +181,30 @@ sign the endpoint belongs under `Api::V1::` instead.
 
 ## Error Handling
 
-Same three-shape taxonomy as `internal-api-controllers.md`, minus the
-auth-failure shape (there is no auth to fail):
+Three shapes, minus the auth-failure shape `internal-api-controllers.md`
+has (there is no auth to fail):
 
 1. **Explicit per-action failure branch** — a closed-enum param
-   (`sort`) with an unrecognized value: `:bad_request` with
-   `{ message: "Unsupported <param>: <value>" }`.
-2. **Unhandled/infra-level failures** — `Api::Public::
+   (`sort`) with an unrecognized value, validated inline in the
+   controller action itself: `:bad_request` with
+   `{ message: "Unsupported <param>: <value>" }`. Used by any action not
+   built on the query-objects layer (e.g. `ItemPricesController#history`'s
+   `PricePeriod`/`ALLOWED_PERIODS` pattern, in `Api::V1::`).
+2. **Raised from the query-objects layer, caught centrally** — for a
+   list endpoint built on `.claude/styleguides/fetcher/list-query-objects.md`,
+   the same closed-enum validation is performed by `Appliers::SortApplier`
+   (or an `Options::*` value's own `#apply`), which raises
+   `Api::Public::UnsupportedParamError` (`lib/api/public/unsupported_param_error.rb`)
+   instead of returning an error for the controller to branch on.
+   `Api::Public::ApplicationController` declares
+   `rescue_from Api::Public::UnsupportedParamError, with:
+   :render_unsupported_param_error`, rendering the identical
+   `:bad_request` / `{ message: "Unsupported <param>: <value>" }` shape
+   as (1) — only how the error is produced differs, not its response.
+   This `rescue_from` is declared *after* `rescue_from StandardError`
+   below — Rails resolves the most-recently-declared matching handler
+   first, so the more specific handler must come second, not first.
+3. **Unhandled/infra-level failures** — `Api::Public::
    ApplicationController`'s own `rescue_from StandardError`, same
    behavior as `Api::V1::`'s (log via `Rails.logger.error`, render
    `{ message: "Internal error" }` / `:internal_server_error`) — see ADR
@@ -192,10 +243,23 @@ this section only adds what's specific to this namespace.
 
 ## Canonical Implementations
 
-None yet — `Api::Public::ItemsController#catalog`
-(`.claude/plans/public-items-catalog-endpoint.md`) is this namespace's
-first controller. Update this section once that plan is implemented.
+None yet — `Api::Public::ItemsController#index`
+(`.claude/plans/item-catalog-query-refactor.md`, superseding the
+`#catalog` shape `.claude/plans/public-items-catalog-endpoint.md`
+originally shipped) will be this namespace's first controller built on
+the query-objects layer, and the first to use the `rescue_from
+Api::Public::UnsupportedParamError` shape. Update this section once that
+plan is implemented.
 
 ## Related ADR
 
 `.claude/adr/fetcher/public-api-namespace.md`
+
+## Related
+
+- `.claude/adr/fetcher/list-query-objects-layer.md` — why list-endpoint
+  filter/sort/pagination/serialization logic lives in its own layer
+  rather than inline in the controller.
+- `.claude/styleguides/fetcher/list-query-objects.md` — the concrete
+  `app/queries/`/`app/serializers/` conventions this file's
+  Responsibilities/Rules/Error Handling sections now reference.

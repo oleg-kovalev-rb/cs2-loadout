@@ -6,8 +6,14 @@ module Api
       extend T::Sig
 
       rescue_from StandardError, with: :render_internal_server_error
+      rescue_from Api::Public::UnsupportedParamError, with: :render_unsupported_param_error
 
       private
+
+      sig { params(exception: Api::Public::UnsupportedParamError).void }
+      def render_unsupported_param_error(exception)
+        render json: { message: exception.message }, status: :bad_request
+      end
 
       sig { params(exception: StandardError).void }
       def render_internal_server_error(exception)

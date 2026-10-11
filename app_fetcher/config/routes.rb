@@ -19,7 +19,7 @@ Rails.application.routes.draw do
     end
 
     namespace :public do
-      get "items/catalog", to: "items#catalog"
+      get "items", to: "items#index"
     end
   end
 end

@@ -107,6 +107,19 @@ Models (app/models/, write)
   may be called synchronously, inline, from a controller action before
   rendering — but only for the specific call sites that ADR names, not
   as a general permission.
+- **Query objects** (`app/queries/`, flat, one `<Resource>CatalogQuery`
+  per resource, plus `app/queries/appliers/` → `Appliers::` and
+  `app/queries/options/` → `Options::` for resource-agnostic
+  filter/sort/pagination mechanics) and **Serializers**
+  (`app/serializers/`, flat, pure response-shaping functions): Scenario
+  1 only, for `Api::Public::` (and, in principle, `Api::V1::`) list
+  endpoints whose filter/sort/pagination/serialization mechanics are
+  shared across more than one controller — a different reuse axis from
+  Services above (cross-controller within one Scenario, not
+  cross-Scenario). See
+  `.claude/styleguides/fetcher/list-query-objects.md` and
+  `.claude/adr/fetcher/list-query-objects-layer.md` for the full
+  structure, interface, and rules — not restated here.
 
 ## Responsibilities
 
@@ -135,6 +148,13 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   same dependency set a worker already has. May also be called
   synchronously from a controller (Scenario 1) for the specific named
   call sites in `cross-scenario-service-layer.md`.
+- Query objects (`<Resource>CatalogQuery`) may depend on `Appliers::*`,
+  `Options::*`, model scopes, and bulk/single-key read-through caching
+  classes (e.g. `ItemTrendCache`) — never on a response-payload TTL
+  cache (e.g. `ItemCatalogCache`) or anything HTTP-related, which stay
+  the controller's job. `Appliers::*` depend on nothing resource-specific.
+  Serializers depend only on the data already fetched by a query object.
+  See `list-query-objects.md` for the full dependency rules.
 
 ## Rules
 
@@ -219,6 +239,11 @@ available for a future, similar case — it just no longer describes what
   object the way `UserInventorySyncService` does — the caller reads the
   updated price/change fields directly off the same `Item` instance it
   passed in.
+- Query objects / Appliers / Options / Serializers: none implemented
+  yet — `app_fetcher/app/queries/item_catalog_query.rb` and siblings
+  (`.claude/plans/item-catalog-query-refactor.md`) will be this layer's
+  first members. See `.claude/styleguides/fetcher/list-query-objects.md`
+  for the intended shape in the meantime.
 
 ## Related ADR
 
@@ -226,3 +251,6 @@ available for a future, similar case — it just no longer describes what
 - `.claude/adr/fetcher/cross-scenario-service-layer.md` — the
   `app/services/` layer added above, and the narrow controller-
   persistence carve-out it comes with.
+- `.claude/adr/fetcher/list-query-objects-layer.md` — the Query
+  objects/Appliers/Options/Serializers layers added above, and why they
+  are not an extension of `app/services/`.
