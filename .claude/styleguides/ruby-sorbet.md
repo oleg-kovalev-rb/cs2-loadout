@@ -50,6 +50,19 @@ gain real custom logic.
 - `extend T::Sig` before using `sig`.
 - A `sig` on every method, no exceptions — under `typed: strict` a method
   without one is a `srb tc` error, not a style nit.
+- After adding anything Sorbet can't see statically on an
+  `ActiveRecord::Base` model — a `scope`, a new `store_accessor` key, an
+  association, an enum — regenerate that model's DSL RBI with `bundle
+  exec tapioca dsl <Model>` and commit the result under
+  `sorbet/rbi/dsl/`. `tapioca` is already in the Gemfile (`dev` group)
+  for exactly this; don't hand-write an RBI shim for something `tapioca`
+  already generates, and don't add a second DSL-RBI tool (e.g.
+  `sorbet-rails`) alongside it. See `Item`'s `sorbet/rbi/dsl/item.rbi`,
+  generated after `scope :marketable`/`:stale_or_unpriced`/
+  `:due_for_price_update` were added — before that RBI existed, `srb tc`
+  couldn't resolve even `Item`'s plain column attributes
+  (`market_hash_name`, `current_price_cents`), because no model in either
+  app had ever had its DSL RBI generated before.
 - Wrap every class-level constant in `T.let(value, Type)`, even ones a
   literal-inference-savvy reader might expect Sorbet to infer on its own
   (e.g. a frozen string or a `Regexp`) — see `Steam::Client::BASE_URL`,
@@ -130,3 +143,6 @@ method needs to be guarded.
   `app_core/app/models/user.rb`
 - `app_fetcher/app/models/price_period.rb` — the `T::Enum` pattern for a
   closed set of API-param tags
+- `app_fetcher/app/models/item.rb` + `app_fetcher/sorbet/rbi/dsl/item.rbi`
+  — the `tapioca dsl` regeneration workflow for a model that gained a new
+  `scope`

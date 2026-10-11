@@ -50,17 +50,46 @@ a change's scope just because an unrelated file is flagged here.
   exist alongside it. Root cause (why Sorbet widens `clean_name`'s type
   across the two `gsub` reassignments) wasn't investigated — out of scope
   for either change.
-- `app_fetcher/app/schedulers/price_scheduler.rb`,
-  `app_fetcher/app/schedulers/inventory_value_scheduler.rb` —
-  `sidekiq_options` has no `retry:` on either, unlike both workers
+- `app_fetcher/app/schedulers/inventory_value_scheduler.rb` —
+  `sidekiq_options` has no `retry:`, unlike both workers
   (`PriceUpdateWorker: retry: 5`, `InventoryValueUpdateWorker: retry: 3`), so
-  both silently fall back to Sidekiq's default of 25 retries over ~3
+  it silently falls back to Sidekiq's default of 25 retries over ~3
   weeks. Not confirmed by a tool the way the two entries above are (this
   is a Sidekiq runtime default, not a static check) — judgment call based
   on the other two jobs always setting it explicitly. New schedulers
   (e.g. `UserInventorySyncScheduler`) set an explicit `retry:` per this
-  reading; these two existing ones weren't touched by that change and
-  still need it. See `.claude/styleguides/fetcher/background-jobs.md`.
+  reading; `price_scheduler.rb` was fixed the same way
+  (`retry: 3`, matching `UserInventorySyncScheduler`'s precedent) when the
+  "Skip fetching non-marketable items" change touched it anyway —
+  `inventory_value_scheduler.rb` wasn't touched by that change and still
+  needs it. See `.claude/styleguides/fetcher/background-jobs.md`.
+- `app_fetcher/app/controllers/api/v1/item_prices_controller.rb` —
+  `#dynamics` guards `next if item.current_price_cents.nil?` (line 22) but
+  then re-reads `item.current_price_cents` as a fresh method call at line
+  25 (`base = item.current_price_cents - change`); Sorbet can't carry a
+  `nil?`-guard's narrowing across two separate calls to the same method
+  (only a local-variable narrowing persists), so this is a real `srb tc`
+  error (`7003`, `-` on `NilClass` component of `T.nilable(Integer)`).
+  Newly *surfaced*, not introduced, by the "Skip fetching non-marketable
+  items" change: before that change, `Item#current_price_cents` itself
+  wasn't resolvable at all under `srb tc` (no DSL RBI had ever been
+  generated for `Item`, so every call on it was silently invisible to the
+  typechecker, column attributes included), which masked this mismatch
+  entirely. Fix is to capture `item.current_price_cents` in a local
+  before the guard so the narrowing holds; out of scope for a scheduler/
+  model change that doesn't touch this controller.
+- `app_fetcher/app/workers/price_update_worker.rb` — `#perform` calls
+  `publish_to_stream(item.market_hash_name, item.current_price_cents,
+  item.change_24h_cents)` (line 24), but `publish_to_stream`'s `sig`
+  declares `price:`/`change_24h:` as non-nilable `Integer` while both
+  `current_price_cents`/`change_24h_cents` are genuinely `T.nilable(
+  Integer)` columns — a real `srb tc` error (`7002`, nilable argument
+  mismatch), same "newly surfaced, not introduced" cause as the entry
+  above. Fixing this means deciding whether `publish_to_stream` should
+  accept nilable values (and what the stream payload should contain for a
+  not-yet-priced item) or whether `#perform` should guard before
+  publishing — a real product decision, not a one-line type fix; out of
+  scope for this change.
 - `app_fetcher/spec/fixtures/items.yml`, `price_logs.yml` — Rails
   fixtures; `.claude/styleguides/rspec-conventions.md` now standardizes
   on `FactoryBot` for test data. Existing rows (`redline`,

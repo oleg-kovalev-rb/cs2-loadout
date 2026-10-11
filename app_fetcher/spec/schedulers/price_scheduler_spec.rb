@@ -28,6 +28,16 @@ RSpec.describe PriceScheduler do
       end
     end
 
+    context "with a stale, non-marketable item" do
+      let!(:non_marketable_item) { create(:item, :stale, :non_marketable) }
+
+      it "does not enqueue it" do
+        perform
+
+        expect(enqueued_ids).not_to include(non_marketable_item.id)
+      end
+    end
+
     context "with several qualifying items" do
       let!(:items) { create_list(:item, 3, :stale) }
 
