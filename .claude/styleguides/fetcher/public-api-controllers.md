@@ -1,5 +1,5 @@
 ---
-description: Api::Public:: controller conventions in app_fetcher — the unauthenticated sibling namespace to Api::V1::, response-shape carryover, and query-param handling (clamped numerics, open-set array filters, closed-enum validation) for list-style endpoints.
+description: Api::Public:: controller conventions in app_fetcher — the unauthenticated sibling namespace to Api::V1::, response-shape carryover, query-param handling (clamped numerics, open-set array filters, closed-enum validation) for list-style endpoints, and not-found handling for single-resource lookups.
 ---
 
 # Public API Controllers (`Api::Public::`)
@@ -43,7 +43,9 @@ this namespace exists specifically to honor rather than work around.
   `before_action` for authentication. Declares its own
   `rescue_from StandardError, with: :render_internal_server_error`,
   independent of `Api::V1::ApplicationController`'s (see ADR for why
-  this is duplicated rather than shared).
+  this is duplicated rather than shared). Also declares
+  `rescue_from ActiveRecord::RecordNotFound, with: :render_not_found`,
+  for any single-resource-by-identifier action — see Error Handling.
 - `lib/api/public/unsupported_param_error.rb` — `Api::Public::
   UnsupportedParamError < StandardError`. One shared exception type for
   every "caller supplied an unrecognized closed-enum value" case raised
@@ -104,6 +106,14 @@ distinct param shapes, each with its own validation posture:
   needs that; default to the "opt-in only" shape above unless stated
   otherwise.
 
+A path-segment resource identifier (e.g. `:steam_id` in `/inventories/
+:steam_id`) isn't a query param, but gets the same "resolve, don't
+branch on absence inline" posture as the closed-enum case above: look
+the resource up with a bang finder (`Model.find_by!(...)`), and let a
+non-existent identifier raise `ActiveRecord::RecordNotFound` rather than
+checking for `nil` and rendering `:not_found` by hand in the action —
+see Error Handling for the resulting response shape.
+
 ## Responsibilities
 
 Same shape as `internal-api-controllers.md`'s Responsibilities section:
@@ -147,6 +157,12 @@ sign the endpoint belongs under `Api::V1::` instead.
 - Reject an unrecognized closed-enum param value with `:bad_request` /
   `{ message: "Unsupported <param>: <value>" }`; never reject an open
   string-set array param value the same way (see Interface).
+- For a single-resource-by-identifier endpoint, look the resource up with
+  a bang finder (`Model.find_by!(...)`) and let a missing record raise
+  `ActiveRecord::RecordNotFound`, caught centrally (see Error Handling) —
+  never branch on a `nil` return to render `:not_found` by hand inline.
+  Keeps this namespace's error-production shape consistent with the
+  closed-enum case: raise deep, catch once, at the base controller.
 
 ### SHOULD
 
@@ -181,7 +197,7 @@ sign the endpoint belongs under `Api::V1::` instead.
 
 ## Error Handling
 
-Three shapes, minus the auth-failure shape `internal-api-controllers.md`
+Four shapes, minus the auth-failure shape `internal-api-controllers.md`
 has (there is no auth to fail):
 
 1. **Explicit per-action failure branch** — a closed-enum param
@@ -209,6 +225,24 @@ has (there is no auth to fail):
    behavior as `Api::V1::`'s (log via `Rails.logger.error`, render
    `{ message: "Internal error" }` / `:internal_server_error`) — see ADR
    for why this is declared independently rather than inherited.
+4. **Raised by a plain lookup, caught centrally** — a single-resource
+   endpoint identified by a path segment (e.g. `:steam_id`) that doesn't
+   exist: looked up via `Model.find_by!(...)` (never a `nil`-checking
+   branch inline, per Interface/Rules), which raises
+   `ActiveRecord::RecordNotFound`. `Api::Public::ApplicationController`
+   declares `rescue_from ActiveRecord::RecordNotFound, with:
+   :render_not_found`, rendering `:not_found` /
+   `{ message: "<Resource> not found" }` — the static message names the
+   resource, not the identifier's value (unlike shape (2) above, which
+   echoes the caller's bad value back into the message). Same mechanism
+   as (2): raise deep inside the lookup/query layer, catch once at the
+   base controller, never branch on a return value in the action. This
+   `rescue_from` must also be declared *after* `rescue_from
+   StandardError` above, for the same reason as (2); its order relative
+   to `rescue_from Api::Public::UnsupportedParamError` doesn't matter —
+   neither exception is a subclass of the other, so Rails' most-
+   recently-declared-first resolution never has to choose between them
+   for the same raised exception.
 
 ## Interaction With Other Layers
 
@@ -240,6 +274,9 @@ this section only adds what's specific to this namespace.
   an unrecognized open-set array value (matches nothing, no error), an
   unrecognized closed-enum value (`:bad_request`), and the boolean
   param's three states (`"true"` / `"false"` / absent).
+- A single-resource-by-identifier endpoint's request spec must include a
+  case for an identifier that doesn't exist, asserting `:not_found` /
+  `{ message: "<Resource> not found" }`.
 
 ## Canonical Implementations
 
@@ -250,6 +287,11 @@ originally shipped) will be this namespace's first controller built on
 the query-objects layer, and the first to use the `rescue_from
 Api::Public::UnsupportedParamError` shape. Update this section once that
 plan is implemented.
+
+The `rescue_from ActiveRecord::RecordNotFound` shape (Error Handling,
+(4)) has no implementation yet either — `Api::Public::
+InventoriesController#show` (`.claude/plans/public-inventory-endpoints.md`)
+will be its first. Update this section once that plan is implemented.
 
 ## Related ADR
 

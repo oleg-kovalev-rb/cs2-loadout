@@ -22,6 +22,24 @@ RSpec.describe Appliers::Pagination do
     it "clamps a non-positive per_page to 1" do
       expect(described_class.new(nil, "0").per_page).to eq(1)
     end
+
+    it "uses a caller-supplied default_per_page when per_page is absent" do
+      pagination = described_class.new(nil, nil, default_per_page: 12)
+
+      expect(pagination.per_page).to eq(12)
+    end
+
+    it "still clamps a caller-supplied default_per_page's resulting per_page against the shared max" do
+      pagination = described_class.new(nil, nil, default_per_page: 9999)
+
+      expect(pagination.per_page).to eq(100)
+    end
+
+    it "ignores default_per_page when per_page is present" do
+      pagination = described_class.new(nil, "5", default_per_page: 12)
+
+      expect(pagination.per_page).to eq(5)
+    end
   end
 
   describe "#offset" do

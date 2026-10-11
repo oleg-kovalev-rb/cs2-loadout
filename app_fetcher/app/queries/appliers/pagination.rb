@@ -16,10 +16,10 @@ module Appliers
     sig { returns(Integer) }
     attr_reader :per_page
 
-    sig { params(raw_page: T.untyped, raw_per_page: T.untyped).void }
-    def initialize(raw_page, raw_per_page)
+    sig { params(raw_page: T.untyped, raw_per_page: T.untyped, default_per_page: Integer).void }
+    def initialize(raw_page, raw_per_page, default_per_page: DEFAULT_PER_PAGE)
       @page = T.let(clamp(raw_page, default: DEFAULT_PAGE, min: MIN_PAGE), Integer)
-      @per_page = T.let(clamp(raw_per_page, default: DEFAULT_PER_PAGE, min: MIN_PER_PAGE, max: MAX_PER_PAGE), Integer)
+      @per_page = T.let(clamp(raw_per_page, default: default_per_page, min: MIN_PER_PAGE, max: MAX_PER_PAGE), Integer)
     end
 
     sig { returns(Integer) }
@@ -36,9 +36,7 @@ module Appliers
 
     sig { params(raw: T.untyped, default: Integer, min: Integer, max: T.nilable(Integer)).returns(Integer) }
     def clamp(raw, default:, min:, max: nil)
-      return default if raw.blank?
-
-      value = [ raw.to_s.to_i, min ].max
+      value = [ raw.blank? ? default : raw.to_s.to_i, min ].max
       max ? [ value, max ].min : value
     end
   end

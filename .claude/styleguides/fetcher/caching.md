@@ -38,14 +38,14 @@ callers key into it:
 - **TTL-only** (`.read`/`.write`): data changes due to activity this
   codebase has no write path into, so there's no event to hook an
   explicit `.invalidate` call to — staleness is bounded purely by a short
-  TTL instead. As of this update, no class in this codebase implements
-  this variant — `UserInventoryCache` used to be its example, but moved to
-  the single-key read-through variant once the weekly sync + manual
-  refresh (`UserInventorySyncService`, see
+  TTL instead. `ItemCatalogCache` is this variant's current example
+  (keyed by a SHA256 hash of normalized filter/sort/pagination params —
+  see Rules — with no single caller-supplied id driving it).
+  `UserInventoryCache` used to be its example before `ItemCatalogCache`
+  existed, but moved to the single-key read-through variant once the
+  weekly sync + manual refresh (`UserInventorySyncService`, see
   `.claude/adr/fetcher/cross-scenario-service-layer.md`) gave it a real
-  write path to invalidate against. Kept documented for a future case
-  that's genuinely TTL-only (no invalidation hook this codebase controls
-  at all), not removed just because it's currently unused.
+  write path to invalidate against.
 
 Don't reach for any variant for data that changes on every request, or
 where staleness of even a few seconds would be user-visible in a way that
@@ -147,7 +147,30 @@ cross-Scenario service layer instead of a worker (see
   `["items_catalog", 1, Digest::SHA256.hexdigest(normalized_filters.to_json)]`.
   Hashing an un-normalized input first would defeat the point — two
   equivalent-but-differently-ordered requests would hash to different
-  digests and silently fragment the cache.
+  digests and silently fragment the cache. Only include inputs that
+  actually affect the cached payload in what gets normalized and hashed —
+  a param a controller accepts but the resource's query object never
+  reads (a confirmed no-op for that endpoint, not an oversight) must be
+  left out entirely; including it would fragment the cache between two
+  requests that are actually equivalent, for no benefit. `ItemCatalogCache`
+  happens to include every param it accepts (`search`/`category`/
+  `rarity`/`stattrak`/`sort`) because each one genuinely does affect that
+  endpoint's result, not because accepting a param obligates a class in
+  this layer to fold it into the key unconditionally.
+- When a cached resource has **both** a single natural identifier
+  (`market_hash_name`/`steam_id`) *and* one or more independent,
+  caller-supplied request-shaping params layered on top of that same id
+  — a detail-style resource identified by an id, with request variants on
+  top (e.g. a date range, an embedded sub-collection's own sort/page) —
+  keep the natural id as its own array element and append a hash of the
+  remaining inputs, normalized the same way as above:
+  `[<namespace>, <version_integer>, id,
+  Digest::SHA256.hexdigest(normalized_remaining_inputs.to_json)]`, a
+  4-element array rather than either of the two 3-element shapes above.
+  Keeping `id` visible, not folded into the hash, matters specifically
+  here: unlike the no-natural-identifier case, a real caller or debugger
+  inspecting cache entries for one resource can still find every variant
+  of it by `id` alone, which a key that's pure hash can't offer.
 - Invalidate with a single `Rails.cache.delete(key)` per id — no
   bulk/wildcard delete, no version-bump-instead-of-delete (see the ADR's
   rejected alternatives).
@@ -261,14 +284,19 @@ section only adds what's specific to caching.
   `app_fetcher/app/caching/price_history_cache.rb`,
   `app_fetcher/app/caching/item_trend_cache.rb`.
 - Single-key read-through + invalidation: `app_fetcher/app/caching/user_inventory_cache.rb`.
-- TTL-only: no current implementation — see When to Use for why
-  `UserInventoryCache` is no longer this variant's example.
+- TTL-only: `app_fetcher/app/caching/item_catalog_cache.rb` — the
+  no-single-natural-identifier key shape (hash of normalized filter/sort/
+  pagination params).
+- TTL-only, hybrid key (natural id + hashed remaining inputs): no current
+  implementation — `InventoryDetailCache`
+  (`.claude/plans/public-inventory-endpoints.md`) will be the first.
 
 `ItemPriceCache`/`PriceHistoryCache` are tracked in
 `.claude/plans/fetcher-price-caching.md`; `ItemTrendCache` is tracked in
 `.claude/plans/dashboard-api-redesign.md`; `UserInventoryCache`'s
 single-key read-through shape is tracked in
-`.claude/plans/user-inventory-persistence.md`. Prop's use of
+`.claude/plans/user-inventory-persistence.md`; `ItemCatalogCache` is
+tracked in `.claude/plans/item-catalog-query-refactor.md`. Prop's use of
 `Rails.cache` for rate-limiting, in `config/initializers/prop.rb`,
 predates this styleguide and doesn't follow any of the three variants.
 

@@ -20,6 +20,8 @@ Rails.application.routes.draw do
 
     namespace :public do
       get "items", to: "items#index"
+      get "inventories", to: "inventories#index"
+      get "inventories/:steam_id", to: "inventories#show"
     end
   end
 end

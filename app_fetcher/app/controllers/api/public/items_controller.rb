@@ -9,7 +9,8 @@ module Api
       def index
         payload = ItemCatalogCache.read(params)
         if payload.nil?
-          payload = ItemCatalogSerializer.call(ItemCatalogQuery.call(params))
+          page = ItemCatalogQuery.call(params)
+          payload = ItemCatalogSerializer.call(page)
           ItemCatalogCache.write(params, payload)
         end
 

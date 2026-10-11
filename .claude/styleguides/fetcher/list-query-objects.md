@@ -1,5 +1,5 @@
 ---
-description: app_fetcher's app/queries/ (per-resource query objects, plus Appliers:: and Options:: subfolders) and app/serializers/ layers — shared filter/sort/pagination mechanics and response-shaping for Api::Public:: list endpoints.
+description: app_fetcher's app/queries/ (per-resource query objects, plus Appliers:: and Options:: subfolders) and app/serializers/ layers — shared filter/sort/pagination mechanics and response-shaping for Api::Public:: list and detail endpoints.
 ---
 
 # List Query Objects (`app/queries/`, `app/serializers/`)
@@ -15,12 +15,17 @@ written, once that decision is taken as given.
 Give every `Api::Public::` list endpoint (filter + sort + pagination +
 response shaping over a paginated resource) a consistent, reusable place
 for each piece of that mechanics, instead of writing it inline in the
-controller action. What belongs here: resolving/validating closed-enum
-query params, applying named filters to a scope, clamping pagination,
-fetching the data a response needs, and shaping that data into a
-response hash. What does not: anything with a notion of caller identity
-(that's `Api::V1::`'s job, if it ever needs this pattern), persisting
-data, or calling `Steam::Client` — this layer only ever reads
+controller action. The same layer also covers a *detail* endpoint — one
+resource looked up by an identifier, which may itself carry a single
+embedded paginated/sorted sub-collection plus its own bespoke aggregates
+(see Structure's `<Resource>DetailQuery`) — since it leans on the exact
+same closed-enum/pagination mechanics, just applied to one resource at a
+time instead of a page of many. What belongs here: resolving/validating
+closed-enum query params, applying named filters to a scope, clamping
+pagination, fetching the data a response needs, and shaping that data
+into a response hash. What does not: anything with a notion of caller
+identity (that's `Api::V1::`'s job, if it ever needs this pattern),
+persisting data, or calling `Steam::Client` — this layer only ever reads
 already-persisted data for a response, the same carve-out
 `architecture-layers.md` already states for `PriceHistoriesController`.
 
@@ -47,6 +52,15 @@ shape.
   resource-specific business logic (aggregates, enrichment lookups) that
   won't generalize to other resources, not imply a reusable abstraction
   that isn't there.
+- **`app/queries/<resource>_detail_query.rb`** (flat root, e.g.
+  `InventoryDetailQuery`) — the sibling shape for a *detail* endpoint:
+  one resource looked up by an identifier (e.g. `steam_id`), not a page
+  of many. Named `<Resource>DetailQuery`, the same naming logic as
+  `<Resource>CatalogQuery` above. May still compose
+  `Appliers::Pagination`/`Appliers::SortApplier`/`Options::*` for a
+  single embedded paginated/sorted sub-collection within that one
+  resource (e.g. `InventoryDetailQuery`'s `top_items`), on top of
+  whatever bespoke scalar aggregates the resource needs.
 - **`app/queries/appliers/`** → `Appliers::` namespace (Zeitwerk:
   subfolder of an autoloaded `app/` root becomes a namespace, same rule
   already used by `app/parsers/steam/` → `Steam::`). Fully
@@ -60,6 +74,9 @@ shape.
   e.g. `ItemCatalogSerializer`) — one per resource/endpoint, pure
   function style, same flat-root convention as `app/services/`/
   `app/caching/`.
+- **`app/serializers/<resource>_detail_serializer.rb`** (flat root, e.g.
+  `InventoryDetailSerializer`) — `<Resource>DetailQuery`'s serializer
+  counterpart; same pure-function rule as `<Resource>CatalogSerializer`.
 
 ## Interface
 
@@ -73,13 +90,31 @@ shape.
   inside the enum value's own `#apply` body; the enum does not validate
   those values against anything.
 - **`Appliers::Pagination`**: plain value object, not `T::Enum`. `.new(raw_page,
-  raw_per_page)` clamps silently (see `public-api-controllers.md`'s
-  bounded-numeric rule — never raises/rejects). Instance methods
-  `#page`, `#per_page`, `#offset`, `#total_pages(total_count)`.
+  raw_per_page, default_per_page: DEFAULT_PER_PAGE)` clamps silently (see
+  `public-api-controllers.md`'s bounded-numeric rule — never
+  raises/rejects). The `default_per_page:` keyword lets each call site
+  pick its own default (e.g. `25` for an items catalog, `24` for an
+  inventories list, `12` for a nested sub-collection like `top_items`)
+  without forking the class — a literal default supplied by the caller
+  isn't a reference to any specific resource/model/`Options::*` class, so
+  this doesn't violate the "depend on nothing resource-specific" rule in
+  Dependencies below. `min`/`max` stay fixed constants shared by every
+  caller; only the default is overridable. Instance methods `#page`,
+  `#per_page`, `#offset`, `#total_pages(total_count)`.
 - **`Appliers::SortApplier.call(raw_value, enum_class:, default:,
   param_name: "sort")`** → a resolved `T::Enum` member (never nilable).
   Raises `Api::Public::UnsupportedParamError` on an unrecognized,
   present value — absence always resolves to `default`, never an error.
+  `enum_class` may be *any* closed-enum `T::Enum` a param needs to
+  resolve against, not only an `Options::*` sort enum whose members
+  implement `#apply(scope)` — this applier's own mechanism
+  (`try_deserialize` + raise + overridable `param_name:`) never actually
+  depends on `#apply` existing; what the resolved member is used for
+  afterward is entirely up to the call site. `PricePeriod`
+  (`app_fetcher/app/models/price_period.rb`, used for a `range`-style
+  param) is the precedent for this broader use: a plain `T::Enum` outside
+  `Options::*` entirely, with its own `#duration` instance method instead
+  of `#apply`, resolved through this same applier unchanged.
 - **`Appliers::FilterApplier.call(scope, params, enum_class:)`** →
   `ActiveRecord::Relation`, by reducing `enum_class.values` over the
   scope.
@@ -89,10 +124,23 @@ shape.
   success/error wrapper: the one failure mode (invalid `sort`) is raised
   by `Appliers::SortApplier`, not returned, so `.call` either returns a
   valid struct or doesn't return at all.
+- **`<Resource>DetailQuery.call(identifier, params)`** → a `T::Struct`
+  carrying everything a detail response needs — the looked-up resource's
+  own fields, any bespoke aggregates, and (if applicable) one embedded
+  paginated/sorted sub-collection's items plus its own pagination. Never
+  a `Result`-style wrapper, same as `<Resource>CatalogQuery` — its one
+  extra failure mode (the identifier doesn't resolve to a record) is
+  raised as `ActiveRecord::RecordNotFound` via a bang finder (`Model.
+  find_by!(...)`), never returned as `nil`; see
+  `public-api-controllers.md`'s Error Handling shape (4) for how the
+  controller's base class catches it.
 - **`<Resource>CatalogSerializer.call(<query-result-struct>)`** →
   `T::Hash[Symbol, T.untyped]`. Pure function — no argument may be
   anything that requires a database or cache read; all data must already
   be resolved by the time this is called.
+- **`<Resource>DetailSerializer.call(<query-result-struct>)`** →
+  `T::Hash[Symbol, T.untyped]`. Same pure-function rule as
+  `<Resource>CatalogSerializer`.
 
 ## Responsibilities
 
@@ -106,7 +154,14 @@ shape.
   answer "what does this page need" — including resource-specific
   aggregates and enrichment lookups (e.g. `Item`'s price-change counts,
   trend data) — and nothing about HTTP or response-level caching.
+- `<Resource>DetailQuery` owns the same kind of work as
+  `<Resource>CatalogQuery`, scoped to one resource instead of a page: the
+  lookup by identifier (raising on a miss, never returning `nil`), any
+  bespoke aggregates, and composing `Appliers::*`/`Options::*` for its
+  own embedded sub-collection, if it has one.
 - `<Resource>CatalogSerializer` owns response-shape mapping only.
+- `<Resource>DetailSerializer` owns response-shape mapping only, same as
+  `<Resource>CatalogSerializer`.
 - The controller owns: calling the query object, calling the serializer,
   `ItemCatalogCache`-style response caching, and conditional-GET
   (`stale?`/`ETag`) — none of that belongs in any class above.
@@ -121,7 +176,11 @@ lookups, per `caching.md`), but never on a response-payload cache like
 depends on nothing but its input struct. `Appliers::*` depend on nothing
 resource-specific — not even indirectly, by referencing a concrete
 `Options::*` class by name inside an `Appliers::*` file. `Options::*`
-depend only on the model scopes they call from `#apply`.
+depend only on the model scopes they call from `#apply`. The identical
+dependency rules apply to `<Resource>DetailQuery`/
+`<Resource>DetailSerializer` — the shape of what each class may depend on
+doesn't change between the list and detail cases, only how many of the
+resource it answers for.
 
 ## Rules
 
@@ -139,6 +198,12 @@ depend only on the model scopes they call from `#apply`.
   as its input.
 - `<Resource>CatalogSerializer` must perform zero I/O — no `ActiveRecord`
   query, no `Rails.cache` call, inside its `.call`.
+- `<Resource>DetailQuery.call` must look up its resource with a bang
+  finder (`Model.find_by!(...)`) and let a miss raise
+  `ActiveRecord::RecordNotFound` — never check for `nil` and return early
+  or build a `Result`-shaped failure value.
+- `<Resource>DetailSerializer` must perform zero I/O, same rule as
+  `<Resource>CatalogSerializer`.
 
 ### SHOULD
 
@@ -147,6 +212,11 @@ depend only on the model scopes they call from `#apply`.
 - Keep `<Resource>CatalogQuery.call`'s return type a plain `T::Struct`,
   not a `Result`/outcome wrapper — see the ADR's "Alternatives
   Considered" for why that was tried and reverted.
+- Name a detail endpoint's query/serializer pair `<Resource>DetailQuery`/
+  `<Resource>DetailSerializer` — the sibling convention to
+  `<Resource>CatalogQuery`/`<Resource>CatalogSerializer` — and keep
+  `<Resource>DetailQuery.call`'s return type a plain `T::Struct` too, for
+  the same reason.
 
 ### MUST NOT
 
@@ -162,15 +232,20 @@ depend only on the model scopes they call from `#apply`.
 
 ## Error Handling
 
-The only failure mode this layer produces is an unrecognized closed-enum
-value, raised as `Api::Public::UnsupportedParamError` from
-`Appliers::SortApplier` (or, in principle, from an `Options::*` value's
-own `#apply` if a future resource ever needs a closed-enum-shaped
-filter — the mechanism is the same). This layer never catches that
-exception itself; it propagates to the controller's base class. See
-`public-api-controllers.md`'s Error Handling section for the exception's
-definition, location (`lib/api/public/`), and the `rescue_from` that
-catches it — not restated here.
+This layer produces two failure modes, neither of which it catches
+itself — both propagate to the controller's base class:
+
+1. An unrecognized closed-enum value, raised as `Api::Public::
+   UnsupportedParamError` from `Appliers::SortApplier` (or, in principle,
+   from an `Options::*` value's own `#apply` if a future resource ever
+   needs a closed-enum-shaped filter — the mechanism is the same).
+2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
+   record, raised as `ActiveRecord::RecordNotFound` by its bang finder
+   (never returned as `nil` — see Rules).
+
+See `public-api-controllers.md`'s Error Handling section for shapes (2)
+and (4) respectively — the exceptions' definitions/sources and the
+`rescue_from` pair that catches each — not restated here.
 
 ## Interaction With Other Layers
 
@@ -185,6 +260,24 @@ Api::Public::<X>Controller#index
     → <Resource>CatalogQuery::Page (T::Struct)
 <Resource>CatalogSerializer.call(page) → response hash
     ↓ ItemCatalogCache.write(params, payload)  — controller's job
+    ↓ stale?/render  — controller's job
+```
+
+The detail shape follows the same sequence, just keyed by an identifier
+instead of a page of filters, and with one failure branch the list shape
+doesn't have:
+
+```text
+Api::Public::<X>Controller#show
+    ↓ <Resource>DetailCache.read(identifier, params)  — cache check, controller's job
+    ↓ (on miss)
+<Resource>DetailQuery.call(identifier, params)
+    ↓ Model.find_by!(identifier)  → raises ActiveRecord::RecordNotFound, or continues
+    ↓ Appliers::SortApplier.call(...) / Appliers::Pagination.new(...)  — for one embedded sub-collection, if any
+    ↓ model scopes, app/caching/ data caches
+    → <Resource>DetailQuery::Page (T::Struct)
+<Resource>DetailSerializer.call(page) → response hash
+    ↓ <Resource>DetailCache.write(...)  — controller's job
     ↓ stale?/render  — controller's job
 ```
 
@@ -211,6 +304,12 @@ Specific to this layer:
   use an unsaved/in-memory instance (e.g. `Item.new(...)`) to keep the
   spec provably free of database access, matching the class's own
   zero-I/O rule.
+- `<Resource>DetailQuery` specs follow the same DB-for-real,
+  no-response-payload-cache rules as `<Resource>CatalogQuery`, plus one
+  scenario `<Resource>CatalogQuery` doesn't need: an unknown identifier
+  raising `ActiveRecord::RecordNotFound`.
+- `<Resource>DetailSerializer` specs follow the same zero-I/O,
+  unsaved-instance rule as `<Resource>CatalogSerializer`.
 
 ## Canonical Implementations
 
@@ -219,6 +318,15 @@ None yet — `ItemCatalogQuery`/`ItemCatalogSerializer`/
 `Appliers::SortApplier`/`Appliers::FilterApplier`
 (`.claude/plans/item-catalog-query-refactor.md`) are this layer's first
 members. Update this section once that plan is implemented.
+
+The detail shape (`<Resource>DetailQuery`/`<Resource>DetailSerializer`),
+`Appliers::SortApplier`'s generalized use against a non-`Options::*`
+enum (`PricePeriod`, for a `range`-style param), and
+`Appliers::Pagination`'s `default_per_page:` keyword also have no
+implementation yet — `InventoryDetailQuery`/`InventoryDetailSerializer`
+and `InventoryCatalogQuery` (`.claude/plans/public-inventory-endpoints.md`)
+will be their first examples. Update this section once that plan is
+implemented.
 
 ## Related ADR
 
