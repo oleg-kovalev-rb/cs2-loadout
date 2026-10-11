@@ -60,6 +60,17 @@ down as props (see State).
   directly in the file that uses them when they have no other caller,
   rather than being extracted to their own file pre-emptively. Extract to
   `components/` only once something else needs to import it.
+- **Optional image fields get a same-class placeholder, not a collapsed
+  gap.** When a prop that renders as an `<img>` may be absent for a given
+  row (`ItemRow`'s `item.iconUrl`, which the API can omit), branch in the
+  render body: the `<img>` when present, an empty
+  `<span aria-hidden="true" />` carrying the *same* class when absent
+  (`ItemRow`: `<img className="mover-icon" src={item.iconUrl} alt="" />`
+  vs. `<span className="mover-icon" aria-hidden="true" />`). Sharing the
+  class means the placeholder keeps the element's layout footprint (e.g.
+  a fixed-width icon column) instead of the row collapsing around a
+  missing image. Cover both branches with explicit tests, the same as any
+  other conditional rendering (see `ItemRow.test.jsx`).
 
 ## Derived Data: `utils/`
 
