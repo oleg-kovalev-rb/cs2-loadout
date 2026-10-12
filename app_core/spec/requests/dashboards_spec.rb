@@ -13,6 +13,23 @@ RSpec.describe "GET /", type: :request do
     end
   end
 
+  describe "when the session references a deleted user" do
+    it "renders the same signed-out empty state as no session at all" do
+      user = create(:user)
+      allow(Steam::LoginUser).to receive(:call).and_return(user)
+      get callback_session_path
+      user.destroy!
+
+      get root_path
+
+      aggregate_failures do
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include("Sign in through Steam")
+        expect(response.body).not_to include("data-bridge-token")
+      end
+    end
+  end
+
   describe "when signed in" do
     let(:user) { create(:user) }
 
@@ -60,14 +77,6 @@ RSpec.describe "GET /", type: :request do
           expect(response.body).to match(/class="avatar"[^>]*>[^<]*#{user.nickname[0]}/)
         end
       end
-    end
-  end
-
-  describe "DELETE /session" do
-    it "clears the session and redirects to the (now signed-out) root" do
-      delete session_path
-
-      expect(response).to redirect_to(root_path)
     end
   end
 end

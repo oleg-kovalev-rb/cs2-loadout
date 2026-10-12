@@ -1,0 +1,70 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://steamcommunity.com/openid/login
+    body:
+      encoding: US-ASCII
+      string: openid.claimed_id=https%3A%2F%2Fsteamcommunity.com%2Fopenid%2Fid%2F76561198000000001&openid.mode=check_authentication
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - AppMain_SteamAuth_PetProject/1.0
+      Content-Type:
+      - application/x-www-form-urlencoded
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx
+      Content-Type:
+      - text/plain;charset=utf-8
+      X-Frame-Options:
+      - DENY
+      Content-Security-Policy:
+      - 'default-src blob: data: https: ''unsafe-inline'' ''unsafe-eval''; script-src
+        ''self'' ''unsafe-inline'' ''unsafe-eval'' https://community.akamai.steamstatic.com/
+        https://cdn.akamai.steamstatic.com/steamcommunity/public/assets/ https://api.steampowered.com/
+        https://recaptcha.net https://www.google.com/recaptcha/ https://www.gstatic.cn/recaptcha/
+        https://www.gstatic.com/recaptcha/ https://www.youtube.com/ https://s.ytimg.com;
+        object-src ''none''; connect-src ''self'' https://community.akamai.steamstatic.com/
+        https://store.steampowered.com/ https://checkout.steampowered.com/ wss://community.steam-api.com/websocket/
+        https://api.steampowered.com/ https://login.steampowered.com/ https://help.steampowered.com/
+        https://steam.tv/ https://steamcommunity.com/ https://*.valvesoftware.com
+        https://*.steambeta.net https://*.discovery.beta.steamserver.net https://*.steamcontent.com
+        https://steambroadcast.akamaized.net https://steambroadcast-test.akamaized.net
+        https://broadcast.st.dl.eccdnx.com https://lv.queniujq.cn https://steambroadcastchat.akamaized.net
+        http://127.0.0.1:27060 ws://127.0.0.1:27060; frame-src ''self'' steam: https://store.steampowered.com/
+        https://help.steampowered.com/ https://login.steampowered.com/ https://checkout.steampowered.com/
+        https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com
+        https://sketchfab.com https://player.vimeo.com https://medal.tv https://www.google.com/recaptcha/
+        https://recaptcha.net/recaptcha/ https://help.steampowered.com/; frame-ancestors
+        ''self'' https://steamloopback.host ;'
+      Expires:
+      - Mon, 26 Jul 1997 05:00:00 GMT
+      Cache-Control:
+      - no-cache
+      Vary:
+      - Accept-Encoding
+      Date:
+      - Mon, 12 Oct 2026 09:27:05 GMT
+      Content-Length:
+      - '51'
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - sessionid=4f3ede77231cab9a2e9e403f; Path=/; Secure; SameSite=None
+      - steamCountry=DE%7C88970f4e724fc644b7da22881ba66c56; path=/; secure; HttpOnly;
+        SameSite=None
+    body:
+      encoding: UTF-8
+      string: |
+        ns:http://specs.openid.net/auth/2.0
+        is_valid:false
+  recorded_at: Mon, 12 Oct 2026 09:27:05 GMT
+recorded_with: VCR 6.4.0

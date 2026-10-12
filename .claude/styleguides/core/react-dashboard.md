@@ -22,11 +22,14 @@ from scratch by reading every existing file.
 ```text
 app/frontend/dashboard/
   Dashboard.jsx           — root component: owns the useReducer + the
-                            data-loading hook, renders the tiles
+                            data-loading hooks, renders the tiles
   reducer.js              — the one UI-state reducer + its initialState
   chartConfig.js           — chart tuning constants (ranges, tick counts)
+                            plus generateAxisLabels (the one function here
+                            with real branching — see Derived Data)
   hooks/
-    useDashboardData.js    — the one data-loading hook
+    useDashboardData.js, useItemPrices.js, useItemTrend.js,
+    usePortfolioHistory.js, useItemHistory.js — one hook per data source
   components/
     <Name>Tile.jsx, <Name>.jsx — presentational components
   utils/
@@ -97,11 +100,23 @@ These functions:
 - are covered by dedicated unit tests with no rendering involved (see
   Testing).
 
-`chartConfig.js` is a sibling exception: it holds tuning *constants*
-(`RANGE_MS`, tick counts, axis-label generation), not derivation over
-request data — it lives at the top level next to `reducer.js`, not inside
-`utils/`, because it configures the chart components rather than
-transforming dashboard data.
+`chartConfig.js` is a sibling exception for its *constants* (`RANGE_MS`,
+`PORTFOLIO_RANGES`/`ITEM_RANGES`, tick counts) — it lives at the top
+level next to `reducer.js`, not inside `utils/`, because it configures
+the chart components rather than transforming dashboard data, and a
+plain constant/lookup table needs no test of its own. `generateAxisLabels`
+is the one export in that file that isn't a constant — it branches on
+`range` (a dedicated case for `'all'`, since that range has no fixed span
+to count back from, vs. a computed relative-offset label for every fixed
+range). A function in `chartConfig.js` with real branching like this is
+held to the same "branches on data in a way that could be wrong → gets a
+test" line as any `utils/` function (see "What gets a dedicated test
+file" below) — it just stays physically in `chartConfig.js` rather than
+moving into `utils/`, since it's still conceptually chart configuration,
+not dashboard-data derivation, and is tested by a sibling
+`chartConfig.test.js` in the same pure-function style as
+`filters.test.js`: call it directly, assert on the return value, no
+rendering.
 
 ## State & Data Loading
 
@@ -116,10 +131,15 @@ toggled through a shared `toggleSetMember` helper — follow this shape for
 a new multi-select filter rather than inventing a different collection
 type.
 
-**Data loading** is a custom hook per data source
-(`useDashboardData(fetcherUrl, bridgeToken)` is the only one today),
-returning `{data, status, error}` with `status` a flat string enum. Two
-rules that generalize beyond today's exact 3 values:
+**Data loading** is a custom hook per data source — today that's
+`useDashboardData` (the inventory skeleton), `useItemPrices`,
+`useItemTrend`, `usePortfolioHistory`, and `useItemHistory`, each gated on
+whichever upstream data it depends on (see Interaction With Other Layers)
+— each returning a result shaped `{<data field(s)>, status}` (`useDashboardData`
+additionally exposes `error`; the data field's name varies by hook —
+`data`, `pricesByName`, `trendByName`, `series` — but the one-hook-per-source,
+status-as-flat-enum shape is the same throughout). Two rules that
+generalize beyond today's exact 3 values:
 
 - `status` describes the *overall* load, and only needs enough values to
   distinguish states the UI actually renders differently — today that's
@@ -215,7 +235,34 @@ layout/presentation, it doesn't need one just for existing.
 - **Hook tests** (`useDashboardData.test.js`): `renderHook` +
   `waitFor` from `@testing-library/react`, with `vi.stubGlobal('fetch',
   vi.fn()...)` to control network responses — mock at the `fetch`
-  boundary, not by stubbing the hook's own internals.
+  boundary, not by stubbing the hook's own internals. Correct for a
+  component or hook with exactly one data source, resolved via
+  `mockImplementationOnce`/a single deferred promise.
+- **Multi-source orchestration tests** (`Dashboard.jsx`, which wires
+  `useDashboardData`, `useItemPrices`, `useItemTrend`,
+  `usePortfolioHistory`, and `useItemHistory` at once — see Interaction
+  With Other Layers): same `vi.stubGlobal('fetch', ...)` boundary as a
+  single-source hook test, but the mock must route its response by
+  request URL instead of resolving once — each hook calls a different
+  `app_fetcher` endpoint and several fire concurrently, so a single
+  `mockResolvedValueOnce`/`mockImplementationOnce` chain (correct for one
+  source) silently hands the wrong body to the wrong hook once there's
+  more than one:
+
+  ```js
+  const fetchMock = vi.fn((url) => {
+    if (url.includes('/inventories/me')) return jsonResponse(INVENTORY_BODY)
+    if (url.includes('/item_prices/dynamics')) return jsonResponse(DYNAMICS_BODY)
+    if (url.includes('/item_prices/trend')) return jsonResponse(TREND_BODY)
+    if (url.includes('/inventory_values')) return jsonResponse(VALUE_HISTORY_BODY)
+    return jsonResponse({})
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  ```
+
+  Use this shape for any component that itself owns more than one
+  concurrently-firing data-loading hook; a component or hook with exactly
+  one data source keeps the simpler single-response shape above.
 - **Component "integration-style" tests** (`ItemsTile.test.jsx`): mount a
   small harness component that owns a real
   `useReducer(dashboardReducer, initialState)` (the same reducer
@@ -231,14 +278,34 @@ layout/presentation, it doesn't need one just for existing.
 
 ```text
 Dashboard.jsx
-    ↓ useReducer(dashboardReducer, initialState)      (reducer.js)
-    ↓ useDashboardData(fetcherUrl, bridgeToken)         (hooks/)
+    ↓ useReducer(dashboardReducer, initialState)          (reducer.js)
+    ↓ useDashboardData(fetcherUrl, bridgeToken)            (hooks/)
         ↓ fetch — GET Api::V1::InventoriesController#show
-        ↓ fetch — POST Api::V1::PriceHistoriesController#index
+    ↓ useItemPrices(fetcherUrl, bridgeToken, names)        (hooks/)
+        ↓ fetch — GET Api::V1::ItemPricesController#dynamics
+    ↓ useItemTrend(fetcherUrl, bridgeToken, names)         (hooks/)
+        ↓ fetch — GET Api::V1::ItemPricesController#trend
+    ↓ usePortfolioHistory(fetcherUrl, bridgeToken, range)  (hooks/)
+        ↓ fetch — GET Api::V1::InventoryValuesController#index
+    ↓ useItemHistory(fetcherUrl, bridgeToken, name, range) (hooks/)
+        ↓ fetch — GET Api::V1::ItemPricesController#history
           (see architecture-layers.md: called directly, no app_core proxy)
-    ↓ passes data + dispatch-bound callbacks to tiles   (components/)
+    ↓ merges useItemPrices'/useItemTrend's results onto the skeleton's
+      items by marketHashName; usePortfolioHistory's/useItemHistory's
+      results pass straight through to PortfolioTile instead (they
+      describe a series, not a per-item field) — then passes data +
+      dispatch-bound callbacks to tiles                   (components/)
         ↓ tiles call utils/ functions to derive what they render
 ```
+
+All five hooks are independent `fetch` calls with their own gating:
+`useItemPrices`/`useItemTrend` wait for `useDashboardData`'s skeleton to
+resolve (they no-op on an empty `names` list); `usePortfolioHistory`
+fires immediately on mount, independent of the skeleton; `useItemHistory`
+only fires once an item is selected. In practice this means several of
+these `fetch` calls are in flight at once well before any single one of
+them has resolved — see Testing's "Multi-source orchestration tests" for
+what that means for testing `Dashboard.jsx` itself.
 
 ## Canonical Implementations
 

@@ -119,3 +119,69 @@ describe('ItemsTile (item not yet priced by item_prices/dynamics)', () => {
     expect(within(row).queryByText(/▲|▼/)).not.toBeInTheDocument()
   })
 })
+
+describe('ItemsTile (filter facets reflect what is actually present)', () => {
+  test('hides the Special group entirely when no item is StatTrak', async () => {
+    const user = userEvent.setup()
+    const noStattrakItems = items.map((item) => ({ ...item, stattrak: false }))
+    render(<Harness items={noStattrakItems} />)
+
+    await user.click(screen.getByRole('button', { name: /filters/i }))
+
+    expect(screen.queryByText('Special')).not.toBeInTheDocument()
+    expect(screen.queryByText('StatTrak™')).not.toBeInTheDocument()
+  })
+
+  test('shows only the conditions actually present, in canonical wear order', async () => {
+    const user = userEvent.setup()
+    const limitedConditionItems = [
+      { ...items[0], condition: 'Battle-Scarred', stattrak: false },
+      { ...items[1], condition: 'Factory New', stattrak: false },
+    ]
+    render(<Harness items={limitedConditionItems} />)
+
+    await user.click(screen.getByRole('button', { name: /filters/i }))
+
+    const conditionGroup = screen.getByText('Condition').closest('.filter-group')
+    const chipLabels = within(conditionGroup)
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+    expect(chipLabels).toEqual(['FN', 'BS'])
+  })
+})
+
+describe('ItemsTile (pagination across more than one page)', () => {
+  const manyItems = Array.from({ length: 9 }, (_, i) => ({
+    marketHashName: `AK-47 | Variant ${i} (FN)`,
+    weaponType: 'AK-47',
+    itemName: `Variant ${i}`,
+    condition: 'Factory New',
+    stattrak: false,
+    currentPriceCents: 1000 + i,
+    changeCents: 10,
+    change24hPercent: i + 1,
+    trendPoints: [],
+  }))
+
+  test('navigates between pages and disables Prev/Next at the boundaries', async () => {
+    const user = userEvent.setup()
+    render(<Harness items={manyItems} />)
+
+    expect(screen.getByText('1–8 of 9')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(8)
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next page' })).not.toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
+
+    expect(screen.getByText('9–9 of 9')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Previous page' })).not.toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Previous page' }))
+
+    expect(screen.getByText('1–8 of 9')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+  })
+})

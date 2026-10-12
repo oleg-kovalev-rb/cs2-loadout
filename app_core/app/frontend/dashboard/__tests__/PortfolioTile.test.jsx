@@ -71,4 +71,14 @@ describe('PortfolioTile', () => {
 
     expect(screen.getByRole('button', { name: '24h' })).toBeInTheDocument()
   })
+
+  test('item mode: range "all" renders without crashing and is marked active', () => {
+    renderTile({
+      mode: 'item',
+      range: 'all',
+      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+    })
+
+    expect(screen.getByRole('button', { name: 'all' })).toHaveClass('is-active')
+  })
 })

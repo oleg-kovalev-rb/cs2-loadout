@@ -399,6 +399,7 @@ GEM
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
     useragent (0.16.11)
+    vcr (6.4.0)
     vite_rails (3.11.1)
       railties (>= 5.1, < 9)
       vite_ruby (~> 3.0, >= 3.2.2)
@@ -457,6 +458,7 @@ DEPENDENCIES
   thruster
   turbo-rails
   tzinfo-data
+  vcr
   vite_rails
   web-console
   webmock
