@@ -15,4 +15,8 @@ Rails.application.routes.draw do
   resource :session, only: %i[create destroy] do
     get :callback
   end
+
+  namespace :admin do
+    resource :session, only: %i[create destroy]
+  end
 end

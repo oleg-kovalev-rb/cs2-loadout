@@ -68,6 +68,9 @@ group :test do
   # Stub outbound HTTP calls (e.g. Steam::Client's real Steam API calls) in tests [https://github.com/bblimke/webmock]
   gem "webmock"
 
+  # Record/replay Steam API calls in request specs [https://github.com/vcr/vcr]
+  gem "vcr"
+
   # Build test data with factories instead of fixtures [https://github.com/thoughtbot/factory_bot_rails]
   gem "factory_bot_rails"
 end

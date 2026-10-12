@@ -90,6 +90,32 @@ a change's scope just because an unrelated file is flagged here.
   not-yet-priced item) or whether `#perform` should guard before
   publishing — a real product decision, not a one-line type fix; out of
   scope for this change.
+- `app_fetcher/spec/caching/user_inventory_cache_spec.rb` — asserts the
+  cache key as `["user_inventory", 2, steam_id]`, but
+  `UserInventoryCache::CACHE_KEY_VERSION` is `1` (reverted back to 1 in
+  `2bd64c5 [Fetcher] Revert UserInventoryCache key version back to 1`,
+  which apparently didn't update this spec to match) — a real,
+  deterministic test failure, not flaky. Confirmed while running the full
+  suite for the admin-panel-backend-foundation plan; `user_inventory_cache.rb`
+  and its spec aren't otherwise touched by that work, so not fixed here.
+- `app_fetcher/app/models/item.rb` had a latent runtime bug in
+  `#stattrak` (`super.nil? ? false : super`): calling it on an item
+  loaded via a relation query (not a freshly-`.create!`d instance) with
+  no `"stattrak"` key in `metadata` raised `TypeError: Return value:
+  Expected type T::Boolean, got type String with value "stattrak"` at
+  the `sig`-wrapped boundary — root cause traced to
+  `ActiveRecord::Store`'s generated reader (`super_method.call`)
+  returning the attribute's own key name instead of `nil`/the stored
+  value in that specific case; reproducible with zero controller code
+  involved (`Item.all.to_a[0].stattrak`). **Fixed** as part of
+  admin-panel-backend-foundation (not left as a fix_me entry) since the
+  new `Api::Admin::ItemsController#index`/`#show` genuinely needed
+  `Item.all`/`Item.find_by` + `.stattrak` to work; replaced with a direct
+  `!!metadata["stattrak"]` read that doesn't go through the buggy `super`
+  path. `Api::Public::ItemsController#item_json` (which also calls
+  `.stattrak`) benefits from the same fix as a side effect; its own spec
+  coincidentally never exercised the triggering combination (2+ items in
+  one query, missing `"stattrak"` key) so it never surfaced there.
 - `app_fetcher/spec/fixtures/items.yml`, `price_logs.yml` — Rails
   fixtures; `.claude/styleguides/rspec-conventions.md` now standardizes
   on `FactoryBot` for test data. Existing rows (`redline`,
@@ -143,3 +169,20 @@ a change's scope just because an unrelated file is flagged here.
   `inventory_value_trigger.rb`, hit and autocorrected the identical
   offense) — this is real drift, not an intentional exception. Not fixed
   here since this file wasn't otherwise being touched.
+- `app_core`'s `sorbet/rbi/gems/` is missing (or stale) RBIs for `jwt`,
+  `rspec-rails`, and `factory_bot_rails` — `bundle exec srb tc` reports
+  "Unable to resolve constant `JWT`"/`RSpec`/`FactoryBot` on every file
+  that references them (`lib/steam/bridge_token.rb`,
+  `spec/rails_helper.rb`, every spec file, etc.), not just newly-added
+  ones. Confirmed while adding `lib/admin/bridge_token.rb` and its spec
+  for the admin-panel-backend-foundation plan — those new files hit the
+  identical pre-existing gap, not a new one. Fix is a project-wide
+  `bundle exec tapioca gems` run, out of scope for any single feature.
+- `app_core/app/models/user.rb` has no generated DSL RBI
+  (`sorbet/rbi/dsl/user.rbi` doesn't exist) — `bundle exec srb tc`
+  reports `Method 'nickname' does not exist on User` in
+  `sessions_controller.rb`. Confirmed while adding `AdminUser` (which
+  needed its own `tapioca dsl AdminUser` run to resolve the equivalent
+  gap for its own columns) — `User`'s matching gap predates this and
+  wasn't fixed here since `user.rb` isn't otherwise touched by that work.
+  Fix is `bundle exec tapioca dsl User`, committing the resulting RBI.

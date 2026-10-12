@@ -1,0 +1,44 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://steamcommunity.com/inventory/76561198000000099/730/2?count=2000&l=english
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+    body:
+      encoding: UTF-8
+      string: |
+        {
+          "success": true,
+          "more_items": 0,
+          "assets": [
+            { "classid": "123456", "instanceid": "0" }
+          ],
+          "descriptions": [
+            {
+              "classid": "123456",
+              "instanceid": "0",
+              "market_hash_name": "AWP | Asiimov (Field-Tested)",
+              "icon_url": "someIconHash",
+              "marketable": 1,
+              "tradable": 1,
+              "tags": [
+                { "category": "Rarity", "localized_tag_name": "Classified" },
+                { "category": "Type", "localized_tag_name": "Rifle" }
+              ]
+            }
+          ]
+        }
+  recorded_at: Sun, 11 Oct 2026 19:38:58 GMT
+recorded_with: VCR 6.4.0

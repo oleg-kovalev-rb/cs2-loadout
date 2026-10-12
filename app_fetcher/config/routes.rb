@@ -23,5 +23,25 @@ Rails.application.routes.draw do
       get "inventories", to: "inventories#index"
       get "inventories/:steam_id", to: "inventories#show"
     end
+
+    namespace :admin do
+      resources :items, only: %i[index show create update destroy] do
+        member do
+          post :refresh_price
+          post :warm_cache
+        end
+
+        resources :price_logs, only: %i[index destroy]
+      end
+
+      resources :user_inventories, only: %i[index show destroy], param: :steam_id do
+        member do
+          post :sync
+          post :warm_cache
+        end
+
+        resources :inventory_value_logs, only: %i[index destroy]
+      end
+    end
   end
 end

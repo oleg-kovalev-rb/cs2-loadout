@@ -34,6 +34,6 @@ class Item < ApplicationRecord
 
   sig { returns(T::Boolean) }
   def stattrak
-    super.nil? ? false : super
+    !!metadata["stattrak"]
   end
 end

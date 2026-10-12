@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted — originally proposed for two namespaces (`Api::V1::`/
+`Api::Public::`); re-affirmed when a third (`Api::Admin::`) reached this
+ADR's own revisit trigger (see Consequences).
 
 ## Context
 
@@ -137,6 +139,24 @@ a branch.
   explicit revisit trigger (Decision) is the guard against that — cite it
   before extracting.
 
+### Update: Third-Namespace Trigger Reached (`Api::Admin::`)
+
+The revisit trigger named above and in Implementation Constraints fired
+when `Api::Admin::` (see `.claude/plans/admin-panel-backend-foundation.md`,
+`.claude/styleguides/fetcher/admin-api-controllers.md`) needed the
+identical `rescue_from StandardError`/handler shape `Api::V1::`/
+`Api::Public::` already have. Extracting a shared `Api::BaseController`
+was explicitly considered at this point and declined — each of the three
+base controllers' `before_action` differs in a way that isn't
+`rescue_from`-related (no auth at all for `Api::Public::`, a per-player
+bridge token for `Api::V1::`, an admin bridge token for `Api::Admin::`),
+so a shared base would only ever be sharing the `rescue_from`/handler
+itself — still the same ~ten lines this ADR already accepted as the cost
+of waiting for real examples, now tripled rather than doubled. This is a
+recorded, deliberate re-affirmation of the original decision, not an
+oversight — if a fourth namespace reaches this same point, decide afresh
+there rather than treating this note as a standing exemption.
+
 ## Implementation Constraints
 
 - `Api::Public::ApplicationController < ActionController::API`, its own
@@ -176,3 +196,8 @@ a branch.
   independently.
 - `.claude/plans/public-items-catalog-endpoint.md` — the plan this
   decision unblocks.
+- `.claude/styleguides/fetcher/admin-api-controllers.md` — the third
+  namespace (`Api::Admin::`) whose introduction reached this ADR's
+  revisit trigger; see Consequences for the recorded outcome.
+- `.claude/plans/admin-panel-backend-foundation.md` — the plan that
+  introduced that third namespace.
