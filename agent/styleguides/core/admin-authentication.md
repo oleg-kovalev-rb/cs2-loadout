@@ -42,13 +42,25 @@ stack unchanged. A new admin-facing resource controller (e.g. a future
   `Admin::SessionsController < ApplicationController` (not
   `Admin::BaseController` — logging in can't require already being
   logged in, the same reason the existing `SessionsController` has no
-  login guard on itself).
+  login guard on itself). `#new` renders the login form (email/password
+  fields, submits to `admin_session_path`); `#create`/`#destroy` are
+  format-aware (see Interface).
 - `lib/admin/bridge_token.rb` — `Admin::BridgeToken`, a new `lib/admin/`
   domain folder, sibling to `lib/steam/`, not inside it (this is not
   Steam-domain code).
-- Routes: `namespace :admin do resource :session, only: %i[create
-  destroy] end`, mirroring the existing `resource :session` shape at the
-  top level.
+- `app/controllers/admin/panel_controller.rb` — the admin-side counterpart
+  to `DashboardsController`: `Admin::PanelController < Admin::BaseController`
+  (an ordinary admin-facing controller, nothing special beyond the
+  `Admin::BaseController` inheritance every such controller already
+  follows), `#show` mints `Admin::BridgeToken.encode(current_admin_user.id)`
+  and renders the page hosting the mounted admin React island. See
+  `architecture-layers.md` for where this fits in `app_core`'s overall
+  layer map.
+- Routes: `namespace :admin do resource :session, only: %i[new create
+  destroy]; get "/", to: "panel#show" end` (route/helper names a starting
+  proposal — see the development plan), mirroring the existing `resource
+  :session` shape at the top level, extended with `new` now that there's
+  a page to render it on.
 
 ## Interface
 
@@ -56,17 +68,35 @@ stack unchanged. A new admin-facing resource controller (e.g. a future
   `AdminUser.find_by(id: session[:admin_user_id])` lookup, exposed as a
   `helper_method`, same shape as `ApplicationController#current_user`
   today.
-- `require_admin!` (on `Admin::BaseController`, `before_action`): renders
-  `{ message: "Unauthorized" }` / `:unauthorized` and halts the filter
-  chain when `current_admin_user` is nil. Never raises.
+- `require_admin!` (on `Admin::BaseController`, `before_action`): format-
+  aware (`respond_to`) and halts the filter chain when `current_admin_user`
+  is nil. `format.json` — unchanged from before any HTML admin page
+  existed: renders `{ message: "Unauthorized" }` / `:unauthorized`.
+  `format.html` — redirects to `new_admin_session_path` instead; no JSON
+  body for a browser navigation. Never raises, either way.
 - `Admin::SessionsController#create`: accepts `email`/`password` params;
-  on success sets `session[:admin_user_id]` and renders `{ message: "..."
-  }` / `:ok`; on failure renders `{ message: "Invalid email or password"
-  }` / `:unauthorized` — the same message regardless of whether the email
-  exists, so the response never discloses which.
-- `Admin::SessionsController#destroy`: clears `session[:admin_user_id]`
-  and renders `{ message: "..." }` / `:ok`, idempotently (succeeds even if
-  no admin session existed).
+  format-aware (`respond_to`). `format.json` — unchanged: on success sets
+  `session[:admin_user_id]` and renders `{ message: "..." }` / `:ok`; on
+  failure renders `{ message: "Invalid email or password" }` /
+  `:unauthorized` — the same message regardless of whether the email
+  exists, so the response never discloses which. `format.html` — on
+  success sets `session[:admin_user_id]` and redirects to the panel root;
+  on failure re-renders `#new` with `status: :unprocessable_content` and
+  an inline `@error` the view displays (not Rails `flash` — see Rules for
+  why).
+- `Admin::SessionsController#new`: renders the login form, no auth guard
+  (same reasoning as `#create`/`#destroy` already being on
+  `ApplicationController`, not `Admin::BaseController` — see Structure).
+- `Admin::SessionsController#destroy`: format-aware (`respond_to`).
+  `format.json` — unchanged: clears `session[:admin_user_id]` and renders
+  `{ message: "..." }` / `:ok`, idempotently. `format.html` — clears the
+  session and redirects to `new_admin_session_path`, idempotently (same
+  no-op-on-absent-session behavior either way).
+- `Admin::PanelController#show`: mints
+  `Admin::BridgeToken.encode(current_admin_user.id)` and renders the
+  mounted-React-island page, gated by `Admin::BaseController`'s
+  `require_admin!` like any other admin-facing controller — no interface
+  beyond what that gating already provides.
 - `Admin::BridgeToken.encode(admin_id)`: returns a JWT string, mirroring
   `Steam::BridgeToken.encode`'s exact shape (HS256, `exp`/`iat` claims),
   signed with `APP_ADMIN_BRIDGE_JWT_SECRET`, carrying an `admin_id` claim
@@ -113,15 +143,26 @@ One-directional, per `rails-layering.md`:
   deviate from this (`typed: true` / no sigil at all, logged in
   `fix_me.md`); that is drift on existing files, not a precedent for new
   ones.
-- `Admin::SessionsController#create`/`#destroy` render `{ message: "..."
-  }` with an explicit status symbol — never a redirect. There is no admin
-  UI page yet to redirect to, and a JSON response keeps the action
-  directly testable on status + body alone. Revisit this rule once a real
-  admin UI defines an actual redirect target.
-- `require_admin!` failures render `{ message: "Unauthorized" }` /
-  `:unauthorized`, matching this project's established cross-app error
-  body shape (`{ message: "..." }`) even though this is the first JSON
-  response `app_core` has ever rendered.
+- `Admin::SessionsController#create`/`#destroy` and `require_admin!` are
+  format-aware (`respond_to do |format| ... end`): `format.json` renders
+  `{ message: "..." }` with an explicit status symbol, exactly as before
+  this rule's revisit below — never a redirect for a JSON caller,
+  regardless of how the HTML path behaves. `format.html` redirects (see
+  Interface for exact targets). This supersedes this rule's original
+  wording ("never a redirect... revisit once a real admin UI defines an
+  actual redirect target") now that `Admin::PanelController`/the login
+  page are that real admin UI — the supersession is additive (a new
+  format branch), not a removal of the JSON guarantee the original rule
+  protected.
+- The login form's failure path (`Admin::SessionsController#create`,
+  `format.html`) passes its error as an instance variable the `#new` view
+  renders inline, not via Rails `flash` — this codebase sets `flash[:notice]`/
+  `flash[:alert]` elsewhere (`SessionsController#callback`/`#destroy`) but
+  no layout currently renders `flash` anywhere (confirmed drift, logged in
+  `fix_me.md`, not fixed here — out of scope for this stack). Depending on
+  `flash` here would silently produce the same never-displayed message;
+  an explicit `@error` local sidesteps that pre-existing gap rather than
+  building on top of it.
 - Downcase `AdminUser#email` before validation/save (e.g. a
   `before_validation` callback) so uniqueness is effectively
   case-insensitive without a database-level `citext`/functional index.
@@ -146,13 +187,16 @@ One-directional, per `rails-layering.md`:
 
 ## Error Handling
 
-- Missing/expired admin session (`require_admin!`) → `{ message:
-  "Unauthorized" }` / `:unauthorized`.
-- Bad login credentials (`Admin::SessionsController#create`) → `{
-  message: "Invalid email or password" }` / `:unauthorized` — identical
-  message whether the email doesn't exist or the password is wrong.
-- Logout (`#destroy`) never fails — clearing an already-absent session
-  key is a no-op, not an error.
+- Missing/expired admin session (`require_admin!`) → `format.json`: `{
+  message: "Unauthorized" }` / `:unauthorized`. `format.html`: redirect to
+  `new_admin_session_path`, no body to speak of.
+- Bad login credentials (`Admin::SessionsController#create`) →
+  `format.json`: `{ message: "Invalid email or password" }` /
+  `:unauthorized` — identical message whether the email doesn't exist or
+  the password is wrong. `format.html`: re-render `#new`,
+  `:unprocessable_content`, same identical-message rule via `@error`.
+- Logout (`#destroy`) never fails either format — clearing an
+  already-absent session key is a no-op, not an error.
 
 ## Testing
 
@@ -171,15 +215,30 @@ adds what's specific to this stack.
   round-trip; wrong-secret rejection via `JWT::VerificationError`).
 - Use a `FactoryBot` factory (`spec/factories/admin_users.rb`) for test
   `AdminUser` records — no fixture, per `rspec-conventions.md`.
+- Format-aware actions get coverage for both formats in the same spec
+  file: a `format.json` example asserting the pre-existing JSON behavior
+  is unchanged (regression proof, not just new-behavior proof), plus
+  `format.html` examples for the new redirect/re-render paths (success
+  redirect target, failure re-render status + inline error, `require_admin!`'s
+  redirect-to-login for an unauthenticated HTML request).
+- `Admin::PanelController` gets its own request spec
+  (`app_core/spec/requests/admin/panel_spec.rb`): unauthenticated request
+  redirects to login; authenticated request renders `200` with a
+  non-blank bridge token present in the response body.
 
 ## Canonical Implementations
 
-None yet — this is the first styleguide-governed implementation of this
-stack. The first ones should go at `app_core/app/models/admin_user.rb`,
-`app_core/app/controllers/admin/base_controller.rb`,
-`app_core/app/controllers/admin/sessions_controller.rb`, and
-`app_core/lib/admin/bridge_token.rb`. Update this section once those
-exist.
+- `app_core/app/models/admin_user.rb`
+- `app_core/app/controllers/admin/base_controller.rb`
+- `app_core/app/controllers/admin/sessions_controller.rb` — the
+  pre-existing JSON-only `create`/`destroy` shape; the format-aware
+  `respond_to` version, `#new`, and the login view are not yet
+  implemented as of this amendment.
+- `app_core/lib/admin/bridge_token.rb`
+- `Admin::PanelController` and the `app/frontend/admin-panel/` React
+  island: not yet implemented — first implementation lands via
+  `agent/plans/admin-panel-frontend.md`. Update this section once that
+  plan is implemented.
 
 ## Related ADR
 

@@ -100,6 +100,30 @@ Rejected because:
   (`PriceLog belongs_to :item`, `InventoryValueLog` scoped by
   `UserInventory`'s `steam_id`) — don't nest further than the data model
   itself does.
+- A non-CRUD action with no single natural `:id` to key off — it operates
+  on a client-supplied list (e.g. a bulk cache-warm across several ids)
+  or on no identifying param at all (e.g. a catalog-wide action) — is a
+  `collection` route, not a `member` route. This isn't a new exception to
+  the decision above, just this ADR's routing vocabulary catching up to a
+  case Rails' own `resources` DSL already distinguishes: `member` for
+  one-`:id`-at-a-time actions, `collection` for everything else.
+- A resource that's nested for its primary CRUD/identity purpose may
+  *also* get a second, top-level, read-only route when there's a genuine
+  cross-parent listing need (e.g. an admin UI page that browses the
+  resource across every parent at once, not one parent at a time) — the
+  nested route stays exactly as it was, unmodified; the flat one is
+  additive, not a replacement. Unlike the genuine-CRUD resources this
+  ADR's main Decision covers, this flat listing has no single addressable
+  record of its own, so it's declared as an explicit route (`get
+  "<resource>", to: "<resource>#global_index"`), the same style
+  `Api::V1::`/`Api::Public::` already use for their own non-CRUD actions
+  — not forced into `resources` just because the rest of this namespace
+  generally prefers it. Dispatching to a distinct action name
+  (`global_index`, not `index`) avoids colliding with the nested route's
+  own `#index` on the same controller. This is decided per-resource, the
+  same case-by-case posture as every other exception in this ADR, not a
+  standing invitation to flatten every nested resource in this namespace
+  "for consistency."
 
 ## Related
 
