@@ -9,6 +9,14 @@ RSpec.describe "GET /api/public/items", type: :request do
     end
   end
 
+  context "cross-origin request from app_core's browser-side fetch" do
+    it "includes an Access-Control-Allow-Origin header for APP_CORE_ORIGIN" do
+      get "/api/public/items", headers: { "Origin" => ENV.fetch("APP_CORE_ORIGIN") }
+
+      expect(response.headers["Access-Control-Allow-Origin"]).to eq(ENV.fetch("APP_CORE_ORIGIN"))
+    end
+  end
+
   context "with no params, on a catalog of marketable items" do
     let!(:gaining) { create(:item, current_price_cents: 1000, change_24h_cents: 100) }
     let!(:losing) { create(:item, current_price_cents: 900, change_24h_cents: -50) }

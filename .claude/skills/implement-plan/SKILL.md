@@ -21,7 +21,7 @@ This skill is responsible for implementation, TDD, refactoring, and verification
 
 Before implementation:
 
-- a development plan exists at `.claude/plans/<slug>.md`;
+- a development plan exists at `agent/plans/<slug>.md`;
 - the plan file's `status` frontmatter field is `styleguide-checked`;
 - applicable styleguides are identified in the plan's `Applicable
   Styleguides` section;
@@ -30,7 +30,7 @@ Before implementation:
 
 Do not skip directly to implementation when the required plan or styleguides are missing.
 
-If no plan path is known, ask for it or locate it under `.claude/plans/`
+If no plan path is known, ask for it or locate it under `agent/plans/`
 before proceeding — do not implement from a plan recalled only from
 conversation memory, since this skill may run in a session that never saw
 the planning stages.
@@ -53,7 +53,7 @@ the planning stages.
 
 Before changing code:
 
-- read the complete implementation plan from `.claude/plans/<slug>.md` on
+- read the complete implementation plan from `agent/plans/<slug>.md` on
   disk (not from conversation history — it may predate this session);
 - confirm `status` is `styleguide-checked`; if it is `draft` or `blocked`,
   stop and return to `create-dev-plan` or `styleguides-check` instead of
@@ -81,7 +81,7 @@ Keep each change focused and easy to verify.
 Do not batch unrelated changes together.
 
 Before editing a file, check whether it is listed in
-`.claude/styleguides/fix_me.md`. If it is, and bringing it into
+`agent/styleguides/fix_me.md`. If it is, and bringing it into
 compliance is small and within a styleguide already applicable to this
 change, fix it as part of the same change and remove its entry. Do not
 expand scope to fix an unrelated flagged file just because it happens to
@@ -184,7 +184,7 @@ Verify:
 
 ### Persist the outcome
 
-Update the plan file at `.claude/plans/<slug>.md`:
+Update the plan file at `agent/plans/<slug>.md`:
 
 - set the `status` frontmatter field to `implemented`;
 - append the `Implementation Summary` (see `Output` below) to the end of

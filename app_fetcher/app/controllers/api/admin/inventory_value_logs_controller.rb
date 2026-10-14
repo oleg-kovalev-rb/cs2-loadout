@@ -7,9 +7,11 @@ module Api
 
       sig { void }
       def index
-        logs = InventoryValueLog.where(steam_id: params[:user_inventory_steam_id])
+        pagination = Appliers::Pagination.new(params[:page], params[:per_page])
+        total_count = InventoryValueLog.count
+        logs = pagination.apply(InventoryValueLog.order(log_date: :desc))
 
-        render json: { inventory_value_logs: logs.map { |log| inventory_value_log_json(log) } }, status: :ok
+        render json: ::Admin::InventoryValueLogSerializer.call_for_list(pagination_meta(pagination, total_count), logs), status: :ok
       end
 
       sig { void }
@@ -18,17 +20,6 @@ module Api
 
         log.destroy!
         render json: { message: "Deleted" }, status: :ok
-      end
-
-      private
-
-      sig { params(log: InventoryValueLog).returns(T::Hash[Symbol, T.untyped]) }
-      def inventory_value_log_json(log)
-        {
-          id: log.id,
-          log_date: log.log_date.iso8601,
-          total_value_cents: log.total_value_cents
-        }
       end
     end
   end

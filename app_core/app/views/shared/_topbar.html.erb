@@ -1,14 +1,17 @@
 <header class="topbar">
-  <div class="topbar-left">
-    <div class="brand">
-      <span class="brand-mark">FLOAT<span>/</span></span>
-      <span class="brand-sub">Steam market intelligence</span>
-    </div>
-    <nav class="nav-tabs">
-      <%= link_to "Portfolio", root_path, class: "nav-tab#{' is-active' if active_nav == :portfolio}" %>
-      <%= link_to "Inventories", inventories_path, class: "nav-tab#{' is-active' if active_nav == :inventories}" %>
-    </nav>
+  <div class="brand">
+    <span class="brand-mark">FLOAT<span>/</span></span>
+    <span class="brand-sub">Steam market intelligence</span>
   </div>
+
+  <nav class="nav-tabs">
+    <%= link_to "Portfolio", root_path, class: "nav-tab#{' is-active' if active_tab == :portfolio}" %>
+    <%= link_to tracked_items_path, class: "nav-tab#{' is-active' if active_tab == :tracked_items}" do %>
+      Tracked Items<span class="pip">NEW</span>
+    <% end %>
+    <%= link_to "Inventories", inventories_path, class: "nav-tab#{' is-active' if active_tab == :inventories}" %>
+  </nav>
+
   <% if current_user %>
     <div class="profile-group">
       <span class="profile-chip">

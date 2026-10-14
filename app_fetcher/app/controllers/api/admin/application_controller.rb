@@ -43,6 +43,11 @@ module Api
       def render_not_found(_exception)
         render json: { message: "Not found" }, status: :not_found
       end
+
+      sig { params(pagination: Appliers::Pagination, total_count: Integer).returns(T::Hash[Symbol, Integer]) }
+      def pagination_meta(pagination, total_count)
+        { total_count: total_count, total_pages: pagination.total_pages(total_count) }
+      end
     end
   end
 end

@@ -18,7 +18,10 @@ module Admin
     def require_admin!
       return if current_admin_user
 
-      render json: { message: "Unauthorized" }, status: :unauthorized
+      respond_to do |format|
+        format.json { render json: { message: "Unauthorized" }, status: :unauthorized }
+        format.html { redirect_to new_admin_session_path }
+      end
     end
   end
 end

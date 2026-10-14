@@ -7,14 +7,18 @@ module Api
 
       sig { void }
       def index
-        render json: { items: Item.all.map { |item| item_json(item) } }, status: :ok
+        pagination = Appliers::Pagination.new(params[:page], params[:per_page])
+        total_count = Item.count
+        items = pagination.apply(Item.order(id: :asc))
+
+        render json: ::Admin::ItemSerializer.call_for_list(pagination_meta(pagination, total_count), items), status: :ok
       end
 
       sig { void }
       def show
         item = Item.find(params[:id])
 
-        render json: { item: item_json(item) }, status: :ok
+        render json: ::Admin::ItemSerializer.call(item), status: :ok
       end
 
       sig { void }
@@ -23,7 +27,7 @@ module Api
 
         if item.save
           PriceUpdateWorker.perform_async(item.id)
-          render json: { item: item_json(item) }, status: :created
+          render json: ::Admin::ItemSerializer.call(item), status: :created
         else
           render json: { message: item.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
@@ -34,7 +38,7 @@ module Api
         item = Item.find(params[:id])
 
         if item.update(update_params)
-          render json: { item: item_json(item) }, status: :ok
+          render json: ::Admin::ItemSerializer.call(item), status: :ok
         else
           render json: { message: item.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
@@ -60,17 +64,36 @@ module Api
       def warm_cache
         item = Item.find(params[:id])
 
-        warm_item_caches(item)
+        warm_item_caches([ item.market_hash_name ])
         render json: { message: "Cache warmed" }, status: :ok
+      end
+
+      sig { void }
+      def bulk_warm_cache
+        items = Item.where(id: Array(params[:item_ids]))
+        warm_item_caches(items.pluck(:market_hash_name))
+
+        render json: {
+          warmed_item_ids: items.pluck(:id),
+          message: "Cache warmed for #{items.size} item(s)"
+        }, status: :ok
+      end
+
+      sig { void }
+      def warm_catalog_cache
+        page = ItemCatalogQuery.call(params)
+        ItemCatalogCache.write(params, ItemCatalogSerializer.call(page))
+
+        render json: { message: "Catalog cache warmed" }, status: :ok
       end
 
       private
 
-      sig { params(item: Item).void }
-      def warm_item_caches(item)
-        ItemPriceCache.fetch_for([ item.market_hash_name ])
-        PriceHistoryCache.fetch_for([ item.market_hash_name ])
-        ItemTrendCache.fetch_for([ item.market_hash_name ])
+      sig { params(market_hash_names: T::Array[String]).void }
+      def warm_item_caches(market_hash_names)
+        ItemPriceCache.fetch_for(market_hash_names)
+        PriceHistoryCache.fetch_for(market_hash_names)
+        ItemTrendCache.fetch_for(market_hash_names)
       end
 
       sig { returns(ActionController::Parameters) }
@@ -85,30 +108,6 @@ module Api
           :icon_url, :marketable, :tradable, :rarity, :category,
           :current_price_cents, :change_24h_cents
         )
-      end
-
-      sig { params(item: Item).returns(T::Hash[Symbol, T.untyped]) }
-      def item_json(item)
-        {
-          id: item.id,
-          market_hash_name: item.market_hash_name,
-          metadata: {
-            weapon_type: item.weapon_type,
-            item_name: item.item_name,
-            condition: item.condition,
-            stattrak: item.stattrak,
-            souvenir: item.souvenir,
-            icon_url: item.icon_url,
-            marketable: item.marketable,
-            tradable: item.tradable,
-            rarity: item.rarity,
-            category: item.category
-          },
-          current_price_cents: item.current_price_cents,
-          change_24h_cents: item.change_24h_cents,
-          created_at: item.created_at.iso8601,
-          updated_at: item.updated_at.iso8601
-        }
       end
     end
   end

@@ -42,7 +42,7 @@ The implementation must not begin until this process is complete.
 
 ### 1. Read the development plan
 
-Read the plan from its file at `.claude/plans/<slug>.md` (produced by
+Read the plan from its file at `agent/plans/<slug>.md` (produced by
 `create-dev-plan`) rather than relying on conversation history — the plan
 may have been approved in an earlier session.
 
@@ -60,12 +60,12 @@ Do not redesign the plan.
 
 ### 2. Inspect the styleguide directories
 
-Styleguides live under `.claude/styleguides/`, split by scope:
+Styleguides live under `agent/styleguides/`, split by scope:
 
-- `.claude/styleguides/` (top level, not in a subfolder) — conventions
+- `agent/styleguides/` (top level, not in a subfolder) — conventions
   shared across every app (Ruby style, git conventions, cross-app
   Rails/testing conventions);
-- `.claude/styleguides/<app>/` — conventions local to that app's domain
+- `agent/styleguides/<app>/` — conventions local to that app's domain
   (`fetcher/` for `app_fetcher`, `core/` for `app_core`).
 
 Inspect the shared level plus the subfolder(s) for whichever app(s) the plan
@@ -144,7 +144,7 @@ Example:
 ```md
 ## Missing Styleguides
 
-### `.claude/styleguides/fetcher/background-jobs.md`
+### `agent/styleguides/fetcher/background-jobs.md`
 
 Status: missing.
 
@@ -159,7 +159,7 @@ Must define:
 - database transaction rules;
 - testing conventions.
 
-### `.claude/styleguides/fetcher/rate-limiting.md`
+### `agent/styleguides/fetcher/rate-limiting.md`
 
 Status: insufficient — exists and already applies, but its "Backoff"
 section doesn't cover exponential backoff on `429` responses, which the
@@ -202,7 +202,7 @@ If any styleguide is still missing or insufficient, return to step 5.
 
 Once every required styleguide exists and is sufficient:
 
-- update the plan file at `.claude/plans/<slug>.md` in place;
+- update the plan file at `agent/plans/<slug>.md` in place;
 - remove any `Missing Styleguides` section;
 - add an `Applicable Styleguides` section listing, for each styleguide that
   applies:

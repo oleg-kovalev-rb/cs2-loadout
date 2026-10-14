@@ -7,7 +7,7 @@ description: Amend an existing styleguide to cover an edge case or scenario its 
 
 Amend an existing project styleguide in place to cover an edge case it doesn't currently address.
 
-Use `.claude/styleguides/base.md` as the format reference — the target file should already follow it; check that the amendment keeps it that way.
+Use `agent/styleguides/base.md` as the format reference — the target file should already follow it; check that the amendment keeps it that way.
 
 ## When this applies
 
@@ -22,7 +22,7 @@ If no styleguide exists yet for the pattern at all, this is not an update — us
 3. Find representative implementations of this specific edge case in the codebase (or, if none exist yet, the closest real precedent the new rule will follow).
 4. Inspect their tests and related code.
 5. Identify the rule the edge case implies.
-   - If a representative implementation deviates from the rule followed by the others, do not fold the deviation in as an alternative and do not fix it inline — extract the rule from the conforming majority, then log the deviating file in `.claude/styleguides/fix_me.md` under the relevant scope (see that file for the format).
+   - If a representative implementation deviates from the rule followed by the others, do not fold the deviation in as an alternative and do not fix it inline — extract the rule from the conforming majority, then log the deviating file in `agent/styleguides/fix_me.md` under the relevant scope (see that file for the format).
 6. Integrate the new rule into the existing file:
    - locate the section it belongs under, or add a new section if none fits;
    - write it so it reads as part of the existing guide, not as an appendix bolted onto the end;
@@ -52,8 +52,8 @@ If an ADR may be appropriate:
 
 1. Explain why.
 2. Ask the user whether an ADR should be created.
-3. Create it only after approval, under `.claude/adr/<app>/` for the app the decision belongs to (ADRs are always app-specific, never shared). If an ADR already exists for the styleguide being amended, consider extending it instead of creating a new one.
-4. Use `.claude/adr/base.md` as the format reference.
+3. Create it only after approval, under `agent/adr/<app>/` for the app the decision belongs to (ADRs are always app-specific, never shared). If an ADR already exists for the styleguide being amended, consider extending it instead of creating a new one.
+4. Use `agent/adr/base.md` as the format reference.
 
 ## Result
 
@@ -64,7 +64,7 @@ The task is complete when:
 - the new rule sits in the section it belongs to, not appended as an afterthought;
 - a canonical example for the new case is added alongside the existing ones, none of which were removed or rewritten;
 - unrelated content in the file is untouched;
-- any deviating files found along the way are logged in `.claude/styleguides/fix_me.md`, not fixed inline;
+- any deviating files found along the way are logged in `agent/styleguides/fix_me.md`, not fixed inline;
 - ADR handling is resolved when applicable;
 - the user has approved the amendment;
 - the development plan was not modified by this skill.

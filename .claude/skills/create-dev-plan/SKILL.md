@@ -118,7 +118,7 @@ Examples:
 
 Write the plan to a file so it survives past this conversation:
 
-- path: `.claude/plans/<slug>.md`, where `<slug>` is a short kebab-case
+- path: `agent/plans/<slug>.md`, where `<slug>` is a short kebab-case
   summary of the goal (e.g. `add-price-history-endpoint.md`);
 - if a plan file for this task already exists, update it in place rather
   than creating a duplicate;
@@ -135,7 +135,7 @@ Write the plan to a file so it survives past this conversation:
 
 - follow it with the plan body (see `Output` below).
 
-`.claude/plans/` is committed to the repo, so a plan stays visible across
+`agent/plans/` is committed to the repo, so a plan stays visible across
 sessions and to the rest of the team. Once a task is implemented, the
 durable record still lives primarily in the code, tests, commit message,
 and any styleguide/ADR produced along the way — the plan file is a
@@ -217,6 +217,6 @@ The plan is complete when:
 - test strategy is defined;
 - implementation steps are ordered;
 - verification is defined;
-- the plan has been written to `.claude/plans/<slug>.md`.
+- the plan has been written to `agent/plans/<slug>.md`.
 
 Do not implement the task as part of this skill.
