@@ -11,5 +11,13 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       headers: :any,
       methods: [ :get, :post, :options ],
       credentials: false
+
+    # Api::Public:: has no caller identity at all (no bridge token, no
+    # cookie) — it's read-only and genuinely public, so it's reachable
+    # cross-origin from any island's browser fetch, not just app_core's.
+    resource "/api/public/*",
+      headers: :any,
+      methods: [ :get, :options ],
+      credentials: false
   end
 end

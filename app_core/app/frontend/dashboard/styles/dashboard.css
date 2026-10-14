@@ -113,16 +113,32 @@ html{
 }
 
 /* ---------- topbar ---------- */
+/* No justify-content:space-between — .nav-tabs's own flex:1 is what pushes
+   trailing content (profile-group, or nothing when signed out) to the far
+   right, so the tabs stay anchored right after the brand either way instead
+   of drifting to re-center between exactly two flex children. */
 .dash-root .topbar{
   display:flex;
   align-items:center;
-  justify-content:space-between;
   gap:24px;
   padding-bottom:14px;
   margin-bottom:16px;
   border-bottom:1px solid var(--border);
 }
 .dash-root .brand{ display:flex; flex-direction:column; gap:1px; }
+
+.dash-root .nav-tabs{ display:flex; align-items:center; gap:20px; flex:1; }
+.dash-root .nav-tab{
+  display:flex; align-items:center;
+  font-size:0.75rem; font-weight:500; color:var(--text-faint);
+  cursor:pointer;
+}
+.dash-root .nav-tab:hover{ color:var(--text-muted); }
+.dash-root .nav-tab.is-active{ color:var(--text); }
+.dash-root .nav-tab .pip{
+  margin-left:6px; font-family:var(--font-mono); font-size:0.5rem; color:var(--accent);
+  background:var(--accent-soft); padding:1px 5px; border-radius:999px;
+}
 .dash-root .brand-mark{
   font-family:var(--font-display);
   font-weight:800;

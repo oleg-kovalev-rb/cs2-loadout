@@ -12,6 +12,8 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "dashboards#show"
 
+  get "tracked-items", to: "tracked_items#show", as: :tracked_items
+
   resource :session, only: %i[create destroy] do
     get :callback
   end

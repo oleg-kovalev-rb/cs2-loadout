@@ -1,21 +1,32 @@
 ---
-description: React dashboard island conventions in app_core — component structure, derived-data placement, state/data-loading shape, charting library boundaries, and Vitest/@testing-library testing conventions.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/) — component structure, cross-island reuse, derived-data placement, state/data-loading shape, charting library boundaries, CSS split, and Vitest/@testing-library testing conventions.
 ---
 
-# React Dashboard (`app_core/app/frontend/dashboard/`)
+# React Islands (`app_core/app/frontend/`)
 
 See `.claude/styleguides/core/architecture-layers.md` first — it owns the
-one rule that sits above everything in this file: the dashboard reads
+one rule that sits above everything in this file: a React island reads
 `app_fetcher`'s API directly from the browser, never through an `app_core`
-proxy. This file covers everything *inside* the island itself, which that
+proxy. This file covers everything *inside* an island itself, which that
 file doesn't address.
+
+These conventions govern every React island under `app_core/app/frontend/`,
+not just the original one — `dashboard/` (the signed-in Portfolio view) was
+the first; `tracked_items/` (the public Tracked Items catalog) is the
+second, same shape. A new island is a new top-level directory under
+`app/frontend/` with its own entrypoint, not a mode bolted onto an existing
+island's reducer — see Structure and Reuse Across Islands below for what
+that means concretely. Most of this file still reads in terms of
+`dashboard/`'s own files, since that's where every existing example lives;
+treat each as "the `dashboard/` island's version of the rule," generalizing
+the same way for any other island.
 
 ## Purpose
 
-Give the dashboard's React code — components, derived-data functions,
-UI state, data loading, and tests — a single consistent shape, so a new
-tile or a new piece of async state doesn't have to re-derive conventions
-from scratch by reading every existing file.
+Give each island's React code — components, derived-data functions, UI
+state, data loading, and tests — a single consistent shape, so a new tile,
+a new piece of async state, or an entirely new island doesn't have to
+re-derive conventions from scratch by reading every existing file.
 
 ## Structure
 
@@ -38,8 +49,18 @@ app/frontend/dashboard/
 A new concern gets a new file in the matching directory — new derived
 data goes in `utils/`, a new presentational piece goes in `components/`,
 a new async data source gets its own hook in `hooks/`. Nothing here uses
-React Context — all shared state is owned by `Dashboard.jsx` and passed
-down as props (see State).
+React Context — all shared state is owned by that island's own root
+component (`Dashboard.jsx` for `dashboard/`) and passed down as props (see
+State).
+
+A genuinely new top-level feature — one with its own route, its own data
+source, and a data-loading shape that doesn't fit the existing island's
+reducer/hook contract — is a new sibling directory under `app/frontend/`
+with this same internal shape (its own root component, `reducer.js`,
+`hooks/`, `components/`, `utils/`, `__tests__/`), not a second mode
+squeezed into an existing island's reducer. State is never shared between
+islands directly — two islands only ever share pure, stateless code (see
+Reuse Across Islands), never a reducer, a hook's state, or a Context.
 
 ## Component Conventions
 
@@ -102,6 +123,45 @@ These functions:
 request data — it lives at the top level next to `reducer.js`, not inside
 `utils/`, because it configures the chart components rather than
 transforming dashboard data.
+
+## Reuse Across Islands
+
+Once more than one island exists, a piece of code from one is sometimes
+exactly what another needs too. Two different outcomes, by one test: is
+the piece pure/stateless and already generic, or is it coupled to its
+owning island's own reducer/state shape?
+
+- **Import directly, don't duplicate**, when the piece has no dependency
+  on any one island's action types, state tree, or data shape — it just
+  takes plain data/props and returns a value or markup.
+  `dashboard/components/Sparkline.jsx` is the canonical example: per
+  `.claude/adr/core/sparkline-vs-recharts.md` it's already the one
+  accepted way to render a small, repeated, decorative trend line, so
+  another island needing the same visualization imports it
+  (`import { Sparkline } from '../dashboard/components/Sparkline'`)
+  rather than growing a near-identical copy. `dashboard/utils/format.js`'s
+  `fmtPrice`/`conditionAbbr` are the same case for formatting — pure
+  functions over plain values with no reducer/state dependency, imported
+  directly rather than re-exported or copied.
+- **Write an island-local version instead**, when the piece is coupled to
+  the owning island's own reducer's action types or state shape, even if
+  it looks structurally or visually similar to something another island
+  already has. `dashboard/components/ItemsToolbar.jsx`,
+  `FilterDropdown.jsx`, `SortDropdown.jsx`, and `Pagination.jsx` are this
+  case: each dispatches `dashboard/reducer.js`'s specific action types and
+  assumes its specific state shape (e.g. `Pagination`'s fixed `PAGE_SIZE`
+  and 0-based in-memory page index). A second island with a materially
+  different data-loading shape (e.g. one driving server-side pagination
+  against a large catalog, where per-page size is user-selectable and
+  every filter change triggers a new request instead of an in-memory
+  re-slice) gets its own version of these, following the same
+  presentational conventions (Component Conventions above) rather than
+  generalizing the existing ones to serve two incompatible state shapes
+  through configuration.
+
+Don't force a shared abstraction across islands just because two
+components look alike — the dividing line is whether the *state contract*
+is shared, not whether the *markup* is.
 
 ## State & Data Loading
 
@@ -168,6 +228,19 @@ built with template-string concatenation
 (`` `chip${active ? ' is-active' : ''}` ``), not a `classnames`-style
 helper (none is a dependency).
 
+**One stylesheet per island, plus one shared one.** `dashboard.css` holds
+the custom-property token block (`--bg`, `--surface`, `--up`/`--down`,
+`--font-*`, `--radius-*`, etc.) and any chrome shared by more than one
+island's page — the topbar, nav tabs, sign-in/sign-out markup — since that
+chrome is rendered by plain ERB outside any one island and every island's
+page loads it. A new island's own page-specific classes (its own tiles,
+toolbar internals, list/grid layout) go in that island's own
+`styles/<island>.css`, imported only by that island's own entrypoint — not
+folded into `dashboard.css`, which would otherwise accumulate classes only
+one island ever uses. The new stylesheet still relies on `dashboard.css`'s
+custom properties rather than redefining them, since both stylesheets load
+on any page that needs them.
+
 ## Testing
 
 Vitest (`vite.config.js`'s `test` block: `environment: 'jsdom'`,
@@ -181,9 +254,11 @@ globals even though they'd work.
 
 ### Structure
 
-- All tests live flat under `__tests__/`, not colocated per-component —
-  `ItemsTile.test.jsx` sits next to `filters.test.js`, not inside
-  `components/`.
+- All tests live flat under an island's own `__tests__/`, not colocated
+  per-component — `ItemsTile.test.jsx` sits next to `filters.test.js`, not
+  inside `components/`. Each island has its own `__tests__/`; there is no
+  shared cross-island test directory, the same way there is no shared
+  cross-island `components/`/`utils/`.
 - `.test.js` for testing a pure `utils/`/`reducer.js` function with no
   rendering (`filters.test.js`, `portfolioSeries.test.js`,
   `marketVolume.test.js`, `reducer.test.js`). `.test.jsx` only when the
@@ -255,6 +330,10 @@ Dashboard.jsx
 
 ## Related ADR
 
+- `.claude/adr/core/multiple-react-islands.md` — why a second top-level
+  feature is a new sibling island rather than a mode inside an existing
+  one, and the pure/stateless-vs-reducer-coupled test behind Reuse Across
+  Islands above.
 - `.claude/adr/core/sparkline-vs-recharts.md` — why Recharts is scoped to
   the one hero chart and repeated sparklines are hand-rolled SVG instead.
 - `.claude/adr/core/component-tests-real-reducer.md` — why composite
