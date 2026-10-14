@@ -1,6 +1,6 @@
-import { RangeToggle } from './RangeToggle'
-import { HeroChart } from './HeroChart'
-import { fmtUSD, fmtPrice, centsToUSD, conditionAbbr } from '../utils/format'
+import { RangeToggle } from '../../shared/components/RangeToggle'
+import { HeroChart } from '../../shared/components/HeroChart'
+import { fmtUSD, fmtPrice, centsToUSD, conditionAbbr } from '../../shared/utils/format'
 import { PORTFOLIO_RANGES, ITEM_RANGES } from '../chartConfig'
 
 export function PortfolioTile({ portfolioSeries, itemHistorySeries, itemHistoryStatus, range, mode, selectedItem, onRangeChange, onBack }) {

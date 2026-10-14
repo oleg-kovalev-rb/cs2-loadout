@@ -1,4 +1,4 @@
-import { conditionAbbr } from '../utils/format'
+import { conditionAbbr } from '../../shared/utils/format'
 import { activeFilterCount } from '../reducer'
 
 export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditions, showStattrak, onWeaponToggle, onConditionToggle, onStattrakToggle, onClear }) {

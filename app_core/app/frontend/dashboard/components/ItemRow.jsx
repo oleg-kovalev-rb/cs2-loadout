@@ -1,5 +1,5 @@
-import { Sparkline } from './Sparkline'
-import { fmtPrice, conditionAbbr } from '../utils/format'
+import { Sparkline } from '../../shared/components/Sparkline'
+import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 import { changePct } from '../utils/filters'
 
 export function ItemRow({ item, isSelected, onSelect }) {

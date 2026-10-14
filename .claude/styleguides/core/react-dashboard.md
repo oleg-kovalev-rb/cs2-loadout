@@ -10,6 +10,10 @@ one rule that sits above everything in this file: the dashboard reads
 proxy. This file covers everything *inside* the island itself, which that
 file doesn't address.
 
+These conventions aren't exclusive to `dashboard/` — see Structure's
+"`app/frontend/shared/`" and "A second island" subsections for how a
+second page's React code (e.g. `inventories/`) fits the same shape.
+
 ## Purpose
 
 Give the dashboard's React code — components, derived-data functions,
@@ -40,6 +44,76 @@ data goes in `utils/`, a new presentational piece goes in `components/`,
 a new async data source gets its own hook in `hooks/`. Nothing here uses
 React Context — all shared state is owned by `Dashboard.jsx` and passed
 down as props (see State).
+
+### `app/frontend/shared/`
+
+Not everything under an island's tree is island-specific. A component,
+hook, util, or style rule with **no knowledge of which island it's
+rendered in** — it takes plain data/callbacks in, renders or computes,
+and nothing about its behavior changes if a second page reuses it — is a
+`shared/` candidate, not a `dashboard/`-local file:
+
+```text
+app/frontend/shared/
+  fonts/                   — the woff2 files every island's stylesheet builds on
+  styles/
+    tokens.css             — font-face rules, design-token custom
+                             properties, and page-agnostic chrome
+                             (topbar/nav-tabs, tile/card shell, dropdown,
+                             range-toggle, pager) every island's own
+                             stylesheet layers on top of
+  utils/
+    format.js               — display formatting with no dashboard-specific shape
+  chartConfig.js            — chart-rendering constants/mechanics
+                              (RANGE_MS, tick counts, generateAxisLabels)
+                              with no per-island range-set choice baked in
+  components/
+    Sparkline.jsx, RangeToggle.jsx, Pagination.jsx, HeroChart.jsx,
+    ChartTooltip.jsx         — generic chart/sparkline/pagination primitives
+  __tests__/
+    format.test.js
+```
+
+A file moves to `shared/` the moment a second island needs it verbatim —
+not pre-emptively, and not by forking it into two near-identical copies,
+one per island. `dashboard/chartConfig.js` is the pattern for the part
+that *doesn't* generalize: it keeps `PORTFOLIO_RANGES`/`ITEM_RANGES`
+(that island's own range-set choice, with the comment on why `24h` is
+excluded there) once the range-rendering mechanics (`RANGE_MS`,
+`generateAxisLabels`) move to `shared/chartConfig.js` — split a file at
+the "is this a choice this specific island makes, or a mechanism any
+island would use identically" line, rather than moving it wholesale just
+because most of it qualifies.
+
+### A second island
+
+A new top-level page under `app/frontend/` (e.g. `inventories/`) is a
+sibling of `dashboard/`, not a subdirectory of it or a set of additions
+bolted onto `Dashboard.jsx` — it gets its own root component, its own
+`reducer.js`, and its own `hooks/`/`components/`/`utils/`/`styles/`/
+`__tests__/`, following every convention in this file (Component
+Conventions, Derived Data, State & Data Loading, Testing) exactly as
+`dashboard/` does. It imports what it needs from `shared/` rather than
+duplicating those files or reaching into `../dashboard/...` for them
+(that directory name describes one specific island, not a shared
+library). "One reducer for the whole dashboard" (see State & Data
+Loading) generalizes the same way: one reducer per island's root
+component — not one shared across islands, and still not one per tile
+within an island.
+
+A shared component may have a narrower contract than a specific
+server-driven use needs — adapt at the call site, don't fork the
+component for it. `shared/components/Pagination.jsx`'s contract is
+0-indexed and computes its own `start`/`end` display range from a
+`pageSize` the caller passes in, because it was built against
+`dashboard/`'s client-side-sliced array. A server-paginated list (an API
+response that already carries 1-indexed `page`/`per_page`/`total_count`
+metadata) still reuses this same component — translate at the call site
+(`page: meta.page - 1` going in; `onNext`/`onPrev` do `± 1` then convert
+back to 1-indexed before calling the API) rather than writing a second,
+server-aware `Pagination` variant. Fork it into a new component only
+once a genuinely different *display* shape is needed, not merely a
+different indexing convention.
 
 ## Component Conventions
 
@@ -147,11 +221,12 @@ Two different tools for two different jobs, both already in the
 codebase — pick by these criteria, don't default to "always use the
 charting library":
 
-- **Recharts** (`HeroChart.jsx`) for the one chart that needs axes, a
-  tooltip, and real interactivity — it's rendered once per dashboard
-  view.
-- **Hand-rolled inline SVG** (`Sparkline.jsx`, used by `ItemRow` per row
-  and `MarketVolumeTile`) for small, repeated, decorative
+- **Recharts** (`shared/components/HeroChart.jsx`) for the one chart
+  that needs axes, a tooltip, and real interactivity — it's rendered
+  once per page view (dashboard's portfolio chart, an inventory detail
+  page's portfolio chart, ...).
+- **Hand-rolled inline SVG** (`shared/components/Sparkline.jsx`, used by
+  `ItemRow` per row and `MarketVolumeTile`) for small, repeated, decorative
   visualizations with no axes/tooltip/legend. `Sparkline.jsx`'s own
   comment states the reasoning directly: it renders 8-9+ times per page
   view, and a full charting-library instance per 38×24px decorative line
@@ -240,6 +315,10 @@ Dashboard.jsx
         ↓ tiles call utils/ functions to derive what they render
 ```
 
+A second island follows the identical shape against a different
+`Api::Public::*` endpoint, with no bridge token at all — see
+`architecture-layers.md` for that unauthenticated direct-fetch pattern.
+
 ## Canonical Implementations
 
 - `app_core/app/frontend/dashboard/Dashboard.jsx`,
@@ -247,8 +326,8 @@ Dashboard.jsx
 - `app_core/app/frontend/dashboard/hooks/useDashboardData.js`
 - `app_core/app/frontend/dashboard/components/ItemsTile.jsx` — the
   composition/derivation/testing pattern in one place
-- `app_core/app/frontend/dashboard/components/Sparkline.jsx` vs.
-  `app_core/app/frontend/dashboard/components/HeroChart.jsx` — the
+- `app_core/app/frontend/shared/components/Sparkline.jsx` vs.
+  `app_core/app/frontend/shared/components/HeroChart.jsx` — the
   charting-tool boundary
 - `app_core/app/frontend/dashboard/__tests__/ItemsTile.test.jsx`,
   `useDashboardData.test.js`, `portfolioSeries.test.js`

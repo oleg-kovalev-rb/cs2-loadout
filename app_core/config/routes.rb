@@ -16,6 +16,8 @@ Rails.application.routes.draw do
     get :callback
   end
 
+  resources :inventories, only: %i[index show], param: :steam_id
+
   namespace :admin do
     resource :session, only: %i[create destroy]
   end

@@ -1,0 +1,17 @@
+<% content_for :title, "Inventory — FLOAT" %>
+
+<div class="dash-root">
+  <div class="bg-fx" aria-hidden="true"></div>
+
+  <%= render "shared/topbar", active_nav: :inventories %>
+
+  <div
+    id="inventory-detail-root"
+    data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
+    data-steam-id="<%= params[:steam_id] %>"
+  ></div>
+</div>
+
+<% content_for :vite_entrypoint do %>
+  <%= vite_javascript_tag "inventory_detail.jsx" %>
+<% end %>

@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import '../shared/styles/tokens.css'
 import '../dashboard/styles/dashboard.css'
 import { Dashboard } from '../dashboard/Dashboard'
 

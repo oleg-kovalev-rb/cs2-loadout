@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ItemsToolbar } from './ItemsToolbar'
 import { ItemRow } from './ItemRow'
-import { Pagination } from './Pagination'
+import { Pagination } from '../../shared/components/Pagination'
 import { applyFilters, applySort, weaponTypesPresent, conditionsPresent, stattrakPresent } from '../utils/filters'
 import { PAGE_SIZE } from '../reducer'
 
