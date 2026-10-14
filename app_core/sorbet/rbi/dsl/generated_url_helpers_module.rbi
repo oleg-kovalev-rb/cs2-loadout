@@ -10,7 +10,16 @@ module GeneratedUrlHelpersModule
   include ::ActionDispatch::Routing::PolymorphicRoutes
 
   sig { params(args: T.untyped).returns(String) }
+  def admin_panel_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def admin_session_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def callback_session_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def new_admin_session_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def new_rails_conductor_inbound_email_source_url(*args); end

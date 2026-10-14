@@ -24,8 +24,12 @@ class ApplicationController
     include ::ActionText::ContentHelper
     include ::ActionText::TagHelper
     include ::Importmap::ImportmapTagsHelper
+    include ::ViteRails::TagHelpers
     include ::ActionController::Base::HelperMethods
     include ::ApplicationHelper
+
+    sig { returns(T.untyped) }
+    def current_user; end
   end
 
   class HelperProxy < ::ActionView::Base

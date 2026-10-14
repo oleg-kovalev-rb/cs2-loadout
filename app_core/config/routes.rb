@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    resource :session, only: %i[create destroy]
+    resource :session, only: %i[new create destroy]
+    get "/", to: "panel#show", as: :panel
   end
 end

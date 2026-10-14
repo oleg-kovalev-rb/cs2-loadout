@@ -21,7 +21,7 @@ they all go through `Steam::Client`.
 - **`response.rb` — `Steam::Response[DataClass]`.** A generic result
   struct (`status`, `data`, `error`, `success?`) returned by every
   `Steam::Client` method. See
-  `.claude/styleguides/fetcher/steam-response-objects.md` for the rules
+  `agent/styleguides/fetcher/steam-response-objects.md` for the rules
   around this type and the DTOs that plug into it.
 
 - **`response/data/item_price_data.rb`, `response/data/inventory_data.rb`**
@@ -89,8 +89,8 @@ Steam endpoint with WebMock and assert on the controller's JSON response.
 
 ## See also
 
-- `.claude/adr/fetcher/steam-client-response-objects-and-rate-limiting.md` — why rate limiting
+- `agent/adr/fetcher/steam-client-response-objects-and-rate-limiting.md` — why rate limiting
   is centralized in the client and why failures are result objects
   instead of exceptions.
-- `.claude/styleguides/fetcher/steam-response-objects.md` — rules for
+- `agent/styleguides/fetcher/steam-response-objects.md` — rules for
   `Steam::Response` and its DTOs.

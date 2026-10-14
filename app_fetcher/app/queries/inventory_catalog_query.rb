@@ -46,7 +46,8 @@ class InventoryCatalogQuery
         UserInventory.left_joins(user_inventory_items: :item).group("user_inventories.id")
       )
 
-      rows = scope.limit(pagination.per_page).offset(pagination.offset).pluck(*AGGREGATE_COLUMNS.map { |column| Arel.sql(column) })
+      rows = scope.limit(pagination.per_page).offset(pagination.offset)
+                  .pluck(*AGGREGATE_COLUMNS.map { |column| Arel.sql(column) })
       rarity_counts_by_id = rarity_counts_for(rows.map { |row| row[0] })
 
       Page.new(
