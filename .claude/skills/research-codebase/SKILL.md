@@ -108,11 +108,11 @@ Determine:
 
 Check:
 
-- `CLAUDE.md`;
-- `.claude/styleguides/` (top level — shared across every app);
-- `.claude/styleguides/<app>/` for the app(s) the task touches (e.g.
+- project guidance: `.claude/CLAUDE.md` (and `.cursor/rules/` when present);
+- `agent/styleguides/` (top level — shared across every app);
+- `agent/styleguides/<app>/` for the app(s) the task touches (e.g.
   `fetcher/` for `app_fetcher`, `core/` for `app_core`);
-- `.claude/styleguides/fix_me.md` — note if any file the task will touch
+- `agent/styleguides/fix_me.md` — note if any file the task will touch
   is already listed as a known deviation;
 - relevant project documentation;
 - existing architectural documentation.

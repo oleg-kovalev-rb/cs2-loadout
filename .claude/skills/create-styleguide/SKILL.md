@@ -7,7 +7,7 @@ description: Create a styleguide for an existing code pattern by extracting conv
 
 Create a project-specific styleguide for an existing code pattern.
 
-Use `.claude/styleguides/base.md` as the format reference.
+Use `agent/styleguides/base.md` as the format reference.
 
 ## Workflow
 
@@ -19,17 +19,17 @@ Use `.claude/styleguides/base.md` as the format reference.
      followed by the others, do not fold the deviation in as an
      alternative and do not fix it inline — extract the rule from the
      conforming majority, then log the deviating file in
-     `.claude/styleguides/fix_me.md` under the relevant scope (see that
+     `agent/styleguides/fix_me.md` under the relevant scope (see that
      file for the format).
-5. Check existing styleguides — both `.claude/styleguides/` (shared) and
-   `.claude/styleguides/<app>/` (e.g. `fetcher/`, `core/`) — for overlap or
+5. Check existing styleguides — both `agent/styleguides/` (shared) and
+   `agent/styleguides/<app>/` (e.g. `fetcher/`, `core/`) — for overlap or
    conflicts.
 6. Extract only established, project-specific rules.
 7. Decide where the styleguide belongs:
-   - `.claude/styleguides/` (top level), if the rule applies identically to
+   - `agent/styleguides/` (top level), if the rule applies identically to
      every app (e.g. Ruby style, git conventions, generic Rails/testing
      conventions shared across apps);
-   - `.claude/styleguides/<app>/`, if the rule is specific to that app's
+   - `agent/styleguides/<app>/`, if the rule is specific to that app's
      domain (e.g. `fetcher/` for Steam ingestion/parsing/jobs, `core/` for
      the dashboard/React island — nothing with an equivalent in the other
      app).
@@ -37,7 +37,7 @@ Use `.claude/styleguides/base.md` as the format reference.
    proven local rule to shared later than to walk back a shared rule that
    turns out to be app-only.
 8. Create the styleguide in the chosen location using
-   `.claude/styleguides/base.md` as the format.
+   `agent/styleguides/base.md` as the format.
 9. Add references to canonical implementations.
 10. Validate the guide against the codebase.
 11. Present the styleguide to the user and wait for explicit approval
@@ -71,9 +71,9 @@ If an ADR may be appropriate:
 
 1. Explain why.
 2. Ask the user whether an ADR should be created.
-3. Create it only after approval, under `.claude/adr/<app>/` for the app the
+3. Create it only after approval, under `agent/adr/<app>/` for the app the
    decision belongs to (ADRs are always app-specific, never shared).
-4. Use `.claude/adr/base.md` as the format reference.
+4. Use `agent/adr/base.md` as the format reference.
 
 ## Result
 
@@ -84,7 +84,7 @@ The task is complete when:
 - canonical examples are included;
 - related styleguides were checked;
 - any deviating files found along the way are logged in
-  `.claude/styleguides/fix_me.md`, not fixed inline;
+  `agent/styleguides/fix_me.md`, not fixed inline;
 - ADR handling is resolved when applicable;
 - the user has approved the styleguide;
 - the development plan was not modified by this skill.

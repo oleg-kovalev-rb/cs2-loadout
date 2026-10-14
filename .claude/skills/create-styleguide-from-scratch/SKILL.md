@@ -10,15 +10,15 @@ implementation can be used as a reference.
 
 Use:
 
-- `.claude/styleguides/base.md` for the styleguide format;
-- `.claude/adr/base.md` for the ADR format.
+- `agent/styleguides/base.md` for the styleguide format;
+- `agent/adr/base.md` for the ADR format.
 
 ## Workflow
 
 1. Confirm that no sufficient existing pattern exists.
    - If an existing file already half-implements the pattern
      inconsistently, do not treat it as a second precedent and do not fix
-     it inline — log it in `.claude/styleguides/fix_me.md` under the
+     it inline — log it in `agent/styleguides/fix_me.md` under the
      relevant scope once the new styleguide exists to point at.
 2. Inspect the surrounding architecture and constraints.
 3. Identify the meaningful design alternatives.
@@ -29,11 +29,11 @@ Use:
    - alternatives;
    - consequences;
    - implementation constraints.
-   Place it under `.claude/adr/<app>/` for the app the decision belongs to
+   Place it under `agent/adr/<app>/` for the app the decision belongs to
    — ADRs are always app-specific, never shared.
-6. Decide where the styleguide belongs: `.claude/styleguides/` (top level)
+6. Decide where the styleguide belongs: `agent/styleguides/` (top level)
    if the new pattern applies identically across apps, or
-   `.claude/styleguides/<app>/` if it's specific to that app's domain.
+   `agent/styleguides/<app>/` if it's specific to that app's domain.
    Default to the app-specific folder when unsure.
 7. Create the styleguide based on the accepted decision.
 8. Make the styleguide describe how the new pattern must be implemented.

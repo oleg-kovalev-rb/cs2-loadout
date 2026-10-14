@@ -1,0 +1,48 @@
+---
+description: Non-trivial change pipeline and shared agent/ docs layout for this monorepo
+alwaysApply: true
+---
+
+# steam_project — agent workflow
+
+Monorepo: `app_fetcher/` (Steam data API, Sorbet, Sidekiq) and `app_core/`
+(Turbo/Stimulus + React dashboard island). Shared stack in `docker-compose.yml`.
+
+## Shared docs (Claude + Cursor)
+
+Canonical paths — both tools read and write the same files:
+
+- `agent/adr/` — ADRs (`fetcher/`, `core/`, plus `base.md`)
+- `agent/styleguides/` — conventions (top-level shared; `fetcher/`; `core/`)
+- `agent/US/` — user stories
+- `agent/plans/` — development plans
+
+Skills: `.cursor/skills/` (this tool). Claude uses `.claude/skills/` with the
+same pipeline. Shared docs live only under `agent/`.
+
+## Development pipeline
+
+For any non-trivial change (new behavior, business-logic bug fix, new
+integration — not one-line fixes or pure formatting), follow this order:
+
+1. `research-codebase`
+2. `create-dev-plan` → writes `agent/plans/<slug>.md` (`status: draft`)
+3. `styleguides-check` → may require `create-styleguide` /
+   `create-styleguide-from-scratch` / `update-styleguide`; plan becomes
+   `blocked` or `styleguide-checked`
+4. `implement-plan` → TDD; plan becomes `implemented`
+
+Do not jump to implementation for non-trivial work. If a later stage
+contradicts an earlier one, go back rather than improvising.
+
+Plan status flow: `draft` → `blocked` / `styleguide-checked` → `implemented`.
+
+## Styleguide / ADR scope
+
+- `agent/styleguides/base.md`, `agent/adr/base.md` — format templates
+- top-level `agent/styleguides/*.md` — cross-app conventions
+- `agent/styleguides/fetcher|core/`, `agent/adr/fetcher|core/` — per-app
+- Deviations go in `agent/styleguides/fix_me.md`, not fixed ad hoc as
+  alternate conventions
+
+Default new guides/ADRs to the per-app folder when unsure.

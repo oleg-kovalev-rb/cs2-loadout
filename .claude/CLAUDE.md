@@ -20,6 +20,14 @@ Monorepo, two Rails 7.2 apps sharing a Postgres/Redis stack (see
 Tests: RSpec in both apps (`app_fetcher` also uses request specs under
 `spec/requests`; `app_core` mixes RSpec with minitest-based Rails defaults).
 
+## Tool layout (Claude + Cursor)
+
+Shared docs live under `agent/` so Claude Code and Cursor use the same
+ADRs, styleguides, user stories, and plans:
+
+- skills: `.claude/skills/` (this tool) and `.cursor/skills/` (Cursor)
+- shared: `agent/adr/`, `agent/styleguides/`, `agent/US/`, `agent/plans/`
+
 ## Development pipeline
 
 For any non-trivial change (new behavior, bug fix touching business logic,
@@ -38,7 +46,7 @@ Do not jump straight to implementation for non-trivial work. If a stage
 surfaces a contradiction with an earlier stage, stop and go back to that
 stage rather than improvising.
 
-`create-dev-plan` writes the plan to `.claude/plans/<slug>.md`, committed
+`create-dev-plan` writes the plan to `agent/plans/<slug>.md`, committed
 to the repo, so it survives a new session or context compaction and stays
 visible to the rest of the team. `styleguides-check` and `implement-plan`
 read and update that same file in place — check its `status` frontmatter
@@ -47,18 +55,18 @@ where a task currently stands before resuming work on it.
 
 ## Styleguides and ADRs: shared vs per-app
 
-Both live under this root `.claude/`, split by scope:
+Both live under `agent/`, split by scope:
 
-- `.claude/styleguides/base.md`, `.claude/adr/base.md` — format templates,
+- `agent/styleguides/base.md`, `agent/adr/base.md` — format templates,
   used everywhere.
-- `.claude/styleguides/*.md` (directly under `styleguides/`, not in a
+- `agent/styleguides/*.md` (directly under `styleguides/`, not in a
   per-app folder) — conventions that apply identically to every app: Ruby
   style, git conventions, cross-app Rails/testing conventions. See
-  `.claude/styleguides/README.md`.
-- `.claude/styleguides/fetcher/`, `.claude/adr/fetcher/` — specific to
+  `agent/styleguides/README.md`.
+- `agent/styleguides/fetcher/`, `agent/adr/fetcher/` — specific to
   `app_fetcher`'s domain (Steam parsing/building, ingestion jobs,
   schedulers, rate-limiting).
-- `.claude/styleguides/core/`, `.claude/adr/core/` — specific to
+- `agent/styleguides/core/`, `agent/adr/core/` — specific to
   `app_core`'s domain (dashboard/React island, Turbo/Stimulus, actions).
 
 When creating a new styleguide or ADR, decide which folder it belongs in
@@ -69,5 +77,5 @@ app-specific.
 
 Files found to deviate from a convention or styleguide (while creating a
 styleguide, researching, or implementing) are logged in
-`.claude/styleguides/fix_me.md` instead of being fixed inline or folded in
+`agent/styleguides/fix_me.md` instead of being fixed inline or folded in
 as an alternative convention — see that file for the format.
