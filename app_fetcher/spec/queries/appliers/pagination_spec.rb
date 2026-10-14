@@ -57,4 +57,14 @@ RSpec.describe Appliers::Pagination do
       expect(described_class.new(nil, "10").total_pages(25)).to eq(3)
     end
   end
+
+  describe "#apply" do
+    it "limits and offsets the given scope" do
+      ids = Array.new(5) { create(:item).id }.sort
+
+      page = described_class.new("2", "2").apply(Item.where(id: ids).order(:id))
+
+      expect(page.map(&:id)).to eq(ids[2, 2])
+    end
+  end
 end

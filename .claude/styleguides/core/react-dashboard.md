@@ -12,12 +12,20 @@ file doesn't address.
 
 ## Purpose
 
-Give the dashboard's React code — components, derived-data functions,
-UI state, data loading, and tests — a single consistent shape, so a new
-tile or a new piece of async state doesn't have to re-derive conventions
-from scratch by reading every existing file.
+Give a React island's code — components, derived-data functions, UI
+state, data loading, and tests — a single consistent shape, so a new
+tile, a new piece of async state, or a whole new island doesn't have to
+re-derive conventions from scratch by reading every existing file. These
+conventions apply to any React island mounted in `app_core`, not only the
+dashboard — `app/frontend/dashboard/` is this file's first (single-page)
+example, `app/frontend/admin-panel/` its second (multi-page, see
+Structure/State & Data Loading for the one place the two shapes genuinely
+differ).
 
 ## Structure
+
+Single-page island (`app/frontend/dashboard/` — the shape below applies
+as-is to any island with exactly one page):
 
 ```text
 app/frontend/dashboard/
@@ -35,11 +43,51 @@ app/frontend/dashboard/
     *.test.js, *.test.jsx  — flat, colocated (see Testing)
 ```
 
+Multi-page island (`app/frontend/admin-panel/` — for an island with more
+than one logical page sharing one mount point, e.g. a hash-routed admin
+panel):
+
+```text
+app/frontend/admin-panel/
+  AdminPanel.jsx           — root component: owns ONLY navigation state
+                            (which page is active) via useHashRoute(),
+                            renders the active page — no business/table
+                            state lives here (see State & Data Loading)
+  useHashRoute.js          — small hook: reads/writes location.hash,
+                            re-renders on 'hashchange'; the one
+                            dependency-free piece of navigation plumbing,
+                            not a general-purpose router
+  adminApi.js              — thin fetch wrapper (auth header, JSON
+                            parse/error shape) shared by every page's
+                            hooks/handlers — the one place that knows the
+                            fetcher base URL and auth scheme, same role
+                            `useDashboardData.js` plays alone when there's
+                            only one data source to wrap
+  pages/
+    <Resource>Page.jsx      — one per logical page: owns its own
+                            useReducer (see State & Data Loading),
+                            renders that page's components
+    <resource>Reducer.js    — that page's UI-state reducer + initialState
+                            (naming mirrors reducer.js's role, scoped per
+                            page: itemsReducer.js, priceLogsReducer.js, ...)
+  hooks/
+    useAdminList.js         — one generic data-loading hook parametrized
+                            by resource path + page/per_page, reused by
+                            every page (see State & Data Loading for why
+                            this is one hook, not one per page)
+  components/
+  utils/
+  __tests__/
+```
+
 A new concern gets a new file in the matching directory — new derived
 data goes in `utils/`, a new presentational piece goes in `components/`,
-a new async data source gets its own hook in `hooks/`. Nothing here uses
-React Context — all shared state is owned by `Dashboard.jsx` and passed
-down as props (see State).
+a new async data source gets its own hook in `hooks/` (single-page) or
+goes through the shared `adminApi.js`/`useAdminList.js` if it's the same
+shape as the other pages' (multi-page). Nothing here uses React Context
+— all shared state is owned by the page that needs it (`Dashboard.jsx`
+for a single-page island, each `<Resource>Page.jsx` for a multi-page one)
+and passed down as props (see State & Data Loading).
 
 ## Component Conventions
 
@@ -106,20 +154,48 @@ transforming dashboard data.
 ## State & Data Loading
 
 **UI state** (filters, sort, pagination, selection, open dropdown) is one
-`useReducer(dashboardReducer, initialState)` owned by `Dashboard.jsx`,
-defined in `reducer.js`. One reducer for the whole dashboard, not one per
-tile — action types are flat strings (`'RANGE_CHANGED'`,
-`'ITEM_ROW_CLICKED'`, `'WEAPON_FILTER_TOGGLED'`, ...), each returning a
-full new state object via spread. Multi-select filter state is a plain
-object of `Set`s (`{weapons: Set, conditions: Set, stattrakOnly: bool}`),
-toggled through a shared `toggleSetMember` helper — follow this shape for
-a new multi-select filter rather than inventing a different collection
-type.
+`useReducer(<name>Reducer, initialState)` **per page**, owned by that
+page's root component — never one per tile/sub-component within a page,
+and never shared across pages. For a single-page island this means
+exactly one reducer, owned by `Dashboard.jsx` (`dashboardReducer`,
+`reducer.js`) — the rule this file originally stated ("one reducer for
+the whole dashboard, not one per tile") is the single-page instance of
+this same rule, written before there was more than one page to have one
+of. For a multi-page island (`admin-panel/`), each `<Resource>Page.jsx`
+owns its own reducer (`itemsReducer`, `priceLogsReducer`,
+`userInventoriesReducer`, `inventoryValueLogsReducer`) — four reducers
+total, not one shared across all four pages and not one per table/toolbar/
+dropdown within a single page either. The root component
+(`AdminPanel.jsx`) owns only navigation state (which page is active, via
+`useHashRoute()`) — it is not where a page's table/pagination/selection
+state lives, even though it's the "root component" in the Structure
+sense.
 
-**Data loading** is a custom hook per data source
-(`useDashboardData(fetcherUrl, bridgeToken)` is the only one today),
-returning `{data, status, error}` with `status` a flat string enum. Two
-rules that generalize beyond today's exact 3 values:
+Action types are flat strings (`'RANGE_CHANGED'`, `'ITEM_ROW_CLICKED'`,
+`'WEAPON_FILTER_TOGGLED'`, ...), each returning a full new state object
+via spread. Multi-select filter state is a plain object of `Set`s
+(`{weapons: Set, conditions: Set, stattrakOnly: bool}`), toggled through a
+shared `toggleSetMember` helper — follow this shape for a new
+multi-select filter rather than inventing a different collection type.
+
+**Data loading** is a custom hook per *distinct* data-loading need. For
+the dashboard, there's exactly one need, so there's exactly one hook
+(`useDashboardData(fetcherUrl, bridgeToken)`). For the admin panel, all
+four pages have the *same* need — paginated reads against one of four
+structurally identical `Api::Admin::` index endpoints, differing only in
+resource path and per-page defaults — so this is one generic hook,
+`useAdminList(resourcePath, { page, perPage })`, parametrized and reused
+by every page, rather than four bespoke ones that would be identical
+apart from a literal string. This isn't a deviation from "a custom hook
+per data source" — it's the same rule applied to four sources that
+happen to share one shape; a future admin resource whose data-loading
+need is genuinely different (a nested/embedded sub-collection, a
+non-paginated detail fetch) gets its own hook rather than being forced
+into `useAdminList`.
+
+Regardless of island, every data-loading hook returns `{data, status,
+error}` with `status` a flat string enum. Two rules that generalize
+beyond today's exact 3 values:
 
 - `status` describes the *overall* load, and only needs enough values to
   distinguish states the UI actually renders differently — today that's
@@ -141,11 +217,36 @@ rules that generalize beyond today's exact 3 values:
   *first* (data-bearing) stage itself fails, since there is nothing
   meaningful to render without it.
 
+## Mutations Against Nested Backend Routes
+
+A flat/global list page (`PriceLogsPage`, `InventoryValueLogsPage` — see
+`admin-api-controllers.md`'s flat-global-index pattern) reads from a
+top-level, unnested endpoint, but the record it lists is still owned by a
+nested resource on the backend — `PriceLog` only has a `destroy` route
+nested under `item_id`, `InventoryValueLog` only has one nested under
+`steam_id`; neither has a flat `destroy` route, only a flat `index`/
+`global_index` read. A page's row action that mutates (delete, etc.) must
+build the real nested URL using a parent key already present in that
+row's own JSON (`item_id` for `PriceLog`, `steam_id` for
+`InventoryValueLog`) — never assume a flat mutation route exists just
+because the list read is flat. If a flat index's JSON doesn't yet carry
+the parent key the nested route needs, add it there (the same category of
+addition as `market_hash_name`/`steam_id` already added for display — see
+`admin-api-controllers.md`), not a new flat mutation endpoint.
+
+This was missed when `PriceLogsPage`/`InventoryValueLogsPage` were first
+built — both called a flat `DELETE /api/admin/<resource>/:id` that was
+never routed on the backend, caught only during manual browser
+verification (Vitest mocks `fetch`, so a test asserting "the delete call
+targets this URL" never validates that URL actually resolves to a real
+Rails route). This rule generalizes that fix for any future flat/global
+list page with a per-row mutation.
+
 ## Charting: Recharts vs. hand-rolled SVG
 
-Two different tools for two different jobs, both already in the
-codebase — pick by these criteria, don't default to "always use the
-charting library":
+Applies to any island's charts, not just the dashboard's — two different
+tools for two different jobs, both already in the codebase — pick by
+these criteria, don't default to "always use the charting library":
 
 - **Recharts** (`HeroChart.jsx`) for the one chart that needs axes, a
   tooltip, and real interactivity — it's rendered once per dashboard
@@ -169,6 +270,12 @@ built with template-string concatenation
 helper (none is a dependency).
 
 ## Testing
+
+Applies to any island's tests. For a multi-page island, the "all tests
+live flat under `__tests__/`" rule below still means one flat directory
+per island, not one per page — `ItemsPage.test.jsx` sits next to
+`PriceLogsPage.test.jsx`, the same way `ItemsTile.test.jsx` sits next to
+`PortfolioTile.test.jsx` today.
 
 Vitest (`vite.config.js`'s `test` block: `environment: 'jsdom'`,
 `globals: true`, single setup file
@@ -252,6 +359,15 @@ Dashboard.jsx
   charting-tool boundary
 - `app_core/app/frontend/dashboard/__tests__/ItemsTile.test.jsx`,
   `useDashboardData.test.js`, `portfolioSeries.test.js`
+- Multi-page structure, per-page reducers, `useHashRoute`, `adminApi.js`,
+  `useAdminList.js`: none yet — first implementation lands via
+  `.claude/plans/admin-panel-frontend.md`. Update this section once that
+  plan is implemented. Until then, `app_core/app/frontend/dashboard/` is
+  the only existing example of anything in this file — islands don't
+  share component files with each other (each is a self-contained
+  `app/frontend/<island>/` tree per Structure); a shared piece only gets
+  extracted to a common location once a third island's concrete need
+  confirms what's actually worth sharing, not pre-emptively from two.
 
 ## Related ADR
 

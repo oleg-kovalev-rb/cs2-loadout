@@ -178,11 +178,14 @@ a change's scope just because an unrelated file is flagged here.
   for the admin-panel-backend-foundation plan — those new files hit the
   identical pre-existing gap, not a new one. Fix is a project-wide
   `bundle exec tapioca gems` run, out of scope for any single feature.
-- `app_core/app/models/user.rb` has no generated DSL RBI
-  (`sorbet/rbi/dsl/user.rbi` doesn't exist) — `bundle exec srb tc`
-  reports `Method 'nickname' does not exist on User` in
-  `sessions_controller.rb`. Confirmed while adding `AdminUser` (which
-  needed its own `tapioca dsl AdminUser` run to resolve the equivalent
-  gap for its own columns) — `User`'s matching gap predates this and
-  wasn't fixed here since `user.rb` isn't otherwise touched by that work.
-  Fix is `bundle exec tapioca dsl User`, committing the resulting RBI.
+- `app_core/app/views/layouts/application.html.erb` never renders
+  `flash` — `SessionsController#callback`/`#destroy` set
+  `notice:`/`alert:` on their `redirect_to` calls, but nothing in the
+  layout (or any view) outputs `flash[:notice]`/`flash[:alert]`, so those
+  messages are silently dropped today. Confirmed while amending
+  `.claude/styleguides/core/admin-authentication.md` for the
+  admin-panel-frontend plan's format-aware login flow — that plan's own
+  login-failure error is passed as an explicit `@error` local instead of
+  `flash`, specifically to avoid building a new feature on top of this
+  gap. Not fixed here since `application.html.erb` isn't otherwise
+  touched by that work.

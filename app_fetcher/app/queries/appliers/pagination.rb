@@ -32,6 +32,11 @@ module Appliers
       total_count.zero? ? 0 : (total_count.to_f / per_page).ceil
     end
 
+    sig { params(scope: ActiveRecord::Relation).returns(ActiveRecord::Relation) }
+    def apply(scope)
+      scope.limit(per_page).offset(offset)
+    end
+
     private
 
     sig { params(raw: T.untyped, default: Integer, min: Integer, max: T.nilable(Integer)).returns(Integer) }

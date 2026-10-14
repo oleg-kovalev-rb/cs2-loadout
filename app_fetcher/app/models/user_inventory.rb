@@ -5,6 +5,7 @@ class UserInventory < ApplicationRecord
 
   has_many :user_inventory_items, dependent: :destroy
   has_many :items, through: :user_inventory_items
+  has_many :inventory_value_logs, foreign_key: :steam_id, primary_key: :steam_id
 
   validates :steam_id, presence: true, uniqueness: true
 

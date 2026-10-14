@@ -24,6 +24,7 @@ class Rails::Conductor::BaseController
     include ::ActionText::ContentHelper
     include ::ActionText::TagHelper
     include ::Importmap::ImportmapTagsHelper
+    include ::ViteRails::TagHelpers
     include ::ActionController::Base::HelperMethods
     include ::ApplicationHelper
   end

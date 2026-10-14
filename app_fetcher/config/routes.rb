@@ -25,22 +25,34 @@ Rails.application.routes.draw do
     end
 
     namespace :admin do
+      get "price_logs", to: "price_logs#index"
+      get "inventory_value_logs", to: "inventory_value_logs#index"
+
       resources :items, only: %i[index show create update destroy] do
+        collection do
+          post :bulk_warm_cache
+          post :warm_catalog_cache
+        end
+
         member do
           post :refresh_price
           post :warm_cache
         end
 
-        resources :price_logs, only: %i[index destroy]
+        resources :price_logs, only: %i[destroy]
       end
 
       resources :user_inventories, only: %i[index show destroy], param: :steam_id do
+        collection do
+          post :bulk_warm_cache
+        end
+
         member do
           post :sync
           post :warm_cache
         end
 
-        resources :inventory_value_logs, only: %i[index destroy]
+        resources :inventory_value_logs, only: %i[destroy]
       end
     end
   end

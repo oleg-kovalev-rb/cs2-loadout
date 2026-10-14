@@ -35,7 +35,7 @@ class ItemCatalogQuery
         Arel.sql("COUNT(*) FILTER (WHERE change_24h_cents < 0)")
       ).first
 
-      page_items = sort_option.apply(scope).limit(pagination.per_page).offset(pagination.offset).to_a
+      page_items = pagination.apply(sort_option.apply(scope)).to_a
 
       Page.new(
         items: page_items,

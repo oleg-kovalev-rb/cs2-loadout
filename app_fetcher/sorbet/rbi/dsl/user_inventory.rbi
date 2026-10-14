@@ -411,6 +411,20 @@ class UserInventory
 
   module GeneratedAssociationMethods
     sig { returns(T::Array[T.untyped]) }
+    def inventory_value_log_ids; end
+
+    sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+    def inventory_value_log_ids=(ids); end
+
+    # This method is created by ActiveRecord on the `UserInventory` class because it declared `has_many :inventory_value_logs`.
+    # 🔗 [Rails guide for `has_many` association](https://guides.rubyonrails.org/association_basics.html#the-has-many-association)
+    sig { returns(::InventoryValueLog::PrivateCollectionProxy) }
+    def inventory_value_logs; end
+
+    sig { params(value: T::Enumerable[::InventoryValueLog]).void }
+    def inventory_value_logs=(value); end
+
+    sig { returns(T::Array[T.untyped]) }
     def item_ids; end
 
     sig { params(ids: T::Array[T.untyped]).returns(T::Array[T.untyped]) }

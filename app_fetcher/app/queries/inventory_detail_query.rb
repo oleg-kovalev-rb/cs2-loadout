@@ -54,10 +54,7 @@ class InventoryDetailQuery
       logs_in_range = since ? logs.select { |log| log.log_date >= since } : logs
       change_cents, change_percent = change_for(logs_in_range)
 
-      top_items = items_sort_option.apply(user_inventory.items)
-                                    .limit(top_items_pagination.per_page)
-                                    .offset(top_items_pagination.offset)
-                                    .to_a
+      top_items = top_items_pagination.apply(items_sort_option.apply(user_inventory.items)).to_a
 
       Page.new(
         steam_id: steam_id,

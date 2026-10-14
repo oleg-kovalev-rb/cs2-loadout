@@ -1,0 +1,21 @@
+<% content_for :title, "AppCore · Admin" %>
+
+<div class="admin-login">
+  <div class="admin-login-card">
+    <h1 class="admin-login-title">AppCore<span class="dim">/</span>Admin</h1>
+
+    <% if @error %>
+      <p class="admin-login-error"><%= @error %></p>
+    <% end %>
+
+    <%= form_with url: admin_session_path, method: :post, local: true, class: "admin-login-form" do |form| %>
+      <label for="email">Email</label>
+      <%= form.text_field :email, id: "email", autocomplete: "username" %>
+
+      <label for="password">Password</label>
+      <%= form.password_field :password, id: "password", autocomplete: "current-password" %>
+
+      <%= form.submit "Sign in" %>
+    <% end %>
+  </div>
+</div>
