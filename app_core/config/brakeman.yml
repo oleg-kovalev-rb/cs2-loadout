@@ -1,0 +1,13 @@
+# Brakeman configuration.
+#
+# `EOLRails` fires on the Rails *version* — 7.2 reached EOL on 2026-08-09 —
+# not on this app's code, so it cannot be fixed here; only a Rails upgrade
+# clears it. That upgrade is a separate task, tracked in
+# agent/plans/add-ci-and-git-hooks.md ("Remaining Issues"). Disabling the
+# check keeps the scanner a blocking gate for everything that *is* about
+# our code.
+# The name here is Brakeman's check *class* name (`Brakeman::CheckEOLRails`),
+# not the `EOLRails` display name shown in the report — `skip_checks` is
+# matched against the former.
+skip_checks:
+  - CheckEOLRails

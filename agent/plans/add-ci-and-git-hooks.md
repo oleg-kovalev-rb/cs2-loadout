@@ -560,8 +560,14 @@ problems — to be fixed separately:
   `agent/styleguides/fetcher/list-query-objects.md`), plus
   `config/initializers/redis.rb` (`ConnectionPool` + `T.let`) and
   `lib/faraday/user_agent_rotator.rb` (`@app`). Deferred to the user.
-- **Brakeman** — `bin/brakeman` adds `--ensure-latest`; exits 5 because
-  the gem is 8.0.4 vs latest 8.1.0 (fix: `bundle update brakeman`).
+- **Brakeman** — fixed. `bin/brakeman`'s `--ensure-latest` was dropped
+  (it failed on upstream's release schedule, with no code of ours
+  involved) and the gem bumped 8.0.4 → 8.1.0. With the scan finally
+  running, it surfaced its one real finding in both apps: `EOLRails`,
+  Rails 7.2 EOL on 2026-08-09 — no code change can clear it. Disabled per
+  app via `config/brakeman.yml` (`skip_checks: [CheckEOLRails]`), which
+  keeps the gate green and still blocking for everything about our code.
+  Removing that entry needs a Rails upgrade — a separate task.
 - **bundler-audit** — ~20 advisories per app (activestorage,
   concurrent-ruby, json, loofah, nokogiri, puma, rack, rack-session,
   mail, net-imap, erb, crass, websocket-driver, faraday, yard, ...); fix

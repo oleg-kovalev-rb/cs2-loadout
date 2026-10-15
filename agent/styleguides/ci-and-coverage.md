@@ -59,6 +59,12 @@ alone is a development-only variant (see Rules → MUST NOT).
 - `linters` runs, for **both** apps: `rubocop`, `srb tc`, `brakeman`,
   `bundler-audit`; and for `app_core` additionally `eslint` and
   `prettier --check`.
+- Keep a disabled Brakeman check narrow and per-app: disable it in that
+  app's `config/brakeman.yml` via `skip_checks`, never with
+  `--no-exit-on-warn` (which unblocks *every* warning, not one check).
+  Only disable a check no code change can clear, name it by its class
+  (`CheckEOLRails` — not the `EOLRails` display name the report prints),
+  and leave the reason — and what removes it — in the file.
 - `tests` runs `rspec` for **both** apps and `vitest` for `app_core`.
 - In `docker-compose.ci.yml`, give each app with a Node toolchain
   (`app_core`) an anonymous `/app/node_modules` volume, so the base source
@@ -92,6 +98,12 @@ alone is a development-only variant (see Rules → MUST NOT).
   and breaks `vitest`/`eslint`/`prettier`. (The `pre-commit` hook is the
   deliberate exception — it *must* see the working tree; see
   `agent/styleguides/git-hooks.md`.)
+- Don't pass `--ensure-latest` to Brakeman (Rails' `bin/brakeman`
+  generator adds it by default): the flag fails the run whenever upstream
+  releases a new Brakeman, independent of our code, which is a red CI we
+  cannot fix on our side. The scanner version is pinned by
+  `Gemfile.lock` instead — refresh it with `bundle update brakeman` in
+  each app.
 - Don't make `coverage` a blocking or required status check.
 - Don't re-declare the Ruby/Node/Postgres/Redis setup inline in the
   workflow — it belongs in the Dockerfiles and `docker-compose.ci.yml`.
@@ -132,6 +144,10 @@ push / pull_request
 - `codecov.yml` — coverage reporting config
 - `app_fetcher/config/ci.rb`, `app_core/config/ci.rb` — each app's local
   equivalent
+- `app_fetcher/bin/brakeman`, `app_core/bin/brakeman` — the Brakeman
+  wrappers CI calls; no `--ensure-latest` (see Rules → MUST NOT)
+- `app_fetcher/config/brakeman.yml`, `app_core/config/brakeman.yml` — the
+  per-app Brakeman config, incl. any `skip_checks` (see Rules → MUST)
 
 ## Related ADR
 
