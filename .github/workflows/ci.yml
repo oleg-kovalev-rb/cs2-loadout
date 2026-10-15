@@ -104,12 +104,27 @@ jobs:
           name: coverage
           path: coverage-artifacts
 
+      # The reports are generated inside the app containers, whose working
+      # directory is /app for both apps — so their file paths are absolute
+      # container paths (/app/...), which Codecov can't map back to the
+      # repository. Rewrite <source> to the app's repo-relative dir so the
+      # paths come out as app_fetcher/... / app_core/...
+      - name: Rewrite coverage paths to repo-relative
+        run: |
+          sed -i 's#<source>/app</source>#<source>app_fetcher</source>#' \
+            coverage-artifacts/app_fetcher/coverage/coverage.xml
+          sed -i 's#<source>/app</source>#<source>app_core</source>#' \
+            coverage-artifacts/app_core/coverage/coverage.xml
+          sed -i 's#<source>/app/app/frontend</source>#<source>app_core/app/frontend</source>#' \
+            coverage-artifacts/app_core/coverage-frontend/cobertura-coverage.xml
+
       - name: Upload app_fetcher to Codecov
         uses: codecov/codecov-action@v7
         continue-on-error: true
         with:
           files: coverage-artifacts/app_fetcher/coverage/coverage.xml
           flags: app_fetcher
+          disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload app_core to Codecov
@@ -118,6 +133,7 @@ jobs:
         with:
           files: coverage-artifacts/app_core/coverage/coverage.xml
           flags: app_core
+          disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload frontend to Codecov
@@ -126,4 +142,5 @@ jobs:
         with:
           files: coverage-artifacts/app_core/coverage-frontend/cobertura-coverage.xml
           flags: frontend
+          disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
