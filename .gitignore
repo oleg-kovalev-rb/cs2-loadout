@@ -4,3 +4,8 @@ redis_data/
 .env
 
 .claude/settings.local.json
+
+# Root dev tooling (lefthook) and generated coverage reports.
+node_modules/
+coverage/
+coverage-frontend/

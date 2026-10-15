@@ -1,0 +1,42 @@
+# CI override for the dev stack. Always applied on top of the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.ci.yml ...
+#
+# Compose MERGES the `volumes` lists across files — it cannot remove the base
+# source bind mount. So the source stays bind-mounted (which is what we want:
+# the container sees the checkout), and each app that has a Node toolchain
+# additionally gets an anonymous `/app/node_modules` volume, initialized from
+# the image, so the mounted source doesn't shadow the image's node_modules.
+# Adds healthchecks so `up --wait` blocks until Postgres/Redis accept
+# connections. See agent/styleguides/ci-and-coverage.md and
+# agent/adr/ci-via-docker-compose.md.
+services:
+  db_core:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  db_fetcher:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app_core:
+    volumes:
+      - /app/node_modules
+    environment:
+      CI: "1"
+
+  app_fetcher:
+    environment:
+      CI: "1"

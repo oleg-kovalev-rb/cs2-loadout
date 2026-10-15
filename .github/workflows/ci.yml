@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Non-empty dummy values for docker compose interpolation. The suites use
+  # WebMock/VCR and never reach the real Steam API, so no real secret is
+  # needed. See agent/styleguides/ci-and-coverage.md.
+  APP_BRIDGE_JWT_SECRET: ci-bridge-secret-not-real
+  APP_ADMIN_BRIDGE_JWT_SECRET: ci-admin-bridge-secret-not-real
+  APP_FETCHER_PUBLIC_URL: http://localhost:3001
+  APP_CORE_ORIGIN: http://localhost:3000
+  COMPOSE: docker compose -f docker-compose.yml -f docker-compose.ci.yml
+
+jobs:
+  linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build images
+        run: $COMPOSE build
+
+      - name: RuboCop — app_fetcher
+        run: $COMPOSE run --rm --no-deps app_fetcher bin/rubocop -f github
+
+      - name: RuboCop — app_core
+        run: $COMPOSE run --rm --no-deps app_core bin/rubocop -f github
+
+      - name: Sorbet — app_fetcher
+        run: $COMPOSE run --rm --no-deps app_fetcher bundle exec srb tc
+
+      - name: Sorbet — app_core
+        run: $COMPOSE run --rm --no-deps app_core bundle exec srb tc
+
+      - name: Brakeman — app_fetcher
+        run: $COMPOSE run --rm --no-deps app_fetcher bin/brakeman --no-pager
+
+      - name: Brakeman — app_core
+        run: $COMPOSE run --rm --no-deps app_core bin/brakeman --no-pager
+
+      - name: bundler-audit — app_fetcher
+        run: $COMPOSE run --rm --no-deps app_fetcher bin/bundler-audit
+
+      - name: bundler-audit — app_core
+        run: $COMPOSE run --rm --no-deps app_core bin/bundler-audit
+
+      - name: ESLint — app_core
+        run: $COMPOSE run --rm --no-deps app_core npm run lint
+
+      - name: Prettier — app_core
+        run: $COMPOSE run --rm --no-deps app_core npm run format:check
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build images
+        run: $COMPOSE build
+
+      - name: Start Postgres and Redis
+        run: $COMPOSE up -d --wait db_core db_fetcher redis
+
+      - name: Prepare test databases
+        run: |
+          $COMPOSE run --rm --no-deps app_fetcher bin/rails db:test:prepare
+          $COMPOSE run --rm --no-deps app_core bin/rails db:test:prepare
+
+      - name: RSpec — app_fetcher
+        run: $COMPOSE run --rm --no-deps -e COVERAGE=1 app_fetcher bundle exec rspec
+
+      - name: RSpec — app_core
+        run: $COMPOSE run --rm --no-deps -e COVERAGE=1 app_core bundle exec rspec
+
+      - name: Vitest — app_core
+        run: $COMPOSE run --rm --no-deps app_core npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: |
+            app_fetcher/coverage/coverage.xml
+            app_core/coverage/coverage.xml
+            app_core/coverage-frontend/cobertura-coverage.xml
+          if-no-files-found: warn
+
+  coverage:
+    needs: tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage reports
+        uses: actions/download-artifact@v7
+        with:
+          name: coverage
+          path: coverage-artifacts
+
+      - name: Upload app_fetcher to Codecov
+        uses: codecov/codecov-action@v7
+        continue-on-error: true
+        with:
+          files: coverage-artifacts/app_fetcher/coverage/coverage.xml
+          flags: app_fetcher
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload app_core to Codecov
+        uses: codecov/codecov-action@v7
+        continue-on-error: true
+        with:
+          files: coverage-artifacts/app_core/coverage/coverage.xml
+          flags: app_core
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload frontend to Codecov
+        uses: codecov/codecov-action@v7
+        continue-on-error: true
+        with:
+          files: coverage-artifacts/app_core/coverage-frontend/cobertura-coverage.xml
+          flags: frontend
+          token: ${{ secrets.CODECOV_TOKEN }}

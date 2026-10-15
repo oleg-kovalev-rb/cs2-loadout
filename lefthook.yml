@@ -1,0 +1,30 @@
+# Git hooks for the monorepo.
+#
+# Installed by `lefthook install`, which the root package.json's `prepare`
+# script runs on `npm install`. Conventions and rationale:
+# agent/styleguides/git-hooks.md and agent/adr/git-hooks-with-lefthook.md.
+
+commit-msg:
+  commands:
+    scope-format:
+      run: script/commit-msg {1}
+
+pre-commit:
+  parallel: true
+  commands:
+    rubocop-app-fetcher:
+      root: "app_fetcher/"
+      glob: "*.rb"
+      run: docker compose run --rm --no-deps app_fetcher bin/rubocop {staged_files}
+    rubocop-app-core:
+      root: "app_core/"
+      glob: "*.rb"
+      run: docker compose run --rm --no-deps app_core bin/rubocop {staged_files}
+    eslint-app-core:
+      root: "app_core/"
+      glob: "app/frontend/**/*.{js,jsx}"
+      run: docker compose run --rm --no-deps app_core npx eslint {staged_files}
+    prettier-app-core:
+      root: "app_core/"
+      glob: "app/frontend/**/*.{js,jsx,css}"
+      run: docker compose run --rm --no-deps app_core npx prettier --check {staged_files}

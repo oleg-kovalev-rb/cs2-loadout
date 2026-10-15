@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Validates a commit message against agent/styleguides/git-commits.md:
+# `[Scope] Imperative summary`, subject-only, no trailing period, no body
+# or trailer. Invoked by lefthook's commit-msg hook, which passes the path
+# to the commit-message file as the first argument.
+#
+# Dependency-free on purpose (no bundler, no gems) so it runs on any
+# checkout, before `bundle install` has ever been run.
+
+VALID_SCOPES = %w[Core Fetcher Core+Fetcher AI\ WorkFlow Tooling CI/CD].freeze
+
+SUBJECT_REGEXP = /\A\[(#{VALID_SCOPES.map { |scope| Regexp.escape(scope) }.join("|")})\] [A-Z][a-zA-Z].*\z/
+
+message_path = ARGV[0]
+if message_path.nil? || message_path.empty?
+  warn "usage: script/commit-msg <commit-message-file>"
+  exit 2
+end
+
+# Git's message file contains comment lines (starting with `#`) that must
+# be ignored; a valid message is exactly one non-comment, non-blank line.
+lines = File.readlines(message_path, chomp: true).reject { |line| line.start_with?("#") }
+subject, *rest = lines
+subject = subject.to_s.rstrip
+
+errors = []
+errors << "subject must match `[Scope] Imperative summary`, with a valid scope tag" unless subject.match?(SUBJECT_REGEXP)
+errors << "subject must not end with a period" if subject.end_with?(".")
+errors << "commit must be subject-only (no body, no trailer)" if rest.any? { |line| !line.strip.empty? }
+
+if errors.any?
+  warn "Invalid commit message:"
+  errors.each { |error| warn "  - #{error}" }
+  warn ""
+  warn "See agent/styleguides/git-commits.md"
+  exit 1
+end

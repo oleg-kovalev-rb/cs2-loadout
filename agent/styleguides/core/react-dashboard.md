@@ -1,5 +1,5 @@
 ---
-description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, charting library boundaries, CSS split, and Vitest/@testing-library testing conventions.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
 ---
 
 # React Islands (`app_core/app/frontend/`)
@@ -191,6 +191,50 @@ Context.
   a fixed-width icon column) instead of the row collapsing around a
   missing image. Cover both branches with explicit tests, the same as any
   other conditional rendering (see `ItemRow.test.jsx`).
+
+## Linting & Formatting
+
+The frontend has a JS/JSX analogue of the Ruby side's lint + format
+enforcement: **ESLint** (flat config) for correctness and **Prettier**
+for formatting. See `agent/adr/core/frontend-lint-stack.md` for why this
+stack, and `agent/styleguides/ci-and-coverage.md` /
+`agent/styleguides/git-hooks.md` for where it runs.
+
+- **Prettier owns formatting; ESLint owns correctness.** Config lives in
+  `app_core/eslint.config.js` (flat, ESM) and `app_core/.prettierrc`
+  (+ `.prettierignore`). `eslint-config-prettier` is applied **last** in
+  the ESLint config specifically so ESLint's stylistic rules stay off and
+  the two tools never disagree about formatting.
+- **ESLint plugins:** `eslint-plugin-react` and
+  `eslint-plugin-react-hooks`. The hooks rules are load-bearing — they
+  catch the dependency-array/conditional-hook mistakes the conventions in
+  this file assume are avoided, not just formatting.
+- **Both are blocking.** `npm run lint` (`eslint app/frontend`) and
+  `npm run format:check` (`prettier --check app/frontend`) fail CI and
+  the `pre-commit` hook. Existing frontend files were reformatted once by
+  Prettier; new/changed files must already pass `format:check` — don't
+  hand-format against it.
+- **No Stylelint and no `tsc`.** The CSS split (below) and the
+  no-TypeScript stance in Component Conventions stay as-is; this stack
+  deliberately adds only lint + format.
+
+### MUST
+
+- Run `npm run format` (not hand-editing) before committing a frontend
+  change, and keep `npm run lint` clean.
+- Keep `eslint-config-prettier` last in `eslint.config.js` — adding any
+  ESLint config after it reintroduces the formatting conflicts the split
+  exists to avoid.
+- Add a new ESLint rule or plugin only to `eslint.config.js`, never as an
+  inline `/* eslint-disable */` for anything broader than a single,
+  explained line.
+
+### MUST NOT
+
+- Don't add ESLint stylistic rules (indentation, quotes, spacing) — that
+  is Prettier's job; rely on `eslint-config-prettier` to disable them.
+- Don't add Stylelint or a TS config without a separate decision (an ADR
+  superseding `agent/adr/core/frontend-lint-stack.md`).
 
 ## Derived Data: `utils/`
 
@@ -557,6 +601,8 @@ patterns.
 - `app_core/app/frontend/inventories/utils/rarity.js` — a pure derivation
   module with no reducer/state coupling, kept island-local (not moved to
   `shared/`) since `inventories/` remains its only consumer
+- `app_core/eslint.config.js`, `app_core/.prettierrc` — the lint/format
+  stack (see Linting & Formatting)
 
 ## Related ADR
 

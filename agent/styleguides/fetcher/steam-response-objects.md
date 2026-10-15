@@ -51,6 +51,11 @@ Don't use it for internal `app_fetcher` domain data (e.g. `Item`,
 - `Steam::Response[DataClass]` — generic `T::Struct` with `const :status,
   Integer`, `const :data, T.nilable(DataClass)`, `const :error,
   T.nilable(String)`, and `#success?` (`status == 200`).
+- A caller that has checked `#success?` reads `#data` exactly **once**
+  and narrows it — `data = T.must(response.data)` — then reads fields off
+  that local. `#data` stays `T.nilable` because the type can't encode
+  "success implies data"; re-reading the nilable `#data` accessor once
+  per field is what makes an otherwise-correct call site fail `srb tc`.
 - Every DTO is a `T::Struct` with `const` fields only — never `prop`.
   Fields are `T.nilable` unless Steam is known to always return them.
 - Every DTO `extend`s `Steam::Response::DataClassMethods` and implements
@@ -85,6 +90,13 @@ JSON.
 - Access the raw hash defensively: `hash["key"] || default` (see
   `InventoryData.from_hash`'s `hash["assets"] || []`), since Steam's JSON
   shape isn't contractually guaranteed.
+- After `#success?` returns true, narrow `#data` once into a local
+  (`data = T.must(response.data)`) and read fields off the local — never
+  call the nilable `#data` accessor again for each field. See
+  `PriceUpdateWorker#perform`; the four separate `response.data` reads in
+  `app/services/user_inventory_sync_service.rb` are the deviation this
+  rule exists to prevent (and are logged in
+  `agent/styleguides/fix_me.md`).
 
 ### SHOULD
 
@@ -128,6 +140,8 @@ Worker / Controller
   `Steam::Response::Data::ItemPriceData`
 - `app_fetcher/lib/steam/response/data/inventory_data.rb` —
   `Steam::Response::Data::InventoryData`
+- `app_fetcher/app/workers/price_update_worker.rb` — the post-`success?`
+  narrowing pattern (`T.must(response.data)` read once, passed on)
 
 ## Related ADR
 
