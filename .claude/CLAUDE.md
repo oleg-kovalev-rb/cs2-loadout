@@ -20,6 +20,14 @@ Monorepo, two Rails 7.2 apps sharing a Postgres/Redis stack (see
 Tests: RSpec in both apps (`app_fetcher` also uses request specs under
 `spec/requests`; `app_core` mixes RSpec with minitest-based Rails defaults).
 
+## Git access (agent policy)
+
+- **NEVER run `git push`** — or any other remote-mutating git command
+  (`git push`, force-push, `git remote` changes, PR creation via CLI).
+  Pushing is the human's job **exclusively**. The agent may edit files,
+  create local branches, and make local commits; it stops there and leaves
+  every push to the human.
+
 ## Tool layout (Claude + Cursor)
 
 Shared docs live under `agent/` so Claude Code and Cursor use the same
