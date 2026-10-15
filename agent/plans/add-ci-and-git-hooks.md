@@ -1,5 +1,5 @@
 ---
-status: draft
+status: implemented
 app: fetcher+core
 goal: Make CI actually run on GitHub (root .github/workflows) split into linters and tests stages executed via docker compose, add lefthook pre-commit + commit-msg hooks, add ESLint/Prettier for the frontend, and report coverage via Codecov (free for this public repo).
 created: 2026-10-15
@@ -473,10 +473,9 @@ project-specific styleguide; the plan is ready for `implement-plan`.
 Related ADRs (created with the styleguides): `agent/adr/ci-via-docker-compose.md`,
 `agent/adr/git-hooks-with-lefthook.md`, `agent/adr/core/frontend-lint-stack.md`.
 
-## Implementation Progress & Blocker (implement-plan)
+## Implementation Summary (implement-plan)
 
-Status reset to `draft`: implementation stopped because the plan's Sorbet
-remediation section materially underestimates the work.
+Status: `implemented` — all tooling gates are green in both apps.
 
 ### Done so far
 
@@ -504,77 +503,55 @@ remediation section materially underestimates the work.
   `.cursor/rules/development-pipeline.mdc`); styleguides/ADR/`fix_me.md`
   updated.
 
-### Blocker
+### Previously blocking — now resolved
 
-`app_fetcher` `srb tc` reports **21 errors across ~10 files**, not the 4
-the plan lists. Regenerating the RBIs surfaced errors beyond the planned
-four:
+`app_fetcher` `srb tc` had 21 errors beyond the plan's 4 (query-layer
+enum/relation typing in `app/queries/`, `config/initializers/redis.rb`,
+`lib/faraday/user_agent_rotator.rb`); fixed in
+`2291489 [Fetcher] Fix app_fetcher srb tc type errors`. Brakeman
+(`decb749`) and bundler-audit (`160641a`) were fixed in follow-up commits.
+All gates are green.
 
-- Query layer — `app/queries/options/item_filter_field.rb`,
-  `item_sort_option.rb`, `app/queries/item_catalog_query.rb`,
-  `inventory_catalog_query.rb`, `inventory_detail_query.rb`: the
-  `Appliers::*` signatures `return(T::Enum)`, losing the concrete enum
-  type, and query params are typed as bare `ActiveRecord::Relation`, so
-  `Item` scopes aren't visible. Fixing means generifying the applier
-  signatures and typing relations as `Item::ActiveRecord_Relation` — a
-  query-layer typing refactor the plan didn't include (and possibly
-  guidance in `agent/styleguides/fetcher/list-query-objects.md`).
-- `config/initializers/redis.rb` — `ConnectionPool` unresolved + needs
-  `T.let` for the constant.
-- `lib/faraday/user_agent_rotator.rb` — undeclared `@app`.
-- `Item` DSL RBI likely needs `tapioca dsl Item` (scopes `by_categories`,
-  `by_rarities`, `stattrak_only`, `matching_search`).
+### Verification (final run — all green)
 
-### Verification (executed)
-
-- RuboCop — clean in both apps (autocorrected 29 + 28 pre-existing
-  offenses; tests re-run green afterwards).
-- RSpec — `app_fetcher` 378 examples / 0 failures; `app_core` 39 / 0
-  (fixed the pre-existing `user_inventory_cache_spec.rb` version-2 key to
-  match `CACHE_KEY_VERSION = 1`; entry removed from `fix_me.md`).
-- ESLint / Prettier — clean; vitest 219/219; `npm run test:coverage`
-  writes `app_core/coverage-frontend/cobertura-coverage.xml`.
-- `COVERAGE=1 bundle exec rspec` writes `app_fetcher/coverage/coverage.xml`
-  (Line 98.82%).
+- `bin/ci` — **CI passed** in both apps (the local equivalent of the
+  workflow: setup, rubocop, `srb tc`, frontend lint/format,
+  bundler-audit, brakeman, rspec, vitest + coverage, seeds).
+- RuboCop — no offenses (143 / 51 files).
+- Sorbet `srb tc` — "No errors! Great job." (both apps).
+- Brakeman — no warnings (both).
+- bundler-audit — no vulnerabilities (both).
+- RSpec — `app_fetcher` 378 examples / 0 failures; `app_core` 39 / 0.
+- ESLint — 0 errors (one pre-existing `react-hooks/exhaustive-deps`
+  warning); Prettier — clean; vitest — 219/219.
+- Coverage — `app_fetcher/coverage/coverage.xml` (Line 98.75%);
+  `app_core/coverage-frontend/cobertura-coverage.xml`.
 - `script/commit-msg` — 13/13 accept/reject cases; `lefthook install`
-  synced `commit-msg` + `pre-commit` hooks; `lefthook run commit-msg`
-  rejects/accepts as expected.
+  synced the `commit-msg` + `pre-commit` hooks.
 - Workflow/Dependabot/`lefthook.yml`/`docker-compose.ci.yml` parse; the CI
-  compose override resolves.
-- Not runnable here: the GitHub Actions jobs end-to-end.
+  compose override resolves. The GitHub Actions jobs can't run locally,
+  but their command set is exercised end-to-end by `bin/ci`.
 
-### Remaining Issues
+### Follow-ups (no blockers)
 
-Kept in the gates (per the user), but currently red on pre-existing
-problems — to be fixed separately:
+All gates are green; the items below are optional or separate work:
 
-- **Sorbet (`srb tc`)** — `app_fetcher`: 21 errors across ~10 files, not
-  the plan's 4. Beyond the planned four (`item_parser.rb`,
-  `item_prices_controller.rb`, `user_inventory_sync_service.rb`,
-  `price_update_worker.rb`), regenerating the RBIs surfaced the query
-  layer (`item_filter_field.rb`, `item_sort_option.rb`,
-  `item_catalog_query.rb`, `inventory_catalog_query.rb`,
-  `inventory_detail_query.rb`) where `Appliers::*` returns base `T::Enum`
-  and params are bare `ActiveRecord::Relation` (needs generics +
-  `Item::ActiveRecord_Relation`; possibly guidance in
-  `agent/styleguides/fetcher/list-query-objects.md`), plus
-  `config/initializers/redis.rb` (`ConnectionPool` + `T.let`) and
-  `lib/faraday/user_agent_rotator.rb` (`@app`). Deferred to the user.
-- **Brakeman** — fixed. `bin/brakeman`'s `--ensure-latest` was dropped
-  (it failed on upstream's release schedule, with no code of ours
-  involved) and the gem bumped 8.0.4 → 8.1.0. With the scan finally
-  running, it surfaced its one real finding in both apps: `EOLRails`,
-  Rails 7.2 EOL on 2026-08-09 — no code change can clear it. Disabled per
-  app via `config/brakeman.yml` (`skip_checks: [CheckEOLRails]`), which
-  keeps the gate green and still blocking for everything about our code.
-  Removing that entry needs a Rails upgrade — a separate task.
-- **bundler-audit** — fixed. Both apps' `bin/bundler-audit` now exit 0
-  with no new `ignore` entries: the flagged gems were patched to their
-  minimum safe versions on the Rails 7.2 line (`rails 7.2.3.2`). The
-  procedure is recorded in `agent/styleguides/dependency-patching.md`,
-  the full run in `agent/plans/patch-vulnerable-gems.md`. The `linters`
-  job is still red overall — on the `srb tc` errors above, not on this
-  step.
+- **Sorbet (`srb tc`)** — resolved in
+  `2291489 [Fetcher] Fix app_fetcher srb tc type errors` (the query-layer
+  enum/relation typing, `config/initializers/redis.rb`, and
+  `lib/faraday/user_agent_rotator.rb`, on top of the plan's original
+  four files).
+- **Brakeman** — resolved in `decb749`. `bin/brakeman`'s
+  `--ensure-latest` was dropped and the gem bumped 8.0.4 → 8.1.0; the
+  scan's one real finding, `EOLRails` (Rails 7.2 EOL on 2026-08-09), is
+  disabled per app via `config/brakeman.yml`
+  (`skip_checks: [CheckEOLRails]`). Removing that entry needs a Rails
+  upgrade — a separate task.
+- **bundler-audit** — resolved in `160641a`: the flagged gems were
+  patched to their minimum safe versions on the Rails 7.2 line
+  (`rails 7.2.3.2`) with no new `ignore` entries. The procedure is
+  recorded in `agent/styleguides/dependency-patching.md`; the full run in
+  `agent/plans/patch-vulnerable-gems.md`.
 
 ### Notes / deviations from the plan
 
@@ -583,7 +560,13 @@ problems — to be fixed separately:
   volume (corrected mechanism, documented in the styleguide/ADR).
 - `app_core/Dockerfile` Ruby bumped 3.3.0 → 3.3.6 (required for
   `simplecov`; matches `app_fetcher`).
+- `bin/ci` rewritten as a plain local runner: the apps are on Rails 7.2,
+  which does not ship `ActiveSupport::ContinuousIntegration` (a Rails 8
+  addition), so the generated `bin/ci` never worked. `config/ci.rb`'s
+  step list is unchanged.
 - RuboCop autocorrect touched a broad set of formatting-only files
   (pre-existing offenses) so the lint gate is real.
 - 2 React-Compiler ESLint rules disabled in `app_core/eslint.config.js`
   (documented there).
+- Local only: container runs write `coverage/` as root, so a host
+  `npm run test:coverage` can need a `chown` afterwards; CI is unaffected.

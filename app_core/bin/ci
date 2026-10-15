@@ -1,6 +1,46 @@
 #!/usr/bin/env ruby
-require_relative "../config/boot"
-require "active_support/continuous_integration"
+# Local CI runner.
+#
+# These apps are on Rails 7.2, which does NOT ship
+# ActiveSupport::ContinuousIntegration (that DSL is a Rails 8 addition), so
+# this provides the small subset of it that config/ci.rb uses. Keeping the
+# config/ci.rb step list unchanged means bin/ci stays the local equivalent of
+# the root GitHub Actions workflow — see
+# agent/styleguides/ci-and-coverage.md.
+#
+# Usage: bin/ci
 
-CI = ActiveSupport::ContinuousIntegration
+module CI
+  @failed = []
+
+  class << self
+    def run(&block)
+      @failed = []
+      instance_exec(&block)
+
+      if @failed.empty?
+        puts "\nCI passed."
+      else
+        warn "\nCI failed: #{@failed.join(', ')}"
+        exit 1
+      end
+    end
+
+    def step(name, command)
+      puts "\n== #{name} =="
+      puts "$ #{command}"
+      @failed << name unless system(command)
+    end
+
+    def success?
+      @failed.empty?
+    end
+
+    def failure(message, hint = nil)
+      @failed << message
+      warn([ message, hint ].compact.join(" "))
+    end
+  end
+end
+
 require_relative "../config/ci.rb"
