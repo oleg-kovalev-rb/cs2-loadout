@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe('PriceLogsPage', () => {
   test('loads and renders the list with formatted prices', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([ logFixture() ]))))
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([logFixture()]))))
 
     render(<PriceLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
 
@@ -49,7 +49,7 @@ describe('PriceLogsPage', () => {
     const fetchMock = vi.fn((url, options) => {
       if (options?.method === 'DELETE') return jsonResponse({ message: 'Deleted' })
       listCallCount += 1
-      return jsonResponse(listResponse([ logFixture() ]))
+      return jsonResponse(listResponse([logFixture()]))
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -64,7 +64,7 @@ describe('PriceLogsPage', () => {
   })
 
   test('has no create button and no bulk toolbar', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([ logFixture() ]))))
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([logFixture()]))))
 
     render(<PriceLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())

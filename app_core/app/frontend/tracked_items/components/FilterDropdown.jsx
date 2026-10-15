@@ -19,7 +19,11 @@ export function FilterDropdown({
 
   return (
     <div className={`dropdown${isOpen ? ' is-open' : ''}`}>
-      <button type="button" className={`toolbar-btn${count > 0 ? ' has-active' : ''}`} onClick={onToggle}>
+      <button
+        type="button"
+        className={`toolbar-btn${count > 0 ? ' has-active' : ''}`}
+        onClick={onToggle}
+      >
         <span className="toolbar-btn-label">
           Filters
           {count > 0 && <span className="filter-badge">{count}</span>}
@@ -63,7 +67,11 @@ export function FilterDropdown({
             <div className="filter-group">
               <span className="filter-group-label">Special</span>
               <div className="chip-row">
-                <button type="button" className={`chip${stattrakOnly ? ' is-active' : ''}`} onClick={onStattrakToggle}>
+                <button
+                  type="button"
+                  className={`chip${stattrakOnly ? ' is-active' : ''}`}
+                  onClick={onStattrakToggle}
+                >
                   StatTrak&trade;
                 </button>
               </div>
@@ -81,7 +89,14 @@ export function FilterDropdown({
 function Chevron() {
   return (
     <svg className="chev" width="9" height="6" viewBox="0 0 9 6" aria-hidden="true">
-      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1 1L4.5 5L8 1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

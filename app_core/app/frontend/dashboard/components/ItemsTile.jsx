@@ -2,7 +2,13 @@ import { useMemo } from 'react'
 import { ItemsToolbar } from './ItemsToolbar'
 import { ItemRow } from './ItemRow'
 import { Pagination } from '../../shared/components/Pagination'
-import { applyFilters, applySort, weaponTypesPresent, conditionsPresent, stattrakPresent } from '../utils/filters'
+import {
+  applyFilters,
+  applySort,
+  weaponTypesPresent,
+  conditionsPresent,
+  stattrakPresent,
+} from '../utils/filters'
 import { PAGE_SIZE } from '../reducer'
 
 export function ItemsTile({
@@ -28,7 +34,7 @@ export function ItemsTile({
       conditions: conditionsPresent(items),
       showStattrak: stattrakPresent(items),
     }),
-    [items]
+    [items],
   )
 
   const { pageItems, totalCount, totalPages, currentPage } = useMemo(() => {

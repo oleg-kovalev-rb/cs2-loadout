@@ -7,13 +7,19 @@ import { fmtPrice, fmtDate } from '../utils/format'
 
 export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
   const [state, dispatch] = useReducer(inventoryValueLogsReducer, initialState)
-  const { data, status, refetch } = useAdminList(fetcherUrl, bridgeToken, '/api/admin/inventory_value_logs', {
-    page: state.page,
-    perPage: state.perPage,
-  })
+  const { data, status, refetch } = useAdminList(
+    fetcherUrl,
+    bridgeToken,
+    '/api/admin/inventory_value_logs',
+    {
+      page: state.page,
+      perPage: state.perPage,
+    },
+  )
 
   if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
-  if (status === 'error' && !data) return <div className="page-placeholder">Не удалось загрузить InventoryValueLog</div>
+  if (status === 'error' && !data)
+    return <div className="page-placeholder">Не удалось загрузить InventoryValueLog</div>
 
   const logs = data?.inventory_value_logs ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -23,7 +29,7 @@ export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
       fetcherUrl,
       bridgeToken,
       'DELETE',
-      `/api/admin/user_inventories/${log.steam_id}/inventory_value_logs/${log.id}`
+      `/api/admin/user_inventories/${log.steam_id}/inventory_value_logs/${log.id}`,
     )
     refetch()
   }

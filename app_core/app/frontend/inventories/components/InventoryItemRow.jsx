@@ -20,7 +20,9 @@ export function InventoryItemRow({ item }) {
           <span className="mover-icon" aria-hidden="true" />
         )}
         <span className="mover-id">
-          <span className="mover-name">{item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}</span>
+          <span className="mover-name">
+            {item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}
+          </span>
           <span className="mover-tags">
             {item.stattrak && <span className="tag tag-stattrak">ST</span>}
             <span className="tag tag-condition">{conditionAbbr(item.condition)}</span>

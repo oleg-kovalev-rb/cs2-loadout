@@ -51,7 +51,12 @@ export function ItemsToolbar({
         onStattrakToggle={onStattrakToggle}
         onClear={onFiltersClear}
       />
-      <SortDropdown isOpen={openDropdown === 'sort'} onToggle={() => onDropdownToggle('sort')} sort={sort} onSortChange={onSortChange} />
+      <SortDropdown
+        isOpen={openDropdown === 'sort'}
+        onToggle={() => onDropdownToggle('sort')}
+        sort={sort}
+        onSortChange={onSortChange}
+      />
     </div>
   )
 }

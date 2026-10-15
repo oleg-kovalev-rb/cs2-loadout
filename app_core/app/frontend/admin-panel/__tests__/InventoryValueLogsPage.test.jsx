@@ -17,7 +17,10 @@ function logFixture(overrides = {}) {
 }
 
 function listResponse(inventory_value_logs, meta = {}) {
-  return { meta: { total_count: inventory_value_logs.length, total_pages: 1, ...meta }, inventory_value_logs }
+  return {
+    meta: { total_count: inventory_value_logs.length, total_pages: 1, ...meta },
+    inventory_value_logs,
+  }
 }
 
 function jsonResponse(body, ok = true, status = ok ? 200 : 422) {
@@ -30,7 +33,7 @@ afterEach(() => {
 
 describe('InventoryValueLogsPage', () => {
   test('loads and renders the list', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([ logFixture() ]))))
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([logFixture()]))))
 
     render(<InventoryValueLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
 
@@ -44,7 +47,7 @@ describe('InventoryValueLogsPage', () => {
     const fetchMock = vi.fn((url, options) => {
       if (options?.method === 'DELETE') return jsonResponse({ message: 'Deleted' })
       listCallCount += 1
-      return jsonResponse(listResponse([ logFixture() ]))
+      return jsonResponse(listResponse([logFixture()]))
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -55,11 +58,13 @@ describe('InventoryValueLogsPage', () => {
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const deleteCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'DELETE')
-    expect(deleteCall[0]).toBe(`${FETCHER_URL}/api/admin/user_inventories/76561198012345678/inventory_value_logs/1`)
+    expect(deleteCall[0]).toBe(
+      `${FETCHER_URL}/api/admin/user_inventories/76561198012345678/inventory_value_logs/1`,
+    )
   })
 
   test('has no create button and no checkboxes', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([ logFixture() ]))))
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse(listResponse([logFixture()]))))
 
     render(<InventoryValueLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('76561198012345678')).toBeInTheDocument())

@@ -19,14 +19,21 @@ describe('adminGet', () => {
     expect(result).toEqual({ items: [], meta: { page: 1 } })
     expect(fetchMock).toHaveBeenCalledWith(
       'https://fetcher.test/api/admin/items',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-123' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
     )
   })
 
   test('throws with the server message on a non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse({ message: 'Unauthorized' }, false, 401)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(jsonResponse({ message: 'Unauthorized' }, false, 401)),
+    )
 
-    await expect(adminGet('https://fetcher.test', 'bad-token', '/api/admin/items')).rejects.toThrow('Unauthorized')
+    await expect(adminGet('https://fetcher.test', 'bad-token', '/api/admin/items')).rejects.toThrow(
+      'Unauthorized',
+    )
   })
 })
 
@@ -35,9 +42,15 @@ describe('adminSend', () => {
     const fetchMock = vi.fn().mockReturnValue(jsonResponse({ item: { id: 1 } }, true, 201))
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await adminSend('https://fetcher.test', 'token-123', 'POST', '/api/admin/items', {
-      item: { market_hash_name: 'AWP | Asiimov' },
-    })
+    const result = await adminSend(
+      'https://fetcher.test',
+      'token-123',
+      'POST',
+      '/api/admin/items',
+      {
+        item: { market_hash_name: 'AWP | Asiimov' },
+      },
+    )
 
     expect(result).toEqual({ item: { id: 1 } })
     const [url, options] = fetchMock.mock.calls[0]
@@ -57,10 +70,15 @@ describe('adminSend', () => {
   })
 
   test('throws with the server message on a non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(jsonResponse({ message: 'Validation failed' }, false, 422)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(jsonResponse({ message: 'Validation failed' }, false, 422)),
+    )
 
     await expect(
-      adminSend('https://fetcher.test', 'token-123', 'POST', '/api/admin/items', { market_hash_name: '' })
+      adminSend('https://fetcher.test', 'token-123', 'POST', '/api/admin/items', {
+        market_hash_name: '',
+      }),
     ).rejects.toThrow('Validation failed')
   })
 })

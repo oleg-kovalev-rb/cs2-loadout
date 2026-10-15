@@ -7,7 +7,10 @@ export function RarityMixBar({ percentages, className = 'rarity-bar' }) {
   return (
     <div className={className}>
       {RARITY_TIERS.map((tier) => (
-        <span key={tier.key} style={{ width: `${percentages[tier.key] || 0}%`, background: `var(${tier.cssVar})` }} />
+        <span
+          key={tier.key}
+          style={{ width: `${percentages[tier.key] || 0}%`, background: `var(${tier.cssVar})` }}
+        />
       ))}
     </div>
   )

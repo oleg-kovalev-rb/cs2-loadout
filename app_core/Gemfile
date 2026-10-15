@@ -42,11 +42,11 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
 
-gem 'sorbet', :group => :development
-gem 'sorbet-runtime'
-gem 'tapioca', require: false, :group => [:development, :test]
+gem "sorbet", group: :development
+gem "sorbet-runtime"
+gem "tapioca", require: false, group: [ :development, :test ]
 
-gem 'jwt'
+gem "jwt"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -78,6 +78,11 @@ group :test do
 
   # Build test data with factories instead of fixtures [https://github.com/thoughtbot/factory_bot_rails]
   gem "factory_bot_rails"
+
+  # Coverage reporting, uploaded to Codecov in CI (see
+  # agent/styleguides/ci-and-coverage.md). Loaded only when COVERAGE is set.
+  gem "simplecov", require: false
+  gem "simplecov-cobertura", require: false
 end
 
 # Rails 7.2's test runner isn't compatible with minitest 6.x (Rails::TestUnit::LineFiltering#run

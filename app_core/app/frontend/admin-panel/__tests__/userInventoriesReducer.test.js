@@ -27,15 +27,23 @@ describe('userInventoriesReducer', () => {
   })
 
   test('ALL_TOGGLED selects/clears every given steam_id', () => {
-    let state = userInventoriesReducer(initialState, { type: 'ALL_TOGGLED', checked: true, steamIds: [ 'a', 'b' ] })
-    expect([ ...state.selectedIds ]).toEqual([ 'a', 'b' ])
+    let state = userInventoriesReducer(initialState, {
+      type: 'ALL_TOGGLED',
+      checked: true,
+      steamIds: ['a', 'b'],
+    })
+    expect([...state.selectedIds]).toEqual(['a', 'b'])
 
-    state = userInventoriesReducer(state, { type: 'ALL_TOGGLED', checked: false, steamIds: [ 'a', 'b' ] })
+    state = userInventoriesReducer(state, {
+      type: 'ALL_TOGGLED',
+      checked: false,
+      steamIds: ['a', 'b'],
+    })
     expect(state.selectedIds.size).toBe(0)
   })
 
   test('SELECTION_CLEARED empties the selection', () => {
-    const state = { ...initialState, selectedIds: new Set([ 'a' ]) }
+    const state = { ...initialState, selectedIds: new Set(['a']) }
     expect(userInventoriesReducer(state, { type: 'SELECTION_CLEARED' }).selectedIds.size).toBe(0)
   })
 

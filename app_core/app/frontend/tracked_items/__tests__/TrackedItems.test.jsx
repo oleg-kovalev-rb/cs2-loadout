@@ -19,41 +19,40 @@ function catalogBody(overrides = {}) {
       last_synced_at: '2026-10-12T10:00:00Z',
       ...overrides.meta,
     },
-    items:
-      overrides.items || [
-        {
-          market_hash_name: 'AK-47 | Redline (Field-Tested)',
-          metadata: {
-            weapon_type: 'AK-47',
-            item_name: 'Redline',
-            category: 'Rifles',
-            condition: 'Field-Tested',
-            stattrak: false,
-            icon_url: null,
-            rarity: 'Classified',
-          },
-          current_price_cents: 4218,
-          change_24h_cents: 130,
-          change_24h_percent: 3.18,
-          trend_7d: [{ at: '2026-10-10T00:00:00Z', price_cents: 4000 }],
+    items: overrides.items || [
+      {
+        market_hash_name: 'AK-47 | Redline (Field-Tested)',
+        metadata: {
+          weapon_type: 'AK-47',
+          item_name: 'Redline',
+          category: 'Rifles',
+          condition: 'Field-Tested',
+          stattrak: false,
+          icon_url: null,
+          rarity: 'Classified',
         },
-        {
-          market_hash_name: 'AWP | Dragon Lore (Factory New)',
-          metadata: {
-            weapon_type: 'AWP',
-            item_name: 'Dragon Lore',
-            category: 'Rifles',
-            condition: 'Factory New',
-            stattrak: false,
-            icon_url: null,
-            rarity: 'Covert',
-          },
-          current_price_cents: 682050,
-          change_24h_cents: -1100,
-          change_24h_percent: -1.1,
-          trend_7d: [],
+        current_price_cents: 4218,
+        change_24h_cents: 130,
+        change_24h_percent: 3.18,
+        trend_7d: [{ at: '2026-10-10T00:00:00Z', price_cents: 4000 }],
+      },
+      {
+        market_hash_name: 'AWP | Dragon Lore (Factory New)',
+        metadata: {
+          weapon_type: 'AWP',
+          item_name: 'Dragon Lore',
+          category: 'Rifles',
+          condition: 'Factory New',
+          stattrak: false,
+          icon_url: null,
+          rarity: 'Covert',
         },
-      ],
+        current_price_cents: 682050,
+        change_24h_cents: -1100,
+        change_24h_percent: -1.1,
+        trend_7d: [],
+      },
+    ],
   }
 }
 
@@ -96,8 +95,8 @@ describe('TrackedItems', () => {
               trend_7d: [],
             },
           ],
-        })
-      )
+        }),
+      ),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -181,18 +180,26 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     const input = screen.getByPlaceholderText(/search by weapon/i)
     fireEvent.change(input, { target: { value: 'red' } })
-    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
     fireEvent.change(input, { target: { value: 'redline' } })
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(2)
     const [url] = fetchMock.mock.calls[1]
     expect(new URL(url).searchParams.get('search')).toBe('redline')

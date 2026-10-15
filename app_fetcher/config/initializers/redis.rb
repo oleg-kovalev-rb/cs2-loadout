@@ -1,7 +1,7 @@
 # typed: strict
 
-require 'redis'
-require 'connection_pool'
+require "redis"
+require "connection_pool"
 
 pool_size = ENV.fetch("RAILS_MAX_THREADS", 5).to_i
 

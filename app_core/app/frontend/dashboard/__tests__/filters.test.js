@@ -1,18 +1,42 @@
 import { describe, test, expect } from 'vitest'
-import { applyFilters, applySort, weaponTypesPresent, conditionsPresent, stattrakPresent } from '../utils/filters'
+import {
+  applyFilters,
+  applySort,
+  weaponTypesPresent,
+  conditionsPresent,
+  stattrakPresent,
+} from '../utils/filters'
 
 const items = [
   {
-    marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false,
-    currentPriceCents: 4000, changeCents: 300, change24hPercent: 8.11,
+    marketHashName: 'AK-47 | Redline (FT)',
+    weaponType: 'AK-47',
+    itemName: 'Redline',
+    condition: 'Field-Tested',
+    stattrak: false,
+    currentPriceCents: 4000,
+    changeCents: 300,
+    change24hPercent: 8.11,
   },
   {
-    marketHashName: 'AK-47 | Vulcan (MW) ST', weaponType: 'AK-47', itemName: 'Vulcan', condition: 'Minimal Wear', stattrak: true,
-    currentPriceCents: 14500, changeCents: -200, change24hPercent: -1.36,
+    marketHashName: 'AK-47 | Vulcan (MW) ST',
+    weaponType: 'AK-47',
+    itemName: 'Vulcan',
+    condition: 'Minimal Wear',
+    stattrak: true,
+    currentPriceCents: 14500,
+    changeCents: -200,
+    change24hPercent: -1.36,
   },
   {
-    marketHashName: 'AWP | Asiimov (BS)', weaponType: 'AWP', itemName: 'Asiimov', condition: 'Battle-Scarred', stattrak: false,
-    currentPriceCents: 5800, changeCents: 100, change24hPercent: 1.75,
+    marketHashName: 'AWP | Asiimov (BS)',
+    weaponType: 'AWP',
+    itemName: 'Asiimov',
+    condition: 'Battle-Scarred',
+    stattrak: false,
+    currentPriceCents: 5800,
+    changeCents: 100,
+    change24hPercent: 1.75,
   },
 ]
 
@@ -101,7 +125,15 @@ describe('weaponTypesPresent', () => {
   })
 
   test('excludes items with no weaponType (knives, gloves, stickers, cases) instead of producing a blank entry', () => {
-    const withKnife = [...items, { marketHashName: 'Karambit | Doppler', itemName: 'Karambit | Doppler', condition: 'Factory New', stattrak: false }]
+    const withKnife = [
+      ...items,
+      {
+        marketHashName: 'Karambit | Doppler',
+        itemName: 'Karambit | Doppler',
+        condition: 'Factory New',
+        stattrak: false,
+      },
+    ]
     expect(weaponTypesPresent(withKnife)).toEqual(['AK-47', 'AWP'])
   })
 })
@@ -126,8 +158,19 @@ describe('conditionsPresent', () => {
   })
 
   test('excludes items with no condition (stickers, cases, agents) instead of producing a blank entry', () => {
-    const withSticker = [...items, { marketHashName: 'Sticker | Katowice 2014', itemName: 'Sticker | Katowice 2014', stattrak: false }]
-    expect(conditionsPresent(withSticker)).toEqual(['Minimal Wear', 'Field-Tested', 'Battle-Scarred'])
+    const withSticker = [
+      ...items,
+      {
+        marketHashName: 'Sticker | Katowice 2014',
+        itemName: 'Sticker | Katowice 2014',
+        stattrak: false,
+      },
+    ]
+    expect(conditionsPresent(withSticker)).toEqual([
+      'Minimal Wear',
+      'Field-Tested',
+      'Battle-Scarred',
+    ])
   })
 })
 

@@ -1,6 +1,13 @@
 import { buildPageNumbers } from '../utils/pagination'
 
-export function Pagination({ page, perPage, totalCount, totalPages, onPageChange, onPerPageChange }) {
+export function Pagination({
+  page,
+  perPage,
+  totalCount,
+  totalPages,
+  onPageChange,
+  onPerPageChange,
+}) {
   const start = totalCount === 0 ? 0 : (page - 1) * perPage + 1
   const end = Math.min(page * perPage, totalCount)
 
@@ -10,7 +17,12 @@ export function Pagination({ page, perPage, totalCount, totalPages, onPageChange
 
       {totalPages > 1 && (
         <div className="pg-controls">
-          <button type="button" className="pg-btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          <button
+            type="button"
+            className="pg-btn"
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
+          >
             ‹
           </button>
           {buildPageNumbers(page, totalPages).map((entry, index) =>
@@ -27,9 +39,14 @@ export function Pagination({ page, perPage, totalCount, totalPages, onPageChange
               >
                 {entry}
               </button>
-            )
+            ),
           )}
-          <button type="button" className="pg-btn" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+          <button
+            type="button"
+            className="pg-btn"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+          >
             ›
           </button>
         </div>

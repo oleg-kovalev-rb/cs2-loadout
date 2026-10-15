@@ -35,7 +35,14 @@ export function SortDropdown({ isOpen, onToggle, sort, onSortChange }) {
 function Chevron() {
   return (
     <svg className="chev" width="9" height="6" viewBox="0 0 9 6" aria-hidden="true">
-      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1 1L4.5 5L8 1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

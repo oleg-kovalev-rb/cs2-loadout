@@ -1,8 +1,8 @@
 # typed: strict
 
-require 'net/http'
-require 'uri'
-require 'json'
+require "net/http"
+require "uri"
+require "json"
 
 module Steam
   class ProfileFetcher
@@ -25,7 +25,10 @@ module Steam
       response = Net::HTTP.get_response(uri)
       return nil unless response.is_a?(Net::HTTPSuccess)
 
-      data = JSON.parse(response.body)
+      body = response.body
+      return nil if body.nil?
+
+      data = JSON.parse(body)
       player = data.dig("response", "players", 0)
 
       return nil unless player

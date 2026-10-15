@@ -21,7 +21,7 @@ function renderRow(item) {
   return render(
     <ul>
       <InventoryItemRow item={item} />
-    </ul>
+    </ul>,
   )
 }
 

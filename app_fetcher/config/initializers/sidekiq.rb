@@ -1,5 +1,5 @@
-require 'sidekiq'
-require 'sidekiq-cron'
+require "sidekiq"
+require "sidekiq-cron"
 
 Sidekiq.configure_server do |config|
   schedule_file = "config/schedule.yml"

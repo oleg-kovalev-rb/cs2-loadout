@@ -8,7 +8,15 @@ const baseInventory = {
   change24hCents: 12500,
   change24hPercent: 2.5,
   itemsCount: 127,
-  rarityMixPercent: { gold: 0.8, covert: 5.5, classified: 8.3, restricted: 15.2, mil_spec: 22.1, industrial: 28.4, consumer: 19.7 },
+  rarityMixPercent: {
+    gold: 0.8,
+    covert: 5.5,
+    classified: 8.3,
+    restricted: 15.2,
+    mil_spec: 22.1,
+    industrial: 28.4,
+    consumer: 19.7,
+  },
   lastSyncedAt: '2026-10-12T15:30:45Z',
 }
 

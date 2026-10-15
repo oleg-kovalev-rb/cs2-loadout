@@ -1,6 +1,6 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
 import { ItemsPage } from '../pages/ItemsPage'
 
 const FETCHER_URL = 'https://fetcher.test'
@@ -52,18 +52,22 @@ afterEach(() => {
 
 describe('ItemsPage', () => {
   test('loads and renders the item list with price and 24h change', async () => {
-    mockFetchSequence(() => jsonResponse(listResponse([ itemFixture() ])))
+    mockFetchSequence(() => jsonResponse(listResponse([itemFixture()])))
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
 
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
     expect(screen.getByText('$12.45')).toBeInTheDocument()
     expect(screen.getByText('Rifle')).toBeInTheDocument()
   })
 
   test('renders the StatTrak tag only when the item is StatTrak', async () => {
     mockFetchSequence(() =>
-      jsonResponse(listResponse([ itemFixture({ metadata: { ...itemFixture().metadata, stattrak: true } }) ]))
+      jsonResponse(
+        listResponse([itemFixture({ metadata: { ...itemFixture().metadata, stattrak: true } })]),
+      ),
     )
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
@@ -76,9 +80,12 @@ describe('ItemsPage', () => {
       jsonResponse(
         listResponse([
           itemFixture({ id: 1, metadata: { ...itemFixture().metadata, icon_url: null } }),
-          itemFixture({ id: 2, metadata: { ...itemFixture().metadata, icon_url: 'https://example.test/icon.png' } }),
-        ])
-      )
+          itemFixture({
+            id: 2,
+            metadata: { ...itemFixture().metadata, icon_url: 'https://example.test/icon.png' },
+          }),
+        ]),
+      ),
     )
 
     const { container } = render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
@@ -94,12 +101,16 @@ describe('ItemsPage', () => {
 
   test('selecting rows enables the bulk toolbar and shows the count', async () => {
     const user = userEvent.setup()
-    mockFetchSequence(() => jsonResponse(listResponse([ itemFixture({ id: 1 }), itemFixture({ id: 2 }) ])))
+    mockFetchSequence(() =>
+      jsonResponse(listResponse([itemFixture({ id: 1 }), itemFixture({ id: 2 })])),
+    )
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0))
 
-    const rowCheckboxes = screen.getAllByRole('checkbox').filter((el) => el.className.includes('row-check'))
+    const rowCheckboxes = screen
+      .getAllByRole('checkbox')
+      .filter((el) => el.className.includes('row-check'))
     await user.click(rowCheckboxes[0])
 
     expect(screen.getByText('Выбрано: 1')).toBeInTheDocument()
@@ -111,14 +122,24 @@ describe('ItemsPage', () => {
     let listCallCount = 0
     const fetchMock = mockFetchSequence((url, options) => {
       if (options?.method === 'POST' && url.endsWith('/api/admin/items')) {
-        return jsonResponse({ item: itemFixture({ id: 2, market_hash_name: 'AWP | Asiimov (Field-Tested)' }) }, true, 201)
+        return jsonResponse(
+          { item: itemFixture({ id: 2, market_hash_name: 'AWP | Asiimov (Field-Tested)' }) },
+          true,
+          201,
+        )
       }
       listCallCount += 1
-      return jsonResponse(listCallCount === 1 ? listResponse([ itemFixture() ]) : listResponse([ itemFixture(), itemFixture({ id: 2 }) ]))
+      return jsonResponse(
+        listCallCount === 1
+          ? listResponse([itemFixture()])
+          : listResponse([itemFixture(), itemFixture({ id: 2 })]),
+      )
     })
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
     await user.click(screen.getByRole('button', { name: '+ Новый Item' }))
     await user.type(screen.getByPlaceholderText(/AK-47/), 'AWP | Asiimov (Field-Tested)')
@@ -126,7 +147,9 @@ describe('ItemsPage', () => {
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const postCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'POST')
-    expect(JSON.parse(postCall[1].body)).toEqual({ item: { market_hash_name: 'AWP | Asiimov (Field-Tested)' } })
+    expect(JSON.parse(postCall[1].body)).toEqual({
+      item: { market_hash_name: 'AWP | Asiimov (Field-Tested)' },
+    })
   })
 
   test('deleting a row calls DELETE and refetches', async () => {
@@ -135,11 +158,13 @@ describe('ItemsPage', () => {
     const fetchMock = mockFetchSequence((url, options) => {
       if (options?.method === 'DELETE') return jsonResponse({ message: 'Deleted' })
       listCallCount += 1
-      return jsonResponse(listResponse([ itemFixture() ]))
+      return jsonResponse(listResponse([itemFixture()]))
     })
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
     await user.click(screen.getByRole('button', { name: '⋯' }))
     await user.click(screen.getByText('Удалить'))
@@ -151,65 +176,88 @@ describe('ItemsPage', () => {
 
   test('refresh_price now calls the member action', async () => {
     const user = userEvent.setup()
-    const fetchMock = mockFetchSequence((url, options) => {
-      if (url.endsWith('/refresh_price')) return jsonResponse({ message: 'Price refresh enqueued' }, true, 202)
-      return jsonResponse(listResponse([ itemFixture() ]))
+    const fetchMock = mockFetchSequence((url) => {
+      if (url.endsWith('/refresh_price'))
+        return jsonResponse({ message: 'Price refresh enqueued' }, true, 202)
+      return jsonResponse(listResponse([itemFixture()]))
     })
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
     await user.click(screen.getByRole('button', { name: '⋯' }))
     await user.click(screen.getByText('Обновить цену сейчас'))
 
     await waitFor(() =>
-      expect(fetchMock.mock.calls.some(([url]) => url === `${FETCHER_URL}/api/admin/items/1/refresh_price`)).toBe(true)
+      expect(
+        fetchMock.mock.calls.some(
+          ([url]) => url === `${FETCHER_URL}/api/admin/items/1/refresh_price`,
+        ),
+      ).toBe(true),
     )
   })
 
   test('warm_catalog_cache button calls the collection action', async () => {
     const user = userEvent.setup()
     const fetchMock = mockFetchSequence((url) => {
-      if (url.endsWith('/warm_catalog_cache')) return jsonResponse({ message: 'Catalog cache warmed' })
-      return jsonResponse(listResponse([ itemFixture() ]))
+      if (url.endsWith('/warm_catalog_cache'))
+        return jsonResponse({ message: 'Catalog cache warmed' })
+      return jsonResponse(listResponse([itemFixture()]))
     })
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
     await user.click(screen.getByRole('button', { name: 'Пересоздать кэш каталога' }))
 
     await waitFor(() =>
-      expect(fetchMock.mock.calls.some(([url]) => url === `${FETCHER_URL}/api/admin/items/warm_catalog_cache`)).toBe(true)
+      expect(
+        fetchMock.mock.calls.some(
+          ([url]) => url === `${FETCHER_URL}/api/admin/items/warm_catalog_cache`,
+        ),
+      ).toBe(true),
     )
   })
 
   test('bulk warm cache sends the selected ids', async () => {
     const user = userEvent.setup()
     const fetchMock = mockFetchSequence((url) => {
-      if (url.endsWith('/bulk_warm_cache')) return jsonResponse({ warmed_item_ids: [ 1 ], message: 'ok' })
-      return jsonResponse(listResponse([ itemFixture() ]))
+      if (url.endsWith('/bulk_warm_cache'))
+        return jsonResponse({ warmed_item_ids: [1], message: 'ok' })
+      return jsonResponse(listResponse([itemFixture()]))
     })
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
-    const rowCheckbox = screen.getAllByRole('checkbox').find((el) => el.className.includes('row-check'))
+    const rowCheckbox = screen
+      .getAllByRole('checkbox')
+      .find((el) => el.className.includes('row-check'))
     await user.click(rowCheckbox)
     await user.click(screen.getByRole('button', { name: 'Пересоздать кэш' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url.endsWith('/bulk_warm_cache'))
       expect(call).toBeTruthy()
-      expect(JSON.parse(call[1].body)).toEqual({ item_ids: [ 1 ] })
+      expect(JSON.parse(call[1].body)).toEqual({ item_ids: [1] })
     })
   })
 
   test('pagination change triggers a new fetch with the new page', async () => {
-    const fetchMock = mockFetchSequence(() => jsonResponse(listResponse([ itemFixture() ], { total_count: 60, total_pages: 3 })))
+    const fetchMock = mockFetchSequence(() =>
+      jsonResponse(listResponse([itemFixture()], { total_count: 60, total_pages: 3 })),
+    )
 
     render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
-    await waitFor(() => expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
 
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: '2' }))

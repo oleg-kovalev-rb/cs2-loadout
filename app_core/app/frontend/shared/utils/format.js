@@ -1,5 +1,7 @@
 export function fmtUSD(dollars) {
-  return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  )
 }
 
 export function centsToUSD(cents) {

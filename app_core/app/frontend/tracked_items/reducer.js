@@ -54,7 +54,10 @@ export function trackedItemsReducer(state, action) {
       }
 
     case 'DROPDOWN_TOGGLED':
-      return { ...state, openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown }
+      return {
+        ...state,
+        openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown,
+      }
 
     case 'DROPDOWNS_CLOSED':
       return state.openDropdown === null ? state : { ...state, openDropdown: null }

@@ -33,7 +33,9 @@ export function useInventoryCatalog(fetcherUrl, { page, sort }) {
     setStatus('loading')
 
     async function load() {
-      const payload = await fetchJson(`${fetcherUrl}/api/public/inventories?page=${page}&per_page=${PER_PAGE}&sort=${sort}`)
+      const payload = await fetchJson(
+        `${fetcherUrl}/api/public/inventories?page=${page}&per_page=${PER_PAGE}&sort=${sort}`,
+      )
 
       if (cancelled) return
       setInventories(payload.inventories.map(mapInventory))

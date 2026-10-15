@@ -17,7 +17,10 @@ function mapItem(raw) {
     currentPriceCents: raw.current_price_cents,
     changeCents: raw.change_24h_cents,
     change24hPercent: raw.change_24h_percent,
-    trendPoints: (raw.trend_7d || []).map((point) => ({ at: point.at, priceCents: point.price_cents })),
+    trendPoints: (raw.trend_7d || []).map((point) => ({
+      at: point.at,
+      priceCents: point.price_cents,
+    })),
   }
 }
 
@@ -60,7 +63,10 @@ async function fetchJson(url) {
 // sort/page/perPage) refetches immediately on change — `view`/`openDropdown`
 // are deliberately not part of this hook's params at all, since neither
 // affects what to fetch, only how to render what's already loaded.
-export function useItemsCatalog(fetcherUrl, { search, categories, rarities, stattrakOnly, sort, page, perPage }) {
+export function useItemsCatalog(
+  fetcherUrl,
+  { search, categories, rarities, stattrakOnly, sort, page, perPage },
+) {
   const [debouncedSearch, setDebouncedSearch] = useState(search)
   const isFirstSearch = useRef(true)
 
@@ -86,7 +92,15 @@ export function useItemsCatalog(fetcherUrl, { search, categories, rarities, stat
     let cancelled = false
     setStatus('loading')
 
-    const query = buildQuery({ search: debouncedSearch, categories, rarities, stattrakOnly, sort, page, perPage })
+    const query = buildQuery({
+      search: debouncedSearch,
+      categories,
+      rarities,
+      stattrakOnly,
+      sort,
+      page,
+      perPage,
+    })
 
     fetchJson(`${fetcherUrl}/api/public/items?${query}`)
       .then((raw) => {

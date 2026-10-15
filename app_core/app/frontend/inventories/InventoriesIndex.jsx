@@ -9,7 +9,10 @@ const PER_PAGE = 24
 
 export function InventoriesIndex({ fetcherUrl }) {
   const [state, dispatch] = useReducer(catalogReducer, initialCatalogState)
-  const { inventories, meta, status } = useInventoryCatalog(fetcherUrl, { page: state.page, sort: state.sort })
+  const { inventories, meta, status } = useInventoryCatalog(fetcherUrl, {
+    page: state.page,
+    sort: state.sort,
+  })
 
   if (status === 'loading') {
     return <p className="dash-loading">Loading inventories…</p>
@@ -28,7 +31,8 @@ export function InventoriesIndex({ fetcherUrl }) {
         <div>
           <h1 className="page-title">Inventories</h1>
           <p className="page-sub">
-            <strong>{totalCount}</strong> public CS2 inventories tracked &middot; browse what the FLOAT community is holding
+            <strong>{totalCount}</strong> public CS2 inventories tracked &middot; browse what the
+            FLOAT community is holding
           </p>
         </div>
       </div>

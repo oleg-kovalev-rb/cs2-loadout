@@ -13,7 +13,10 @@ export function catalogReducer(state, action) {
       return { ...state, page: action.page }
 
     case 'DROPDOWN_TOGGLED':
-      return { ...state, openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown }
+      return {
+        ...state,
+        openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown,
+      }
 
     case 'DROPDOWNS_CLOSED':
       return state.openDropdown === null ? state : { ...state, openDropdown: null }
@@ -42,7 +45,10 @@ export function detailReducer(state, action) {
       return { ...state, itemsPage: action.itemsPage }
 
     case 'DROPDOWN_TOGGLED':
-      return { ...state, openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown }
+      return {
+        ...state,
+        openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown,
+      }
 
     case 'DROPDOWNS_CLOSED':
       return state.openDropdown === null ? state : { ...state, openDropdown: null }

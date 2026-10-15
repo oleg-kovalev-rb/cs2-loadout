@@ -31,7 +31,7 @@ export function TrackedItems({ fetcherUrl }) {
       availableRarities: raritiesPresent(items),
       showStattrak: stattrakPresent(items),
     }),
-    [items]
+    [items],
   )
 
   if (status === 'loading' && !data) {
@@ -39,7 +39,11 @@ export function TrackedItems({ fetcherUrl }) {
   }
 
   if (status === 'error' && !data) {
-    return <p className="dash-loading dash-loading-error">Couldn&rsquo;t load tracked items: {error?.message}</p>
+    return (
+      <p className="dash-loading dash-loading-error">
+        Couldn&rsquo;t load tracked items: {error?.message}
+      </p>
+    )
   }
 
   return (

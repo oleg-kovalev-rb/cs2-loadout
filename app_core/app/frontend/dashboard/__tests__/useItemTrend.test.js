@@ -24,9 +24,11 @@ describe('useItemTrend', () => {
 
   test('fetches trend with no params and maps points per item', async () => {
     const at = new Date().toISOString()
-    const fetchMock = vi.fn().mockImplementationOnce(() =>
-      jsonResponse({ [NAMES[0]]: [{ at, price_cents: 3845, volume: 12 }] })
-    )
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() =>
+        jsonResponse({ [NAMES[0]]: [{ at, price_cents: 3845, volume: 12 }] }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() => useItemTrend('http://fetcher.test', 'token-123', NAMES))
@@ -35,13 +37,18 @@ describe('useItemTrend', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/v1/item_prices/trend',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-123' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
     )
     expect(result.current.trendByName[NAMES[0]]).toEqual([{ at, priceCents: 3845, volume: 12 }])
   })
 
   test('surfaces an error status when the fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({}, false)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, false)),
+    )
 
     const { result } = renderHook(() => useItemTrend('http://fetcher.test', 'token-123', NAMES))
 

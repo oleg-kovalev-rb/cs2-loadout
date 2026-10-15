@@ -38,7 +38,9 @@ describe('useDashboardData', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/v1/inventories/me',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-123' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
     )
     expect(result.current.data.items[0]).toMatchObject({
       marketHashName: 'AK-47 | Redline (Field-Tested)',
@@ -57,7 +59,7 @@ describe('useDashboardData', () => {
   test('surfaces an error state when the inventory call fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementationOnce(() => jsonResponse({}, false))
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, false)),
     )
 
     const { result } = renderHook(() => useDashboardData('http://fetcher.test', 'token-123'))
@@ -67,7 +69,9 @@ describe('useDashboardData', () => {
   })
 
   test('handles an empty inventory', async () => {
-    const fetchMock = vi.fn().mockImplementationOnce(() => jsonResponse({ items_count: 0, items: [] }))
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse({ items_count: 0, items: [] }))
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() => useDashboardData('http://fetcher.test', 'token-123'))

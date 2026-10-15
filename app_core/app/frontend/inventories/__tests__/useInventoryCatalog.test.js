@@ -12,7 +12,15 @@ const rawInventory = {
   change_24h_cents: 12500,
   change_24h_percent: 2.5,
   items_count: 127,
-  rarity_mix_percent: { gold: 0.8, covert: 5.5, classified: 8.3, restricted: 15.2, mil_spec: 22.1, industrial: 28.4, consumer: 19.7 },
+  rarity_mix_percent: {
+    gold: 0.8,
+    covert: 5.5,
+    classified: 8.3,
+    restricted: 15.2,
+    mil_spec: 22.1,
+    industrial: 28.4,
+    consumer: 19.7,
+  },
   last_synced_at: '2026-10-12T15:30:45Z',
 }
 
@@ -23,15 +31,23 @@ afterEach(() => {
 describe('useInventoryCatalog', () => {
   test('fetches the catalog with no auth header, mapping snake_case fields to camelCase', async () => {
     const fetchMock = vi.fn().mockImplementationOnce(() =>
-      jsonResponse({ meta: { page: 1, per_page: 24, total_count: 1, total_pages: 1 }, inventories: [rawInventory] })
+      jsonResponse({
+        meta: { page: 1, per_page: 24, total_count: 1, total_pages: 1 },
+        inventories: [rawInventory],
+      }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const { result } = renderHook(() => useInventoryCatalog('http://fetcher.test', { page: 1, sort: 'value_desc' }))
+    const { result } = renderHook(() =>
+      useInventoryCatalog('http://fetcher.test', { page: 1, sort: 'value_desc' }),
+    )
 
     await waitFor(() => expect(result.current.status).toBe('success'))
 
-    expect(fetchMock).toHaveBeenCalledWith('http://fetcher.test/api/public/inventories?page=1&per_page=24&sort=value_desc', expect.anything())
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://fetcher.test/api/public/inventories?page=1&per_page=24&sort=value_desc',
+      expect.anything(),
+    )
     const [, options] = fetchMock.mock.calls[0]
     expect(options.headers?.Authorization).toBeUndefined()
     expect(result.current.inventories).toEqual([
@@ -52,9 +68,12 @@ describe('useInventoryCatalog', () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse({ meta: {}, inventories: [] }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { rerender } = renderHook(({ page, sort }) => useInventoryCatalog('http://fetcher.test', { page, sort }), {
-      initialProps: { page: 1, sort: 'value_desc' },
-    })
+    const { rerender } = renderHook(
+      ({ page, sort }) => useInventoryCatalog('http://fetcher.test', { page, sort }),
+      {
+        initialProps: { page: 1, sort: 'value_desc' },
+      },
+    )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
@@ -65,14 +84,19 @@ describe('useInventoryCatalog', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
     expect(fetchMock).toHaveBeenLastCalledWith(
       'http://fetcher.test/api/public/inventories?page=2&per_page=24&sort=items_desc',
-      expect.anything()
+      expect.anything(),
     )
   })
 
   test('surfaces an error status when the fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({}, false)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, false)),
+    )
 
-    const { result } = renderHook(() => useInventoryCatalog('http://fetcher.test', { page: 1, sort: 'value_desc' }))
+    const { result } = renderHook(() =>
+      useInventoryCatalog('http://fetcher.test', { page: 1, sort: 'value_desc' }),
+    )
 
     await waitFor(() => expect(result.current.status).toBe('error'))
   })

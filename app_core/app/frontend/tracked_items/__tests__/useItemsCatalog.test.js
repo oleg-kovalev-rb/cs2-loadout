@@ -107,8 +107,8 @@ describe('useItemsCatalog', () => {
           sort: 'price_desc',
           page: 3,
           perPage: 50,
-        })
-      )
+        }),
+      ),
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
@@ -145,21 +145,31 @@ describe('useItemsCatalog', () => {
       initialProps: baseParams(),
     })
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     rerender(baseParams({ search: 'red' }))
-    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
     rerender(baseParams({ search: 'redl' }))
-    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
     rerender(baseParams({ search: 'redline' }))
 
     // still within the debounce window — no new fetch yet
-    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     // debounce settles 300ms after the last change
-    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(2)
 
     const [lastUrl] = fetchMock.mock.calls[1]
@@ -185,17 +195,24 @@ describe('useItemsCatalog', () => {
 
   test('a superseded in-flight request does not clobber the newer one landing after it', async () => {
     let resolveFirst
-    const firstPromise = new Promise((resolve) => { resolveFirst = resolve })
+    const firstPromise = new Promise((resolve) => {
+      resolveFirst = resolve
+    })
 
     const fetchMock = vi
       .fn()
       .mockImplementationOnce(() => firstPromise)
-      .mockImplementationOnce(() => jsonResponse({ ...CATALOG_BODY, meta: { ...CATALOG_BODY.meta, page: 2 } }))
+      .mockImplementationOnce(() =>
+        jsonResponse({ ...CATALOG_BODY, meta: { ...CATALOG_BODY.meta, page: 2 } }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
-    const { result, rerender } = renderHook((props) => useItemsCatalog('http://fetcher.test', props), {
-      initialProps: baseParams({ page: 1 }),
-    })
+    const { result, rerender } = renderHook(
+      (props) => useItemsCatalog('http://fetcher.test', props),
+      {
+        initialProps: baseParams({ page: 1 }),
+      },
+    )
 
     rerender(baseParams({ page: 2 }))
     await waitFor(() => expect(result.current.status).toBe('success'))
@@ -209,7 +226,10 @@ describe('useItemsCatalog', () => {
   })
 
   test('surfaces an error state when the request fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({}, false)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, false)),
+    )
 
     const { result } = renderHook(() => useItemsCatalog('http://fetcher.test', baseParams()))
 

@@ -27,7 +27,10 @@ describe('trackedItemsReducer', () => {
     expect(added.categories.has('Rifles')).toBe(true)
     expect(added.page).toBe(1)
 
-    const removed = trackedItemsReducer({ ...added, page: 5 }, { type: 'CATEGORY_TOGGLED', value: 'Rifles' })
+    const removed = trackedItemsReducer(
+      { ...added, page: 5 },
+      { type: 'CATEGORY_TOGGLED', value: 'Rifles' },
+    )
     expect(removed.categories.has('Rifles')).toBe(false)
     expect(removed.page).toBe(1)
   })
@@ -38,7 +41,10 @@ describe('trackedItemsReducer', () => {
     expect(added.rarities.has('Covert')).toBe(true)
     expect(added.page).toBe(1)
 
-    const removed = trackedItemsReducer({ ...added, page: 5 }, { type: 'RARITY_TOGGLED', value: 'Covert' })
+    const removed = trackedItemsReducer(
+      { ...added, page: 5 },
+      { type: 'RARITY_TOGGLED', value: 'Covert' },
+    )
     expect(removed.rarities.has('Covert')).toBe(false)
     expect(removed.page).toBe(1)
   })
@@ -107,15 +113,24 @@ describe('trackedItemsReducer', () => {
   })
 
   test('DROPDOWN_TOGGLED opens then closes the same dropdown', () => {
-    const opened = trackedItemsReducer(initialState, { type: 'DROPDOWN_TOGGLED', dropdown: 'filter' })
+    const opened = trackedItemsReducer(initialState, {
+      type: 'DROPDOWN_TOGGLED',
+      dropdown: 'filter',
+    })
     expect(opened.openDropdown).toBe('filter')
     const closed = trackedItemsReducer(opened, { type: 'DROPDOWN_TOGGLED', dropdown: 'filter' })
     expect(closed.openDropdown).toBeNull()
   })
 
   test('DROPDOWN_TOGGLED opening a different dropdown replaces the open one', () => {
-    const sortOpen = trackedItemsReducer(initialState, { type: 'DROPDOWN_TOGGLED', dropdown: 'sort' })
-    const filterOpen = trackedItemsReducer(sortOpen, { type: 'DROPDOWN_TOGGLED', dropdown: 'filter' })
+    const sortOpen = trackedItemsReducer(initialState, {
+      type: 'DROPDOWN_TOGGLED',
+      dropdown: 'sort',
+    })
+    const filterOpen = trackedItemsReducer(sortOpen, {
+      type: 'DROPDOWN_TOGGLED',
+      dropdown: 'filter',
+    })
     expect(filterOpen.openDropdown).toBe('filter')
   })
 
