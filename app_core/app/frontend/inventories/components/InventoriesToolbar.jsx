@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { InventorySortDropdown } from './InventorySortDropdown'
 
-export function InventoriesToolbar({ sort, openDropdown, onDropdownToggle, onDropdownsClosed, onSortChange }) {
+export function InventoriesToolbar({
+  sort,
+  openDropdown,
+  onDropdownToggle,
+  onDropdownsClosed,
+  onSortChange,
+}) {
   const toolbarRef = useRef(null)
 
   useEffect(() => {
@@ -27,7 +33,12 @@ export function InventoriesToolbar({ sort, openDropdown, onDropdownToggle, onDro
       <label className="search-field">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="7" cy="7" r="5.2" stroke="currentColor" strokeWidth="1.3" />
-          <path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <path
+            d="M11 11L14.5 14.5"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
         </svg>
         <input
           type="text"

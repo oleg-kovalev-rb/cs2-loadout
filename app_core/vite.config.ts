@@ -11,5 +11,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./dashboard/__tests__/setup.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'cobertura'],
+      // Relative to Vite's root (app/frontend), so this lands at
+      // app_core/coverage-frontend/ — see agent/styleguides/ci-and-coverage.md.
+      reportsDirectory: '../../coverage-frontend',
+    },
   },
 })

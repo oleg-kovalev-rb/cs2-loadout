@@ -1,12 +1,27 @@
 import { conditionAbbr } from '../../shared/utils/format'
 import { activeFilterCount } from '../reducer'
 
-export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditions, showStattrak, onWeaponToggle, onConditionToggle, onStattrakToggle, onClear }) {
+export function FilterDropdown({
+  isOpen,
+  onToggle,
+  filters,
+  weaponTypes,
+  conditions,
+  showStattrak,
+  onWeaponToggle,
+  onConditionToggle,
+  onStattrakToggle,
+  onClear,
+}) {
   const count = activeFilterCount(filters)
 
   return (
     <div className={`dropdown${isOpen ? ' is-open' : ''}`}>
-      <button type="button" className={`toolbar-btn${count > 0 ? ' has-active' : ''}`} onClick={onToggle}>
+      <button
+        type="button"
+        className={`toolbar-btn${count > 0 ? ' has-active' : ''}`}
+        onClick={onToggle}
+      >
         <span className="toolbar-btn-label">
           Filters
           {count > 0 && <span className="filter-badge">{count}</span>}
@@ -49,7 +64,11 @@ export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditi
             <div className="filter-group">
               <span className="filter-group-label">Special</span>
               <div className="chip-row">
-                <button type="button" className={`chip${filters.stattrakOnly ? ' is-active' : ''}`} onClick={onStattrakToggle}>
+                <button
+                  type="button"
+                  className={`chip${filters.stattrakOnly ? ' is-active' : ''}`}
+                  onClick={onStattrakToggle}
+                >
                   StatTrak™
                 </button>
               </div>
@@ -67,7 +86,14 @@ export function FilterDropdown({ isOpen, onToggle, filters, weaponTypes, conditi
 function Chevron() {
   return (
     <svg className="chev" width="9" height="6" viewBox="0 0 9 6" aria-hidden="true">
-      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1 1L4.5 5L8 1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

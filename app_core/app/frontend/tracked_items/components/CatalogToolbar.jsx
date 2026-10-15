@@ -49,7 +49,12 @@ export function CatalogToolbar({
       <div className="search-field">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="7" cy="7" r="5.2" stroke="currentColor" strokeWidth="1.4" />
-          <path d="M11 11L14.2 14.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <path
+            d="M11 11L14.2 14.2"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
         </svg>
         <input
           className="search-input"
@@ -76,7 +81,12 @@ export function CatalogToolbar({
         onClear={onFiltersClear}
       />
 
-      <SortDropdown isOpen={openDropdown === 'sort'} onToggle={() => onDropdownToggle('sort')} sort={sort} onSortChange={onSortChange} />
+      <SortDropdown
+        isOpen={openDropdown === 'sort'}
+        onToggle={() => onDropdownToggle('sort')}
+        sort={sort}
+        onSortChange={onSortChange}
+      />
 
       <ViewToggle view={view} onChange={onViewChange} />
     </div>

@@ -7,7 +7,7 @@ RSpec.describe UserInventoryCache do
     context "when no UserInventory exists for this steam_id" do
       it "returns nil and does not write to the cache" do
         expect(described_class.fetch(steam_id)).to be_nil
-        expect(Rails.cache.exist?([ "user_inventory", 2, steam_id ])).to be(false)
+        expect(Rails.cache.exist?([ "user_inventory", 1, steam_id ])).to be(false)
       end
     end
 
@@ -17,7 +17,7 @@ RSpec.describe UserInventoryCache do
 
       it "returns the user's items and writes them to the cache" do
         expect(described_class.fetch(steam_id)).to contain_exactly(item)
-        expect(Rails.cache.exist?([ "user_inventory", 2, steam_id ])).to be(true)
+        expect(Rails.cache.exist?([ "user_inventory", 1, steam_id ])).to be(true)
       end
 
       it "does not hit the database on a second fetch" do
@@ -38,7 +38,7 @@ RSpec.describe UserInventoryCache do
 
       described_class.invalidate(steam_id)
 
-      expect(Rails.cache.exist?([ "user_inventory", 2, steam_id ])).to be(false)
+      expect(Rails.cache.exist?([ "user_inventory", 1, steam_id ])).to be(false)
     end
 
     it "is a no-op when nothing is cached for this steam_id" do

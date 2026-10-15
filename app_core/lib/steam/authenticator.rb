@@ -30,13 +30,13 @@ module Steam
       check_params["openid.mode"] = "check_authentication"
 
       uri = URI(STEAM_OPENID_URL)
-      
+
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
 
       request = Net::HTTP::Post.new(uri.request_uri)
       request.set_form_data(check_params)
-      
+
       request["User-Agent"] = "AppMain_SteamAuth_PetProject/1.0"
 
       response = http.request(request)

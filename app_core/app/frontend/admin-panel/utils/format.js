@@ -4,7 +4,10 @@ function pad2(n) {
 
 export function fmtPrice(cents) {
   if (!cents) return '—'
-  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    '$' +
+    (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  )
 }
 
 export function fmtDateTime(isoString) {

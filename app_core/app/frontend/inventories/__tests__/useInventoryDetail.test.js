@@ -24,7 +24,15 @@ function detailPayload(overrides = {}) {
     avg_item_value_cents: 3937,
     priciest_item: {
       market_hash_name: '★ Karambit | Crimson Web',
-      metadata: { weapon_type: 'Knives', item_name: 'Crimson Web', category: 'Knives', condition: 'Factory New', stattrak: false, icon_url: null, rarity: 'Covert' },
+      metadata: {
+        weapon_type: 'Knives',
+        item_name: 'Crimson Web',
+        category: 'Knives',
+        condition: 'Factory New',
+        stattrak: false,
+        icon_url: null,
+        rarity: 'Covert',
+      },
       current_price_cents: 250000,
     },
     rarity_breakdown: [{ tier: 'gold', count: 1, percent: 0.8 }],
@@ -33,7 +41,15 @@ function detailPayload(overrides = {}) {
       entries: [
         {
           market_hash_name: 'AK-47 | Redline',
-          metadata: { weapon_type: 'AK-47', item_name: 'Redline', category: 'Rifles', condition: 'Field-Tested', stattrak: false, icon_url: 'https://x/icon.png', rarity: 'Classified' },
+          metadata: {
+            weapon_type: 'AK-47',
+            item_name: 'Redline',
+            category: 'Rifles',
+            condition: 'Field-Tested',
+            stattrak: false,
+            icon_url: 'https://x/icon.png',
+            rarity: 'Classified',
+          },
           current_price_cents: 4218,
           change_24h_cents: 130,
           change_24h_percent: 3.18,
@@ -55,14 +71,19 @@ describe('useInventoryDetail', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() =>
-      useInventoryDetail('http://fetcher.test', '76561198000000001', { range: '7d', itemsSort: 'price_desc', itemsPage: 1, itemsPerPage: 12 })
+      useInventoryDetail('http://fetcher.test', '76561198000000001', {
+        range: '7d',
+        itemsSort: 'price_desc',
+        itemsPage: 1,
+        itemsPerPage: 12,
+      }),
     )
 
     await waitFor(() => expect(result.current.status).toBe('success'))
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/public/inventories/76561198000000001?range=7d&items_sort=price_desc&items_page=1&items_per_page=12',
-      expect.anything()
+      expect.anything(),
     )
     const [, options] = fetchMock.mock.calls[0]
     expect(options.headers?.Authorization).toBeUndefined()
@@ -100,10 +121,18 @@ describe('useInventoryDetail', () => {
   })
 
   test('priciest_item: null maps to priciestItem: null', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload({ priciest_item: null }))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload({ priciest_item: null }))),
+    )
 
     const { result } = renderHook(() =>
-      useInventoryDetail('http://fetcher.test', '76561198000000001', { range: '7d', itemsSort: 'price_desc', itemsPage: 1, itemsPerPage: 12 })
+      useInventoryDetail('http://fetcher.test', '76561198000000001', {
+        range: '7d',
+        itemsSort: 'price_desc',
+        itemsPage: 1,
+        itemsPerPage: 12,
+      }),
     )
 
     await waitFor(() => expect(result.current.status).toBe('success'))
@@ -115,31 +144,56 @@ describe('useInventoryDetail', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { rerender } = renderHook(
-      ({ range }) => useInventoryDetail('http://fetcher.test', '76561198000000001', { range, itemsSort: 'price_desc', itemsPage: 1, itemsPerPage: 12 }),
-      { initialProps: { range: '7d' } }
+      ({ range }) =>
+        useInventoryDetail('http://fetcher.test', '76561198000000001', {
+          range,
+          itemsSort: 'price_desc',
+          itemsPage: 1,
+          itemsPerPage: 12,
+        }),
+      { initialProps: { range: '7d' } },
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     rerender({ range: '30d' })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('range=30d'), expect.anything())
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringContaining('range=30d'),
+      expect.anything(),
+    )
   })
 
   test('a 404 response maps to a distinct not_found status, not the generic error status', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({ message: 'Inventory not found' }, 404)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({ message: 'Inventory not found' }, 404)),
+    )
 
     const { result } = renderHook(() =>
-      useInventoryDetail('http://fetcher.test', 'unknown', { range: '7d', itemsSort: 'price_desc', itemsPage: 1, itemsPerPage: 12 })
+      useInventoryDetail('http://fetcher.test', 'unknown', {
+        range: '7d',
+        itemsSort: 'price_desc',
+        itemsPage: 1,
+        itemsPerPage: 12,
+      }),
     )
 
     await waitFor(() => expect(result.current.status).toBe('not_found'))
   })
 
   test('a generic failure surfaces the error status', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({}, 500)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, 500)),
+    )
 
     const { result } = renderHook(() =>
-      useInventoryDetail('http://fetcher.test', '76561198000000001', { range: '7d', itemsSort: 'price_desc', itemsPage: 1, itemsPerPage: 12 })
+      useInventoryDetail('http://fetcher.test', '76561198000000001', {
+        range: '7d',
+        itemsSort: 'price_desc',
+        itemsPage: 1,
+        itemsPerPage: 12,
+      }),
     )
 
     await waitFor(() => expect(result.current.status).toBe('error'))

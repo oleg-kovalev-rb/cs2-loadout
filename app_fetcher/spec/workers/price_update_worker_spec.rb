@@ -59,7 +59,6 @@ RSpec.describe PriceUpdateWorker do
           end
         end
       end
-
     end
 
     context "when the Steam API response is unsuccessful" do

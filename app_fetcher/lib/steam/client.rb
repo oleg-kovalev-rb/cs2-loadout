@@ -1,7 +1,7 @@
 # typed: strict
 
-require 'faraday'
-require 'prop'
+require "faraday"
+require "prop"
 
 module Steam
   class Client
@@ -52,11 +52,11 @@ module Steam
 
     sig do
       params(
-        dto_class: T.untyped, 
+        dto_class: T.untyped,
         path: String,
         limit_key: Symbol,
         params_blk: T.proc.returns(T::Hash[Symbol, T.untyped])
-      ).returns(T.untyped) 
+      ).returns(T.untyped)
     end
     def perform_request(dto_class, path, limit_key, &params_blk)
       Prop.throttle!("#{limit_key}_rpm".to_sym, "global")
@@ -67,7 +67,7 @@ module Steam
       case response.status
       when 200
         body = JSON.parse(response.body)
-        return Steam::Response[T.untyped].new(status: 404, error: "Not Found") unless body['success']
+        return Steam::Response[T.untyped].new(status: 404, error: "Not Found") unless body["success"]
 
         data = dto_class.from_hash(body)
         Steam::Response[T.untyped].new(status: 200, data: data)

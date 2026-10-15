@@ -42,7 +42,10 @@ describe('dashboardReducer', () => {
 
   test('selecting a different item while one is selected swaps cleanly', () => {
     const first = dashboardReducer(initialState, { type: 'ITEM_ROW_CLICKED', item: item() })
-    const second = dashboardReducer(first, { type: 'ITEM_ROW_CLICKED', item: item({ marketHashName: 'AWP | Asiimov (Battle-Scarred)' }) })
+    const second = dashboardReducer(first, {
+      type: 'ITEM_ROW_CLICKED',
+      item: item({ marketHashName: 'AWP | Asiimov (Battle-Scarred)' }),
+    })
     expect(second.mode).toBe('item')
     expect(second.selectedItem.marketHashName).toBe('AWP | Asiimov (Battle-Scarred)')
   })
@@ -68,7 +71,10 @@ describe('dashboardReducer', () => {
     expect(added.filters.weapons.has('AK-47')).toBe(true)
     expect(added.page).toBe(0)
 
-    const removed = dashboardReducer({ ...added, page: 5 }, { type: 'WEAPON_FILTER_TOGGLED', value: 'AK-47' })
+    const removed = dashboardReducer(
+      { ...added, page: 5 },
+      { type: 'WEAPON_FILTER_TOGGLED', value: 'AK-47' },
+    )
     expect(removed.filters.weapons.has('AK-47')).toBe(false)
     expect(removed.page).toBe(0)
   })
@@ -84,7 +90,11 @@ describe('dashboardReducer', () => {
     const dirty = {
       ...initialState,
       page: 4,
-      filters: { weapons: new Set(['AK-47']), conditions: new Set(['Factory New']), stattrakOnly: true },
+      filters: {
+        weapons: new Set(['AK-47']),
+        conditions: new Set(['Factory New']),
+        stattrakOnly: true,
+      },
     }
     const next = dashboardReducer(dirty, { type: 'FILTERS_CLEARED' })
     expect(next.filters.weapons.size).toBe(0)

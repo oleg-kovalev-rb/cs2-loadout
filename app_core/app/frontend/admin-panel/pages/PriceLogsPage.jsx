@@ -13,13 +13,19 @@ export function PriceLogsPage({ fetcherUrl, bridgeToken }) {
   })
 
   if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
-  if (status === 'error' && !data) return <div className="page-placeholder">Не удалось загрузить PriceLog</div>
+  if (status === 'error' && !data)
+    return <div className="page-placeholder">Не удалось загрузить PriceLog</div>
 
   const priceLogs = data?.price_logs ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
 
   async function handleDelete(log) {
-    await adminSend(fetcherUrl, bridgeToken, 'DELETE', `/api/admin/items/${log.item_id}/price_logs/${log.id}`)
+    await adminSend(
+      fetcherUrl,
+      bridgeToken,
+      'DELETE',
+      `/api/admin/items/${log.item_id}/price_logs/${log.id}`,
+    )
     refetch()
   }
 

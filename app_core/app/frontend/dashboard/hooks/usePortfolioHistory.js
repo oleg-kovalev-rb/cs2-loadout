@@ -16,7 +16,12 @@ export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
       const points = await response.json()
 
       if (cancelled) return
-      setSeries(points.map((point) => ({ at: new Date(point.date).getTime(), value: point.total_value_cents })))
+      setSeries(
+        points.map((point) => ({
+          at: new Date(point.date).getTime(),
+          value: point.total_value_cents,
+        })),
+      )
       setStatus('success')
     }
 

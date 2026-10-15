@@ -8,7 +8,7 @@ class SessionsController < ApplicationController
   end
 
   def callback
-    user = Steam::LoginUser.call(request.query_parameters.except('controller', 'action'))
+    user = Steam::LoginUser.call(request.query_parameters.except("controller", "action"))
 
     session[:user_id] = user.id
 

@@ -18,7 +18,9 @@ function ItemCard({ item }) {
         <span className="card-icon" aria-hidden="true" />
       )}
       <div className="card-id">
-        <span className="card-name">{item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}</span>
+        <span className="card-name">
+          {item.weaponType ? `${item.weaponType} | ${item.itemName}` : item.itemName}
+        </span>
         <span className="ticker-tags">
           {item.stattrak && <span className="tag tag-stattrak">ST</span>}
           <span className="tag tag-condition">{conditionAbbr(item.condition)}</span>

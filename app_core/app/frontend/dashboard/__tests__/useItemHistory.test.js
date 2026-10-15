@@ -22,10 +22,14 @@ describe('useItemHistory', () => {
 
   test('fetches on demand, URL-encoding the market_hash_name, and shows a pending state while in flight', async () => {
     const at = '2026-09-01T00:00:00Z'
-    const fetchMock = vi.fn().mockImplementationOnce(() => jsonResponse([{ at, price_cents: 3845, volume: 12 }]))
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse([{ at, price_cents: 3845, volume: 12 }]))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { result } = renderHook(() => useItemHistory('http://fetcher.test', 'token-123', 'AK-47 | Redline (Field-Tested)', '30d'))
+    const { result } = renderHook(() =>
+      useItemHistory('http://fetcher.test', 'token-123', 'AK-47 | Redline (Field-Tested)', '30d'),
+    )
 
     expect(result.current.status).toBe('pending')
 
@@ -33,7 +37,9 @@ describe('useItemHistory', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/v1/item_prices/AK-47%20%7C%20Redline%20(Field-Tested)/history?period=30d',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-123' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
     )
     expect(result.current.series).toEqual([{ at: new Date(at).getTime(), value: 3845 }])
   })
@@ -43,8 +49,14 @@ describe('useItemHistory', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { rerender } = renderHook(
-      ({ period }) => useItemHistory('http://fetcher.test', 'token-123', 'AK-47 | Redline (Field-Tested)', period),
-      { initialProps: { period: '30d' } }
+      ({ period }) =>
+        useItemHistory(
+          'http://fetcher.test',
+          'token-123',
+          'AK-47 | Redline (Field-Tested)',
+          period,
+        ),
+      { initialProps: { period: '30d' } },
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
@@ -55,9 +67,14 @@ describe('useItemHistory', () => {
   })
 
   test('surfaces an error status when the fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({}, false)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({}, false)),
+    )
 
-    const { result } = renderHook(() => useItemHistory('http://fetcher.test', 'token-123', 'AK-47 | Redline (Field-Tested)', '30d'))
+    const { result } = renderHook(() =>
+      useItemHistory('http://fetcher.test', 'token-123', 'AK-47 | Redline (Field-Tested)', '30d'),
+    )
 
     await waitFor(() => expect(result.current.status).toBe('error'))
   })

@@ -1,6 +1,6 @@
 # typed: strict
 
-require 'faraday'
+require "faraday"
 
 module Faraday
   class UserAgentRotator < Middleware

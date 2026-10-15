@@ -40,19 +40,30 @@ export function InventoryDetail({ fetcherUrl, steamId }) {
           <div className="profile-head-name">
             <span>{data.steamId}</span>
           </div>
-          <p className="profile-head-sub">Public inventory &middot; synced {fmtDateTime(new Date(data.lastSyncedAt).getTime())}</p>
+          <p className="profile-head-sub">
+            Public inventory &middot; synced {fmtDateTime(new Date(data.lastSyncedAt).getTime())}
+          </p>
         </div>
       </div>
 
       <div className="detail-grid">
-        <PortfolioHeroTile portfolio={data.portfolio} onRangeChange={(range) => dispatch({ type: 'RANGE_CHANGED', range })} />
+        <PortfolioHeroTile
+          portfolio={data.portfolio}
+          onRangeChange={(range) => dispatch({ type: 'RANGE_CHANGED', range })}
+        />
 
         <StatTile label="Items" value={data.itemsCount.toLocaleString('en-US')} />
         <StatTile label="Avg. item value" value={fmtUSD(centsToUSD(data.avgItemValueCents))} />
         <StatTile
           label="Priciest item"
           value={priciest ? fmtPrice(priciest.currentPriceCents) : '—'}
-          note={priciest ? (priciest.weaponType ? `${priciest.weaponType} | ${priciest.itemName}` : priciest.itemName) : 'No priced items yet'}
+          note={
+            priciest
+              ? priciest.weaponType
+                ? `${priciest.weaponType} | ${priciest.itemName}`
+                : priciest.itemName
+              : 'No priced items yet'
+          }
         />
 
         <RarityLegend breakdown={data.rarityBreakdown} />

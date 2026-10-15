@@ -18,7 +18,10 @@ describe('catalogReducer', () => {
   })
 
   test('DROPDOWN_TOGGLED opens then closes the same dropdown', () => {
-    const opened = catalogReducer(initialCatalogState, { type: 'DROPDOWN_TOGGLED', dropdown: 'sort' })
+    const opened = catalogReducer(initialCatalogState, {
+      type: 'DROPDOWN_TOGGLED',
+      dropdown: 'sort',
+    })
     expect(opened.openDropdown).toBe('sort')
     const closed = catalogReducer(opened, { type: 'DROPDOWN_TOGGLED', dropdown: 'sort' })
     expect(closed.openDropdown).toBeNull()
@@ -59,7 +62,10 @@ describe('detailReducer', () => {
   })
 
   test('DROPDOWN_TOGGLED opens then closes the same dropdown', () => {
-    const opened = detailReducer(initialDetailState, { type: 'DROPDOWN_TOGGLED', dropdown: 'itemsSort' })
+    const opened = detailReducer(initialDetailState, {
+      type: 'DROPDOWN_TOGGLED',
+      dropdown: 'itemsSort',
+    })
     expect(opened.openDropdown).toBe('itemsSort')
     const closed = detailReducer(opened, { type: 'DROPDOWN_TOGGLED', dropdown: 'itemsSort' })
     expect(closed.openDropdown).toBeNull()

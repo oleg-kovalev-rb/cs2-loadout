@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react'
 function mapTrend(raw) {
   const mapped = {}
   for (const [name, points] of Object.entries(raw)) {
-    mapped[name] = points.map((point) => ({ at: point.at, priceCents: point.price_cents, volume: point.volume }))
+    mapped[name] = points.map((point) => ({
+      at: point.at,
+      priceCents: point.price_cents,
+      volume: point.volume,
+    }))
   }
   return mapped
 }

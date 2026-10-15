@@ -29,13 +29,13 @@ class PriceUpdateWorker
   sig { params(market_hash_name: String).void }
   def update_related_cache(market_hash_name)
     ItemPriceCache.invalidate(market_hash_name)
-    ItemPriceCache.fetch_for([market_hash_name])
+    ItemPriceCache.fetch_for([ market_hash_name ])
 
     PriceHistoryCache.invalidate(market_hash_name)
-    PriceHistoryCache.fetch_for([market_hash_name])
+    PriceHistoryCache.fetch_for([ market_hash_name ])
 
     ItemTrendCache.invalidate(market_hash_name)
-    ItemTrendCache.fetch_for([market_hash_name])
+    ItemTrendCache.fetch_for([ market_hash_name ])
   end
 
   sig { params(market_hash_name: String, price: Integer, change_24h: Integer).void }

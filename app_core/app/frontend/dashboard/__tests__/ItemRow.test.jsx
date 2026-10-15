@@ -18,7 +18,7 @@ function renderRow(item) {
   return render(
     <ul>
       <ItemRow item={item} isSelected={false} onSelect={() => {}} />
-    </ul>
+    </ul>,
   )
 }
 
@@ -30,7 +30,10 @@ describe('ItemRow', () => {
     })
 
     const icon = container.querySelector('img')
-    expect(icon).toHaveAttribute('src', 'https://community.akamai.steamstatic.com/economy/image/abc123')
+    expect(icon).toHaveAttribute(
+      'src',
+      'https://community.akamai.steamstatic.com/economy/image/abc123',
+    )
   })
 
   test('renders no image when iconUrl is absent', () => {

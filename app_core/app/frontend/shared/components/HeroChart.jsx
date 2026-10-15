@@ -1,4 +1,12 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import { ChartTooltip } from './ChartTooltip'
 import { fmtUSD, centsToUSD } from '../utils/format'
 import { generateAxisLabels, Y_AXIS_TICK_COUNT, RANGE_MS } from '../chartConfig'
@@ -34,7 +42,11 @@ export function HeroChart({ values, range }) {
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--text-faint)', strokeDasharray: '3 3' }} isAnimationActive={false} />
+              <Tooltip
+                content={<ChartTooltip />}
+                cursor={{ stroke: 'var(--text-faint)', strokeDasharray: '3 3' }}
+                isAnimationActive={false}
+              />
               <Area
                 type="monotone"
                 dataKey="cents"

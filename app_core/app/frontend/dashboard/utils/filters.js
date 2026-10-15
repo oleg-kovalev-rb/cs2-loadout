@@ -1,7 +1,13 @@
 // Canonical wear-order vocabulary, used both to filter and to order
 // whichever of these are actually present in a given inventory (see
 // conditionsPresent) — not shown in full regardless of inventory contents.
-export const CONDITIONS = ['Factory New', 'Minimal Wear', 'Field-Tested', 'Well-Worn', 'Battle-Scarred']
+export const CONDITIONS = [
+  'Factory New',
+  'Minimal Wear',
+  'Field-Tested',
+  'Well-Worn',
+  'Battle-Scarred',
+]
 
 export function applyFilters(items, filters) {
   return items.filter((item) => {
@@ -34,7 +40,8 @@ export const SORTERS = {
   delta_asc: (a, b) => changePct(a) - changePct(b),
   price_desc: (a, b) => b.currentPriceCents - a.currentPriceCents,
   price_asc: (a, b) => a.currentPriceCents - b.currentPriceCents,
-  name_asc: (a, b) => `${a.weaponType} ${a.itemName}`.localeCompare(`${b.weaponType} ${b.itemName}`),
+  name_asc: (a, b) =>
+    `${a.weaponType} ${a.itemName}`.localeCompare(`${b.weaponType} ${b.itemName}`),
 }
 
 export const SORT_LABELS = {

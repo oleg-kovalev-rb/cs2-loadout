@@ -22,7 +22,12 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, names)
   const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
   const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioRange)
-  const itemHistory = useItemHistory(fetcherUrl, bridgeToken, state.selectedItem?.marketHashName ?? null, state.itemRange)
+  const itemHistory = useItemHistory(
+    fetcherUrl,
+    bridgeToken,
+    state.selectedItem?.marketHashName ?? null,
+    state.itemRange,
+  )
 
   const items = useMemo(() => {
     if (!data) return []
@@ -38,11 +43,16 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   }
 
   if (status === 'error') {
-    return <p className="dash-loading dash-loading-error">Couldn&rsquo;t load the dashboard: {error?.message}</p>
+    return (
+      <p className="dash-loading dash-loading-error">
+        Couldn&rsquo;t load the dashboard: {error?.message}
+      </p>
+    )
   }
 
   const selectedItem = state.selectedItem
-    ? items.find((item) => item.marketHashName === state.selectedItem.marketHashName) || state.selectedItem
+    ? items.find((item) => item.marketHashName === state.selectedItem.marketHashName) ||
+      state.selectedItem
     : null
 
   return (
@@ -55,7 +65,10 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
         mode={state.mode}
         selectedItem={selectedItem}
         onRangeChange={(range) =>
-          dispatch({ type: state.mode === 'item' ? 'ITEM_RANGE_CHANGED' : 'PORTFOLIO_RANGE_CHANGED', range })
+          dispatch({
+            type: state.mode === 'item' ? 'ITEM_RANGE_CHANGED' : 'PORTFOLIO_RANGE_CHANGED',
+            range,
+          })
         }
         onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}
       />

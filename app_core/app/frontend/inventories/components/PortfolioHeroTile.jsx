@@ -12,7 +12,11 @@ export function PortfolioHeroTile({ portfolio, onRangeChange }) {
     <section className="tile tile-hero">
       <header className="tile-head">
         <h2>Portfolio value</h2>
-        <RangeToggle ranges={INVENTORY_DETAIL_RANGES} range={portfolio.range} onChange={onRangeChange} />
+        <RangeToggle
+          ranges={INVENTORY_DETAIL_RANGES}
+          range={portfolio.range}
+          onChange={onRangeChange}
+        />
       </header>
 
       <div className="hero-value-row">

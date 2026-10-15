@@ -25,7 +25,13 @@ describe('useItemPrices', () => {
 
   test('fetches dynamics with no params and merges the response', async () => {
     const fetchMock = vi.fn().mockImplementationOnce(() =>
-      jsonResponse({ [NAMES[0]]: { current_price_cents: 3845, change_24h_cents: 120, change_24h_percent: 3.22 } })
+      jsonResponse({
+        [NAMES[0]]: {
+          current_price_cents: 3845,
+          change_24h_cents: 120,
+          change_24h_percent: 3.22,
+        },
+      }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -35,7 +41,9 @@ describe('useItemPrices', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/v1/item_prices/dynamics',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-123' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
     )
     expect(result.current.pricesByName[NAMES[0]]).toEqual({
       currentPriceCents: 3845,
@@ -48,28 +56,38 @@ describe('useItemPrices', () => {
     vi.useFakeTimers()
     const fetchMock = vi
       .fn()
-      .mockImplementationOnce(() => jsonResponse({ [NAMES[0]]: { current_price_cents: 100, change_24h_cents: 0, change_24h_percent: 0 } }))
+      .mockImplementationOnce(() =>
+        jsonResponse({
+          [NAMES[0]]: { current_price_cents: 100, change_24h_cents: 0, change_24h_percent: 0 },
+        }),
+      )
       .mockImplementationOnce(() =>
         jsonResponse({
           [NAMES[0]]: { current_price_cents: 100, change_24h_cents: 0, change_24h_percent: 0 },
           [NAMES[1]]: { current_price_cents: 200, change_24h_cents: 0, change_24h_percent: 0 },
-        })
+        }),
       )
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() => useItemPrices('http://fetcher.test', 'token-123', NAMES))
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(Object.keys(result.current.pricesByName)).toEqual([NAMES[0]])
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000)
+    })
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(Object.keys(result.current.pricesByName)).toHaveLength(2)
 
     // fully covered now — no further retries scheduled
-    await act(async () => { await vi.advanceTimersByTimeAsync(120000) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120000)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
@@ -80,15 +98,21 @@ describe('useItemPrices', () => {
 
     renderHook(() => useItemPrices('http://fetcher.test', 'token-123', NAMES))
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     for (const delay of [3000, 6000, 12000, 24000, 45000]) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(delay) })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(delay)
+      })
     }
     expect(fetchMock).toHaveBeenCalledTimes(6)
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(120000) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120000)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(6)
   })
 
@@ -98,11 +122,15 @@ describe('useItemPrices', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { unmount } = renderHook(() => useItemPrices('http://fetcher.test', 'token-123', NAMES))
-    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     unmount()
-    await act(async () => { await vi.advanceTimersByTimeAsync(120000) })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120000)
+    })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })

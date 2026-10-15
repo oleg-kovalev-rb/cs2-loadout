@@ -1,6 +1,14 @@
 const PER_PAGE_OPTIONS = [25, 50, 100]
 
-export function CatalogPagination({ page, totalPages, totalCount, perPage, onPrev, onNext, onPerPageChange }) {
+export function CatalogPagination({
+  page,
+  totalPages,
+  totalCount,
+  perPage,
+  onPrev,
+  onNext,
+  onPerPageChange,
+}) {
   const start = totalCount === 0 ? 0 : (page - 1) * perPage + 1
   const end = Math.min(page * perPage, totalCount)
 
@@ -25,7 +33,13 @@ export function CatalogPagination({ page, totalPages, totalCount, perPage, onPre
           </select>
         </label>
         <div className="pager-btns">
-          <button type="button" className="pager-btn" onClick={onPrev} disabled={page <= 1} aria-label="Previous page">
+          <button
+            type="button"
+            className="pager-btn"
+            onClick={onPrev}
+            disabled={page <= 1}
+            aria-label="Previous page"
+          >
             &lsaquo;
           </button>
           <span className="pager-page tabular">

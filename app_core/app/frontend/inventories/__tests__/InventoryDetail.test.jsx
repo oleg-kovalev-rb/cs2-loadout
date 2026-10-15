@@ -25,7 +25,15 @@ function detailPayload(overrides = {}) {
     avg_item_value_cents: 3937,
     priciest_item: {
       market_hash_name: '★ Karambit | Crimson Web',
-      metadata: { weapon_type: 'Knives', item_name: 'Crimson Web', category: 'Knives', condition: 'Factory New', stattrak: false, icon_url: null, rarity: 'Covert' },
+      metadata: {
+        weapon_type: 'Knives',
+        item_name: 'Crimson Web',
+        category: 'Knives',
+        condition: 'Factory New',
+        stattrak: false,
+        icon_url: null,
+        rarity: 'Covert',
+      },
       current_price_cents: 250000,
     },
     rarity_breakdown: [
@@ -37,7 +45,15 @@ function detailPayload(overrides = {}) {
       entries: [
         {
           market_hash_name: 'AK-47 | Redline',
-          metadata: { weapon_type: 'AK-47', item_name: 'Redline', category: 'Rifles', condition: 'Field-Tested', stattrak: false, icon_url: null, rarity: 'Classified' },
+          metadata: {
+            weapon_type: 'AK-47',
+            item_name: 'Redline',
+            category: 'Rifles',
+            condition: 'Field-Tested',
+            stattrak: false,
+            icon_url: null,
+            rarity: 'Classified',
+          },
           current_price_cents: 4218,
           change_24h_cents: 130,
           change_24h_percent: 3.18,
@@ -64,7 +80,7 @@ describe('InventoryDetail', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://fetcher.test/api/public/inventories/76561198000000001?range=7d&items_sort=price_desc&items_page=1&items_per_page=12',
-      expect.anything()
+      expect.anything(),
     )
     const [, options] = fetchMock.mock.calls[0]
     expect(options.headers?.Authorization).toBeUndefined()
@@ -84,7 +100,12 @@ describe('InventoryDetail', () => {
 
     await user.click(screen.getByRole('button', { name: '24h' }))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('range=24h'), expect.anything()))
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining('range=24h'),
+        expect.anything(),
+      ),
+    )
   })
 
   test('changing the items sort re-fetches and resets to items_page=1', async () => {
@@ -99,12 +120,18 @@ describe('InventoryDetail', () => {
     await user.click(screen.getByRole('button', { name: 'Name' }))
 
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('items_sort=name_asc&items_page=1'), expect.anything())
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining('items_sort=name_asc&items_page=1'),
+        expect.anything(),
+      ),
     )
   })
 
   test('priciest_item: null renders a graceful "no priced items" note instead of crashing', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload({ priciest_item: null }))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload({ priciest_item: null }))),
+    )
 
     render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
 
@@ -112,11 +139,17 @@ describe('InventoryDetail', () => {
   })
 
   test('a 404 renders the not-tracked state with a link back to the list', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementationOnce(() => jsonResponse({ message: 'Inventory not found' }, 404)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse({ message: 'Inventory not found' }, 404)),
+    )
 
     render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="unknown" />)
 
     await waitFor(() => expect(screen.getByText(/isn.t tracked/i)).toBeInTheDocument())
-    expect(screen.getByRole('link', { name: /back to inventories/i })).toHaveAttribute('href', '/inventories')
+    expect(screen.getByRole('link', { name: /back to inventories/i })).toHaveAttribute(
+      'href',
+      '/inventories',
+    )
   })
 })

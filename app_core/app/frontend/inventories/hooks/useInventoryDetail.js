@@ -15,7 +15,10 @@ function mapItemSummary(item) {
     currentPriceCents: item.current_price_cents,
     change24hCents: item.change_24h_cents ?? 0,
     change24hPercent: item.change_24h_percent ?? 0,
-    trendPoints: (item.trend_7d || []).map((point) => ({ at: new Date(point.at).getTime(), priceCents: point.price_cents })),
+    trendPoints: (item.trend_7d || []).map((point) => ({
+      at: new Date(point.at).getTime(),
+      priceCents: point.price_cents,
+    })),
   }
 }
 
@@ -28,7 +31,10 @@ function mapDetail(raw) {
       changeCents: raw.portfolio.change_cents,
       changePercent: raw.portfolio.change_percent,
       range: raw.portfolio.range,
-      history: raw.portfolio.history.map((point) => ({ at: new Date(point.at).getTime(), value: point.total_value_cents })),
+      history: raw.portfolio.history.map((point) => ({
+        at: new Date(point.at).getTime(),
+        value: point.total_value_cents,
+      })),
     },
     itemsCount: raw.items_count,
     avgItemValueCents: raw.avg_item_value_cents,
@@ -54,7 +60,11 @@ async function fetchDetailJson(url) {
 // already returns one fully composed payload per request, so a single
 // hook with a flat status is correct here — no need to split loading
 // into independently-resolving stages this page doesn't have.
-export function useInventoryDetail(fetcherUrl, steamId, { range, itemsSort, itemsPage, itemsPerPage }) {
+export function useInventoryDetail(
+  fetcherUrl,
+  steamId,
+  { range, itemsSort, itemsPage, itemsPerPage },
+) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
 

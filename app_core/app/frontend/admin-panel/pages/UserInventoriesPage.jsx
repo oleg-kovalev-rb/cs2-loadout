@@ -15,19 +15,28 @@ const VISIBLE_ITEMS = 2
 // differently.
 function fmtValueOrDash(cents) {
   if (cents == null) return '—'
-  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    '$' +
+    (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  )
 }
 
 export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
   const [state, dispatch] = useReducer(userInventoriesReducer, initialState)
-  const { data, status, refetch } = useAdminList(fetcherUrl, bridgeToken, '/api/admin/user_inventories', {
-    page: state.page,
-    perPage: state.perPage,
-  })
+  const { data, status, refetch } = useAdminList(
+    fetcherUrl,
+    bridgeToken,
+    '/api/admin/user_inventories',
+    {
+      page: state.page,
+      perPage: state.perPage,
+    },
+  )
   const [detailsBySteamId, setDetailsBySteamId] = useState({})
 
   if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
-  if (status === 'error' && !data) return <div className="page-placeholder">Не удалось загрузить UserInventory</div>
+  if (status === 'error' && !data)
+    return <div className="page-placeholder">Не удалось загрузить UserInventory</div>
 
   const userInventories = data?.user_inventories ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -40,7 +49,10 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
     if (!detailsBySteamId[steamId]) {
       setDetailsBySteamId((prev) => ({ ...prev, [steamId]: { status: 'loading', items: [] } }))
       const body = await adminGet(fetcherUrl, bridgeToken, `/api/admin/user_inventories/${steamId}`)
-      setDetailsBySteamId((prev) => ({ ...prev, [steamId]: { status: 'success', items: body.user_inventory.items } }))
+      setDetailsBySteamId((prev) => ({
+        ...prev,
+        [steamId]: { status: 'success', items: body.user_inventory.items },
+      }))
     }
   }
 
@@ -55,9 +67,15 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
   }
 
   async function handleBulkWarmCache() {
-    await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/user_inventories/bulk_warm_cache', {
-      steam_ids: [...state.selectedIds],
-    })
+    await adminSend(
+      fetcherUrl,
+      bridgeToken,
+      'POST',
+      '/api/admin/user_inventories/bulk_warm_cache',
+      {
+        steam_ids: [...state.selectedIds],
+      },
+    )
     dispatch({ type: 'SELECTION_CLEARED' })
   }
 
@@ -70,7 +88,9 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
         <div className="resource-head">
           <h2>Все записи</h2>
           <div className="resource-head-right">
-            <span className="sel-count">{state.selectedIds.size > 0 ? `Выбрано: ${state.selectedIds.size}` : ''}</span>
+            <span className="sel-count">
+              {state.selectedIds.size > 0 ? `Выбрано: ${state.selectedIds.size}` : ''}
+            </span>
             <button
               type="button"
               className="btn ghost-cache cache-action"
@@ -92,7 +112,13 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                     className="select-all"
                     aria-label="Выбрать все"
                     checked={allSelected}
-                    onChange={(event) => dispatch({ type: 'ALL_TOGGLED', checked: event.target.checked, steamIds: allSteamIds })}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'ALL_TOGGLED',
+                        checked: event.target.checked,
+                        steamIds: allSteamIds,
+                      })
+                    }
                   />
                 </th>
                 <th />
@@ -174,12 +200,16 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                                   {detail.items.slice(0, VISIBLE_ITEMS).map((item, index) => (
                                     <tr key={index}>
                                       <td>{item.market_hash_name}</td>
-                                      <td className="mono text-muted">{fmtDateTime(item.added_at)}</td>
+                                      <td className="mono text-muted">
+                                        {fmtDateTime(item.added_at)}
+                                      </td>
                                     </tr>
                                   ))}
                                   {detail.items.length > VISIBLE_ITEMS && (
                                     <tr>
-                                      <td className="text-muted">… ещё {detail.items.length - VISIBLE_ITEMS}</td>
+                                      <td className="text-muted">
+                                        … ещё {detail.items.length - VISIBLE_ITEMS}
+                                      </td>
                                       <td />
                                     </tr>
                                   )}

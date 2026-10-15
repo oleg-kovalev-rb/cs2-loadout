@@ -37,7 +37,9 @@ export function useDashboardData(fetcherUrl, bridgeToken) {
     const authHeaders = { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` }
 
     async function load() {
-      const inventory = await fetchJson(`${fetcherUrl}/api/v1/inventories/me`, { headers: authHeaders })
+      const inventory = await fetchJson(`${fetcherUrl}/api/v1/inventories/me`, {
+        headers: authHeaders,
+      })
 
       if (cancelled) return
       setData({ itemsCount: inventory.items_count, items: inventory.items.map(mapItem) })

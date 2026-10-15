@@ -35,16 +35,16 @@ gem "image_processing", "~> 1.2"
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 
-gem 'sorbet', :group => :development
-gem 'sorbet-runtime'
+gem "sorbet", group: :development
+gem "sorbet-runtime"
 
-gem 'prop'
-gem 'redis', '~> 5.0'
-gem 'connection_pool'
-gem 'faraday'
-gem 'jwt'
+gem "prop"
+gem "redis", "~> 5.0"
+gem "connection_pool"
+gem "faraday"
+gem "jwt"
 
-gem 'sidekiq-cron'
+gem "sidekiq-cron"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -59,7 +59,7 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 
-  gem 'tapioca', require: false
+  gem "tapioca", require: false
 
   gem "rspec-rails"
 end
@@ -73,4 +73,9 @@ group :test do
 
   # Build test data with factories instead of fixtures [https://github.com/thoughtbot/factory_bot_rails]
   gem "factory_bot_rails"
+
+  # Coverage reporting, uploaded to Codecov in CI (see
+  # agent/styleguides/ci-and-coverage.md). Loaded only when COVERAGE is set.
+  gem "simplecov", require: false
+  gem "simplecov-cobertura", require: false
 end

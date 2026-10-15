@@ -40,13 +40,31 @@ export function dashboardReducer(state, action) {
       return { ...state, sort: action.sort, page: 0, openDropdown: null }
 
     case 'WEAPON_FILTER_TOGGLED':
-      return { ...state, filters: { ...state.filters, weapons: toggleSetMember(state.filters.weapons, action.value) }, page: 0 }
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          weapons: toggleSetMember(state.filters.weapons, action.value),
+        },
+        page: 0,
+      }
 
     case 'CONDITION_FILTER_TOGGLED':
-      return { ...state, filters: { ...state.filters, conditions: toggleSetMember(state.filters.conditions, action.value) }, page: 0 }
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          conditions: toggleSetMember(state.filters.conditions, action.value),
+        },
+        page: 0,
+      }
 
     case 'STATTRAK_FILTER_TOGGLED':
-      return { ...state, filters: { ...state.filters, stattrakOnly: !state.filters.stattrakOnly }, page: 0 }
+      return {
+        ...state,
+        filters: { ...state.filters, stattrakOnly: !state.filters.stattrakOnly },
+        page: 0,
+      }
 
     case 'FILTERS_CLEARED':
       return { ...state, filters: initialState.filters, page: 0 }
@@ -55,7 +73,10 @@ export function dashboardReducer(state, action) {
       return { ...state, page: action.page }
 
     case 'DROPDOWN_TOGGLED':
-      return { ...state, openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown }
+      return {
+        ...state,
+        openDropdown: state.openDropdown === action.dropdown ? null : action.dropdown,
+      }
 
     case 'DROPDOWNS_CLOSED':
       return state.openDropdown === null ? state : { ...state, openDropdown: null }

@@ -23,7 +23,9 @@ export function useItemHistory(fetcherUrl, bridgeToken, marketHashName, period) 
       const points = await response.json()
 
       if (cancelled) return
-      setSeries(points.map((point) => ({ at: new Date(point.at).getTime(), value: point.price_cents })))
+      setSeries(
+        points.map((point) => ({ at: new Date(point.at).getTime(), value: point.price_cents })),
+      )
       setStatus('ready')
     }
 

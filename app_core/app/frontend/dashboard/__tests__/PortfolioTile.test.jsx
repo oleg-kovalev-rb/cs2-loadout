@@ -27,7 +27,10 @@ describe('PortfolioTile', () => {
 
   test('portfolio mode: renders the last series value and a delta once the series has points', () => {
     const { container } = renderTile({
-      portfolioSeries: [{ at: 1, value: 14000 }, { at: 2, value: 15000 }],
+      portfolioSeries: [
+        { at: 1, value: 14000 },
+        { at: 2, value: 15000 },
+      ],
     })
 
     expect(screen.getByText('$150.00')).toBeInTheDocument()
@@ -37,7 +40,14 @@ describe('PortfolioTile', () => {
   test('item mode: shows a loading state while item history is pending, not a zero', () => {
     const { container } = renderTile({
       mode: 'item',
-      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+      selectedItem: {
+        marketHashName: 'AK-47 | Redline (FT)',
+        weaponType: 'AK-47',
+        itemName: 'Redline',
+        condition: 'Field-Tested',
+        stattrak: false,
+        currentPriceCents: 4000,
+      },
       itemHistorySeries: [],
       itemHistoryStatus: 'pending',
     })
@@ -48,8 +58,18 @@ describe('PortfolioTile', () => {
   test('item mode: renders the item series once history has loaded', () => {
     const { container } = renderTile({
       mode: 'item',
-      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
-      itemHistorySeries: [{ at: 1, value: 3700 }, { at: 2, value: 4000 }],
+      selectedItem: {
+        marketHashName: 'AK-47 | Redline (FT)',
+        weaponType: 'AK-47',
+        itemName: 'Redline',
+        condition: 'Field-Tested',
+        stattrak: false,
+        currentPriceCents: 4000,
+      },
+      itemHistorySeries: [
+        { at: 1, value: 3700 },
+        { at: 2, value: 4000 },
+      ],
       itemHistoryStatus: 'ready',
     })
 
@@ -66,7 +86,14 @@ describe('PortfolioTile', () => {
   test('item mode: the range toggle includes a 24h option', () => {
     renderTile({
       mode: 'item',
-      selectedItem: { marketHashName: 'AK-47 | Redline (FT)', weaponType: 'AK-47', itemName: 'Redline', condition: 'Field-Tested', stattrak: false, currentPriceCents: 4000 },
+      selectedItem: {
+        marketHashName: 'AK-47 | Redline (FT)',
+        weaponType: 'AK-47',
+        itemName: 'Redline',
+        condition: 'Field-Tested',
+        stattrak: false,
+        currentPriceCents: 4000,
+      },
     })
 
     expect(screen.getByRole('button', { name: '24h' })).toBeInTheDocument()
