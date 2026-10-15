@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "name": "steam-project-hooks",
+  "description": "Repo-wide dev tooling (git hooks). See agent/styleguides/git-hooks.md.",
+  "scripts": {
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "lefthook": "^2.2.2"
+  }
+}

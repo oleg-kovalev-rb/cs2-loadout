@@ -28,6 +28,20 @@ ADRs, styleguides, user stories, and plans:
 - skills: `.claude/skills/` (this tool) and `.cursor/skills/` (Cursor)
 - shared: `agent/adr/`, `agent/styleguides/`, `agent/US/`, `agent/plans/`
 
+## CI & git hooks
+
+- CI lives at the repo root: `.github/workflows/ci.yml` (GitHub reads no
+  other location). Jobs: `linters` (RuboCop, Sorbet `srb tc`, Brakeman,
+  bundler-audit, ESLint, Prettier), `tests` (RSpec ×2, Vitest), and a
+  non-blocking `coverage` job (Codecov). Everything runs through
+  `docker compose` via `docker-compose.ci.yml`. See
+  `agent/styleguides/ci-and-coverage.md`.
+- Git hooks use `lefthook`: run `npm install` once at the repo root (its
+  `prepare` script runs `lefthook install`). `pre-commit` lints staged
+  Ruby/JS; `commit-msg` enforces the `[Scope] Imperative summary`
+  convention. See `agent/styleguides/git-hooks.md`.
+- Each app's `bin/ci` is the local equivalent of CI — keep it aligned.
+
 ## Development pipeline
 
 For any non-trivial change (new behavior, bug fix touching business logic,

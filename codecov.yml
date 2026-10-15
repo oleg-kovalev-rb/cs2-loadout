@@ -1,0 +1,18 @@
+# Codecov configuration.
+#
+# The coverage status is informational so it reports a percentage on the PR
+# without ever blocking a merge — see agent/styleguides/ci-and-coverage.md.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+ignore:
+  - "app_core/node_modules/**"
+  - "**/spec/**"
+  - "**/sorbet/**"
+  - "app_core/app/frontend/**/__tests__/**"

@@ -7,9 +7,9 @@ description: Commit message format across the monorepo — `[Scope] Imperative s
 ## Purpose
 
 How commit messages are written across this monorepo, so history stays
-scannable by scope (`git log --oneline` should tell you which app a
-commit touched without opening it) and so a non-obvious change carries
-its own "why."
+scannable by scope (`git log --oneline` should tell you which app — or
+shared concern — a commit touched without opening it) and so a
+non-obvious change carries its own "why."
 
 ## Structure
 
@@ -25,9 +25,28 @@ its own "why."
     application code. Exception: a styleguide/ADR created only to support
     one task's implementation is not its own `AI WorkFlow` commit — see
     "Task-Scoped Styleguides, ADRs, and Plans" below.
-  Don't invent a new tag ad hoc; if a genuinely new scope appears (a
-  third app or package), add it deliberately rather than
-  one-off-improvising a name.
+  - `Tooling` — the dev tools themselves and their configuration, for a
+    repo-wide change that spans both apps and isn't application code:
+    linters/formatters/static analysis and their config files
+    (`rubocop`, `sorbet`, `brakeman`, `bundler-audit`, `eslint`,
+    `prettier`) and the root `package.json` carrying tool dependencies.
+    It's about *which tools and how they're configured*, not where they
+    run.
+  - `CI/CD` — the automation that runs those tools: the root GitHub
+    Actions workflow (`.github/workflows/`), git hooks (`lefthook`
+    `pre-commit`/`commit-msg`), CI-specific `docker-compose` overrides,
+    and coverage upload (`codecov.yml`).
+    Tie-breaker between the two: `Tooling` is the tool's own config,
+    `CI/CD` is the pipeline/hook that invokes it. Both are repo-wide only
+    — a change to one app's own CI/Gemfile/config stays tagged with that
+    app (`Fetcher`, `Core`) — and both are distinct from `AI WorkFlow`
+    (which is `.claude/`'s own process docs).
+  A change that spans both (e.g. adding ESLint and wiring it into CI) is
+  split into two commits — `[Tooling]` for the config, `[CI/CD]` for the
+  pipeline wiring — per the single-purpose-commit rule below. Don't
+  invent a new tag ad hoc; if a genuinely new scope appears (a third app
+  or package), add it deliberately rather than one-off-improvising a
+  name.
 - The summary starts with a capitalized, imperative verb (`Add`, `Move`,
   `Fix`, `Wire` — not `Added`/`Adds`/a lowercase start).
 
@@ -44,7 +63,8 @@ When `styleguides-check` finds a gap and a new styleguide or ADR gets
 created only because this task's plan needed it — not a pre-existing,
 reusable convention — commit it together with that task's
 implementation: one `[Scope]` commit (tagged with the app the code
-belongs to: `Core`, `Fetcher`, or `Core+Fetcher`) covering the plan
+belongs to: `Core`, `Fetcher`, or `Core+Fetcher`; `Tooling` or `CI/CD`
+when the task itself is repo-wide tooling/pipeline) covering the plan
 update, the ADR/styleguide, and the code. Don't split the doc into its
 own preceding `AI WorkFlow` commit — that hides that it only exists to
 support this one change.
@@ -76,4 +96,10 @@ implementation, or a plan committed on its own before implementation
 [Fetcher] Add change_24h_cents column to items
 [Core] Add user model
 [AI WorkFlow] Add RSpec testing-conventions styleguide and ADR
+[Tooling] Add ESLint and Prettier config for the frontend
+[CI/CD] Add root CI workflow and lefthook git hooks
 ```
+
+The `Tooling`/`CI/CD` lines are their intended shape, not history
+entries — the tags were introduced after the commits above; the first
+real `Tooling`/`CI/CD` commits will be the change that added them.

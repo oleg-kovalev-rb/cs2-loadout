@@ -90,14 +90,6 @@ a change's scope just because an unrelated file is flagged here.
   not-yet-priced item) or whether `#perform` should guard before
   publishing — a real product decision, not a one-line type fix; out of
   scope for this change.
-- `app_fetcher/spec/caching/user_inventory_cache_spec.rb` — asserts the
-  cache key as `["user_inventory", 2, steam_id]`, but
-  `UserInventoryCache::CACHE_KEY_VERSION` is `1` (reverted back to 1 in
-  `2bd64c5 [Fetcher] Revert UserInventoryCache key version back to 1`,
-  which apparently didn't update this spec to match) — a real,
-  deterministic test failure, not flaky. Confirmed while running the full
-  suite for the admin-panel-backend-foundation plan; `user_inventory_cache.rb`
-  and its spec aren't otherwise touched by that work, so not fixed here.
 - `app_fetcher/app/models/item.rb` had a latent runtime bug in
   `#stattrak` (`super.nil? ? false : super`): calling it on an item
   loaded via a relation query (not a freshly-`.create!`d instance) with
@@ -162,22 +154,6 @@ a change's scope just because an unrelated file is flagged here.
   same rationale as the `app_fetcher` fixtures entry above. Existing
   `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`
   factory instead.
-- `app_core/lib/steam/profile_fetcher.rb` — `require 'net/http'`/
-  `require 'uri'` use single-quoted string literals; `bin/rubocop`
-  confirms `Style/StringLiterals` (double-quoted preferred) actually
-  applies to this file (a sibling file added in the same session,
-  `inventory_value_trigger.rb`, hit and autocorrected the identical
-  offense) — this is real drift, not an intentional exception. Not fixed
-  here since this file wasn't otherwise being touched.
-- `app_core`'s `sorbet/rbi/gems/` is missing (or stale) RBIs for `jwt`,
-  `rspec-rails`, and `factory_bot_rails` — `bundle exec srb tc` reports
-  "Unable to resolve constant `JWT`"/`RSpec`/`FactoryBot` on every file
-  that references them (`lib/steam/bridge_token.rb`,
-  `spec/rails_helper.rb`, every spec file, etc.), not just newly-added
-  ones. Confirmed while adding `lib/admin/bridge_token.rb` and its spec
-  for the admin-panel-backend-foundation plan — those new files hit the
-  identical pre-existing gap, not a new one. Fix is a project-wide
-  `bundle exec tapioca gems` run, out of scope for any single feature.
 - `app_core/app/views/layouts/application.html.erb` never renders
   `flash` — `SessionsController#callback`/`#destroy` set
   `notice:`/`alert:` on their `redirect_to` calls, but nothing in the

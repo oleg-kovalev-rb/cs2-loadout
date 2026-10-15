@@ -101,6 +101,12 @@ stream.
   item`) rather than letting a `NoMethodError` on `nil` become the
   failure — Sidekiq would retry a `nil` dereference as if it were a
   transient error, which it isn't.
+- Guard on a nil price before publishing to `prices_stream`: a
+  not-yet-priced or non-marketable item is a normal state, not a failure
+  to log, so the worker skips the publish when the item's
+  `current_price_cents` is nil — it never writes a `nil`/`0` price into
+  the stream. The stream's contract is concrete (non-nil) prices only
+  (`PriceUpdateWorker`).
 
 ### SHOULD
 
@@ -153,7 +159,8 @@ PriceScheduler#perform
     ↓ PriceUpdateWorker.perform_async(item.id)  — one job per item
 PriceUpdateWorker#perform
     ↓ Steam::Client → Steam::PriceLogBuilder → transaction (save + update)
-    ↓ publish to STREAM_REDIS_POOL ("prices_stream")
+    ↓ publish to STREAM_REDIS_POOL ("prices_stream") — only when the
+      item has a non-nil price
 
 sidekiq-cron
     ↓ enqueues on schedule (daily; its own staleness filter bounds actual Steam calls to ~weekly per steam_id)
