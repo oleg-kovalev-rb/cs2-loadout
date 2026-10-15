@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import '../shared/styles/tokens.css'
 import '../dashboard/styles/dashboard.css'
 import '../tracked_items/styles/tracked_items.css'
 import { TrackedItems } from '../tracked_items/TrackedItems'

@@ -3,28 +3,28 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url('../../dashboard/fonts/BigShouldersDisplay-800.woff2') format('woff2');
+  src: url('../../shared/fonts/BigShouldersDisplay-800.woff2') format('woff2');
 }
 @font-face {
   font-family: 'IBM Plex Sans';
   font-style: normal;
   font-weight: 400 600;
   font-display: swap;
-  src: url('../../dashboard/fonts/IBMPlexSans-Variable.woff2') format('woff2');
+  src: url('../../shared/fonts/IBMPlexSans-Variable.woff2') format('woff2');
 }
 @font-face {
   font-family: 'IBM Plex Mono';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../../dashboard/fonts/IBMPlexMono-400.woff2') format('woff2');
+  src: url('../../shared/fonts/IBMPlexMono-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'IBM Plex Mono';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('../../dashboard/fonts/IBMPlexMono-500.woff2') format('woff2');
+  src: url('../../shared/fonts/IBMPlexMono-500.woff2') format('woff2');
 }
 
 :root {

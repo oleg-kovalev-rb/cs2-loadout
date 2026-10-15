@@ -1,5 +1,5 @@
-import { Sparkline } from '../../dashboard/components/Sparkline'
-import { fmtPrice, conditionAbbr } from '../../dashboard/utils/format'
+import { Sparkline } from '../../shared/components/Sparkline'
+import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 import { rarityColor } from '../utils/format'
 
 function TickerRow({ item }) {
