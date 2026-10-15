@@ -51,6 +51,9 @@ Dockerfile shape, same two lockfiles.
   with `check`, so the ignore list is always consulted.
 - `<app>/Dockerfile` — `COPY Gemfile*` followed by `RUN bundle install`.
   Gems are installed into the image at **build** time.
+- `app_core/package.json` / `app_core/package-lock.json` — the npm side.
+  Not patched here, but it is a constraint source: a gem can require a
+  range from it and enforce that at boot (see Rules → SHOULD).
 
 ## Rules
 
@@ -81,6 +84,14 @@ Dockerfile shape, same two lockfiles.
 - Take the version the resolver selects inside the declared constraints,
   rather than pinning a transitive gem into the `Gemfile` to force a
   particular one — a pin we add is a constraint we then maintain.
+- When the newest release of a gem demands a newer package from the
+  *other* ecosystem, take the newest version whose requirement is already
+  met instead of extending the change into that ecosystem. `vite_ruby` is
+  the standing case: it enforces the npm `vite-plugin-ruby` range at boot
+  (`ViteRuby::DEFAULT_PLUGIN_VERSION`, via `ViteRuby::Config`), so the
+  version to take is the newest `vite_ruby` whose range
+  `app_core/package.json` already satisfies — the lockfile moves,
+  `package.json`/`package-lock.json` do not.
 - Stay on the declared line. A security patch does not widen a constraint
   to chase a fix (`~> 7.2.0`, `~> 2.3`). If the fix needs a new major,
   that is a separate, planned upgrade.
@@ -157,5 +168,8 @@ config/bundler-audit.yml   → consulted by bin/bundler-audit; stays empty
   `RUN bundle install`, the reason an image rebuild is required.
 - `agent/plans/patch-vulnerable-gems.md` — the worked example of a scoped
   advisory patch across both apps.
+- `app_core/Gemfile.lock`'s `vite_ruby` + `rack-proxy` pair against an
+  untouched `app_core/package.json` — the cross-ecosystem version choice
+  (Rules → SHOULD).
 - The Brakeman refresh (commit `decb749`) — a single pinned-gem update
   where the "rebuild before re-running" rule was found the hard way.
