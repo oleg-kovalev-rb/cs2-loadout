@@ -2,6 +2,8 @@
 require "rubygems"
 require "bundler/setup"
 
-ARGV.unshift("--ensure-latest")
-
+# NOTE: `--ensure-latest` is deliberately not passed. The flag makes CI fail
+# whenever upstream releases a new Brakeman, regardless of our code. The
+# scanner version is pinned by Gemfile.lock instead; update it via
+# `bundle update brakeman`. See agent/styleguides/ci-and-coverage.md.
 load Gem.bin_path("brakeman", "brakeman")
