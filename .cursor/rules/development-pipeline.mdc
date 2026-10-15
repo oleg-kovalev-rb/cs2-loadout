@@ -8,6 +8,14 @@ alwaysApply: true
 Monorepo: `app_fetcher/` (Steam data API, Sorbet, Sidekiq) and `app_core/`
 (Turbo/Stimulus + React dashboard island). Shared stack in `docker-compose.yml`.
 
+## Git access (agent policy)
+
+- **NEVER run `git push`** — or any other remote-mutating git command
+  (`git push`, force-push, `git remote` changes, PR creation via CLI).
+  Pushing is the human's job **exclusively**. The agent may edit files,
+  create local branches, and make local commits; it stops there and leaves
+  every push to the human.
+
 ## Shared docs (Claude + Cursor)
 
 Canonical paths — both tools read and write the same files:
