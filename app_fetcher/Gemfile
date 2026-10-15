@@ -39,7 +39,7 @@ gem "sorbet", group: :development
 gem "sorbet-runtime"
 
 gem "prop"
-gem "redis", "~> 5.0"
+gem "redis", "~> 6.0"
 gem "connection_pool"
 gem "faraday"
 gem "jwt"
