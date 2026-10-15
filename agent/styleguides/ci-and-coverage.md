@@ -119,11 +119,19 @@ alone is a development-only variant (see Rules → MUST NOT).
 - Frontend: `@vitest/coverage-v8`, configured in `vite.config.ts`, with
   the cobertura reporter writing to a separate reports directory.
 - The `coverage` job downloads both reports and uploads them to Codecov
-  with per-stack flags (`app_fetcher`, `app_core`, `frontend`).
+  with per-stack flags (`app_fetcher`, `app_core`, `frontend`) and
+  `disable_search: true` (so each upload carries only its own file — the
+  CLI otherwise searches the workspace and finds all of them).
+- **Paths must be repo-relative.** Coverage is generated inside the app
+  containers, whose working directory is `/app` for both apps, so the
+  reports carry absolute container paths (`/app/...`) that Codecov can't
+  map to the repository (→ 0%). The `coverage` job rewrites each report's
+  `<source>` to the app's repo-relative dir (`app_fetcher`,
+  `app_core`, `app_core/app/frontend`) before uploading.
 - `codecov.yml` marks the status **informational** so coverage never
   blocks a merge, and lists ignored paths.
-- `CODECOV_TOKEN` is optional for this public repo but is set as a
-  fallback secret.
+- `CODECOV_TOKEN` is set as a secret (required to authenticate the
+  upload).
 
 ## Interaction With Other Layers
 
