@@ -19,6 +19,12 @@ module GeneratedPathHelpersModule
   def callback_session_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def inventories_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def inventory_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def new_admin_session_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -110,6 +116,9 @@ module GeneratedPathHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def session_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def tracked_items_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def turbo_recede_historical_location_path(*args); end

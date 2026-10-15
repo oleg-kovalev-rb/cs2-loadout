@@ -10,6 +10,63 @@ module GeneratedUrlHelpersModule
   include ::ActionDispatch::Routing::PolymorphicRoutes
 
   sig { params(args: T.untyped).returns(String) }
+  def api_admin_inventory_value_logs_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_item_price_log_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_item_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_items_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_price_logs_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_user_inventories_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_user_inventory_inventory_value_log_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_admin_user_inventory_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_public_inventories_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_public_items_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_public_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_inventories_me_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_inventories_refresh_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_inventory_values_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_item_prices_dynamics_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_item_prices_trend_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_v1_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def bulk_warm_cache_api_admin_items_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def bulk_warm_cache_api_admin_user_inventories_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def new_rails_conductor_inbound_email_source_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -94,5 +151,20 @@ module GeneratedUrlHelpersModule
   def rails_storage_redirect_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def refresh_price_api_admin_item_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def sync_api_admin_user_inventory_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def update_rails_disk_service_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def warm_cache_api_admin_item_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def warm_cache_api_admin_user_inventory_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def warm_catalog_cache_api_admin_items_url(*args); end
 end
