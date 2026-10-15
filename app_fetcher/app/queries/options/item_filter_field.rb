@@ -11,7 +11,9 @@ module Options
       Search = new("search")
     end
 
-    sig { params(scope: ActiveRecord::Relation, params: ActionController::Parameters).returns(ActiveRecord::Relation) }
+    T::Sig::WithoutRuntime.sig do
+      params(scope: Item::PrivateRelation, params: ActionController::Parameters).returns(Item::PrivateRelation)
+    end
     def apply(scope, params)
       case self
       when Category then scope.by_categories(Array(params[:category]).map(&:to_s))

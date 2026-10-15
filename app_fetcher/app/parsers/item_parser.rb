@@ -52,6 +52,7 @@ class ItemParser
 
     if clean_name.include?(WEAPON_TYPE_SEPARATOR)
       weapon_type, item_name = clean_name.split(WEAPON_TYPE_SEPARATOR, 2)
+      item_name = T.must(item_name)
 
       {
         market_hash_name:,
