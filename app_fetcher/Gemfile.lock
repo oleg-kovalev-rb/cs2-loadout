@@ -255,7 +255,7 @@ GEM
     rbi (0.3.10)
       prism (~> 1.0)
       rbs (>= 4.0.1)
-    rbs (4.0.2)
+    rbs (4.2.0)
       logger
       prism (>= 1.6.0)
       tsort
@@ -338,7 +338,7 @@ GEM
     simplecov-cobertura (4.0.0)
       rexml
       simplecov (~> 1.0)
-    solid_cable (3.0.12)
+    solid_cable (4.1.0)
       actioncable (>= 7.2)
       activejob (>= 7.2)
       activerecord (>= 7.2)
