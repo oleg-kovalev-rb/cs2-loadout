@@ -21,7 +21,11 @@ class PriceUpdateWorker
 
     PriceUpdateService.call(item, T.must(response.data))
     update_related_cache(item.market_hash_name)
-    publish_to_stream(item.market_hash_name, item.current_price_cents, item.change_24h_cents)
+
+    price = item.current_price_cents
+    return if price.nil?
+
+    publish_to_stream(item.market_hash_name, price, item.change_24h_cents || 0)
   end
 
   private

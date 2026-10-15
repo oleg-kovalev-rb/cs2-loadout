@@ -21,7 +21,7 @@ module Faraday
     sig { params(env: Faraday::Env).returns(Faraday::Response) }
     def call(env)
       env[:request_headers]["User-Agent"] = USER_AGENTS.sample
-      @app.call(env)
+      app.call(env)
     end
   end
 end

@@ -1,6 +1,7 @@
 gem:
   exclude:
     - bundler-audit
+    - connection_pool
     - ffi
     - ruby-vips
     - rdoc

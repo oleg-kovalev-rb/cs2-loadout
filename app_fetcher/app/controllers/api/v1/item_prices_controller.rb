@@ -19,14 +19,15 @@ module Api
         enqueue_price_warmup(priced_items.values)
 
         result = priced_items.each_with_object({}) do |(name, item), hash|
-          next if item.current_price_cents.nil?
+          current_price_cents = item.current_price_cents
+          next if current_price_cents.nil?
 
           change = item.change_24h_cents || 0
-          base = item.current_price_cents - change
+          base = current_price_cents - change
           percent = base.zero? ? 0.0 : (change.to_f / base * 100).round(2)
 
           hash[name] = {
-            current_price_cents: item.current_price_cents,
+            current_price_cents: current_price_cents,
             change_24h_cents: change,
             change_24h_percent: percent
           }

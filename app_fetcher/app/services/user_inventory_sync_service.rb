@@ -21,13 +21,14 @@ class UserInventorySyncService
       response = Steam::Client.new.fetch_user_inventory(steam_id)
       return Result.new(success: false, error: response.error, items: nil) unless response.success?
 
-      Rails.logger.warn("[UserInventorySyncService] steam_id=#{steam_id} inventory truncated (more_items)") if response.data.more_items
+      data = T.must(response.data)
+      Rails.logger.warn("[UserInventorySyncService] steam_id=#{steam_id} inventory truncated (more_items)") if data.more_items
 
-      names = response.data.market_hash_names
+      names = data.market_hash_names
       known_items = ItemPriceCache.fetch_for(names)
       missing_names = names - known_items.keys
-      icon_by_name = response.data.icon_urls_by_name
-      item_attributes_by_name = response.data.item_attributes_by_name
+      icon_by_name = data.icon_urls_by_name
+      item_attributes_by_name = data.item_attributes_by_name
       missing_attrs = missing_names.map do |name|
         attrs = item_attributes_by_name[name] || { marketable: false, tradable: false, rarity: nil, category: nil }
         ItemParser.parse(
