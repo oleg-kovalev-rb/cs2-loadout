@@ -19,6 +19,12 @@ module GeneratedUrlHelpersModule
   def callback_session_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def inventories_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def inventory_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def new_admin_session_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
@@ -110,6 +116,9 @@ module GeneratedUrlHelpersModule
 
   sig { params(args: T.untyped).returns(String) }
   def session_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def tracked_items_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
   def turbo_recede_historical_location_url(*args); end
