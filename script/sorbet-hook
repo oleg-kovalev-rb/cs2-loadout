@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# pre-commit helper: regenerate an app's model DSL RBIs (`tapioca dsl`) so RBI
+# debt can't accumulate, then typecheck with `srb tc`.
+#
+# If `tapioca dsl` produced changes that aren't staged yet, the hook fails and
+# tells you to stage them — committing without them is exactly how the debt
+# accumulates. (`tapioca gems` is deliberately NOT run here; gem RBIs are
+# regenerated on gem changes, not on every commit.)
+#
+# `tapioca dsl` boots the app and reads the schema, so the app's database is
+# started (and awaited) first.
+#
+# See agent/styleguides/git-hooks.md.
+#
+# Usage: script/sorbet-hook app_fetcher | app_core
+
+set -euo pipefail
+
+app="${1:?usage: script/sorbet-hook <app_fetcher|app_core>}"
+db="db_${app#app_}"
+rbi_dir="$app/sorbet/rbi/dsl"
+compose=(docker compose -f docker-compose.yml -f docker-compose.ci.yml)
+
+# tapioca dsl needs the database up to read the schema.
+"${compose[@]}" up -d --wait "$db" redis >/dev/null
+
+"${compose[@]}" run --rm --no-deps "$app" bundle exec tapioca dsl
+
+if ! git diff --quiet -- "$rbi_dir" ||
+   [ -n "$(git ls-files --others --exclude-standard -- "$rbi_dir")" ]; then
+  echo "" >&2
+  echo "tapioca dsl updated $rbi_dir" >&2
+  echo "Stage it (\`git add $rbi_dir\`) and commit again." >&2
+  exit 1
+fi
+
+"${compose[@]}" run --rm --no-deps "$app" bundle exec srb tc

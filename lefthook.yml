@@ -12,6 +12,12 @@ commit-msg:
 pre-commit:
   parallel: true
   commands:
+    sorbet-app-fetcher:
+      glob: "app_fetcher/**/*.rb"
+      run: script/sorbet-hook app_fetcher
+    sorbet-app-core:
+      glob: "app_core/**/*.rb"
+      run: script/sorbet-hook app_core
     rubocop-app-fetcher:
       root: "app_fetcher/"
       glob: "*.rb"
