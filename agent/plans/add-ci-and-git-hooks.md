@@ -568,10 +568,13 @@ problems — to be fixed separately:
   app via `config/brakeman.yml` (`skip_checks: [CheckEOLRails]`), which
   keeps the gate green and still blocking for everything about our code.
   Removing that entry needs a Rails upgrade — a separate task.
-- **bundler-audit** — ~20 advisories per app (activestorage,
-  concurrent-ruby, json, loofah, nokogiri, puma, rack, rack-session,
-  mail, net-imap, erb, crass, websocket-driver, faraday, yard, ...); fix
-  is patching those gems (a separate security task).
+- **bundler-audit** — fixed. Both apps' `bin/bundler-audit` now exit 0
+  with no new `ignore` entries: the flagged gems were patched to their
+  minimum safe versions on the Rails 7.2 line (`rails 7.2.3.2`). The
+  procedure is recorded in `agent/styleguides/dependency-patching.md`,
+  the full run in `agent/plans/patch-vulnerable-gems.md`. The `linters`
+  job is still red overall — on the `srb tc` errors above, not on this
+  step.
 
 ### Notes / deviations from the plan
 
