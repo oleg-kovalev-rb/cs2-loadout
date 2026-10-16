@@ -1,5 +1,5 @@
 ---
-description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and fixed-height paginated lists, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and hero-delta zero-hiding, fixed-height paginated lists, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
 ---
 
 # React Islands (`app_core/app/frontend/`)
@@ -203,6 +203,18 @@ Context.
   one island's item row needs the identical rule (see Reuse Across
   Islands). Canonical: `dashboard/components/ItemRow.jsx`,
   `inventories/components/InventoryItemRow.jsx`.
+- **A hero/portfolio delta is rendered only when there is an actual
+  change.** The chart-hero delta (`PortfolioTile`'s and
+  `PortfolioHeroTile`'s `.hero-delta`) must be omitted — not drawn as a
+  green `▲ $0.00 (+0.00%)` — whenever the change is exactly `0`: most
+  visibly a single-point series, where `last - first === 0`, but equally a
+  series whose endpoints are equal. Gate it on `delta !== 0`
+  (`PortfolioTile`) / `changeCents !== 0` (`PortfolioHeroTile`). Unlike the
+  item-row rule above this is a per-component one-line render guard, not a
+  shared helper — it isn't a cross-island derivation. Positive and
+  negative changes render exactly as before. Canonical:
+  `dashboard/components/PortfolioTile.jsx`,
+  `inventories/components/PortfolioHeroTile.jsx`.
 - **A paginated list keeps a stable `PAGE_SIZE` height with decorative
   placeholder rows.** When the current page holds fewer than `PAGE_SIZE`
   items, render the missing slots as empty `<li>`s that reuse the row's
@@ -611,6 +623,9 @@ patterns.
 - `app_core/app/frontend/shared/utils/trend.js` — the shared `up`/`down`/
   `flat` trend-direction helper every island's item row derives through
   (see Component Conventions)
+- `app_core/app/frontend/dashboard/components/PortfolioTile.jsx`,
+  `app_core/app/frontend/inventories/components/PortfolioHeroTile.jsx` —
+  the hero-delta zero-hiding guard (see Component Conventions)
 - `app_core/app/frontend/dashboard/__tests__/ItemsTile.test.jsx`,
   `useDashboardData.test.js`, `portfolioSeries.test.js`
 - `app_core/app/frontend/admin-panel/AdminPanel.jsx`,
