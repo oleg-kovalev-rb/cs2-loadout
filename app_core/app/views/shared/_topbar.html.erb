@@ -7,7 +7,7 @@
   <nav class="nav-tabs">
     <%= link_to "Portfolio", root_path, class: "nav-tab#{' is-active' if active_tab == :portfolio}" %>
     <%= link_to tracked_items_path, class: "nav-tab#{' is-active' if active_tab == :tracked_items}" do %>
-      Tracked Items<span class="pip">NEW</span>
+      Tracked Items
     <% end %>
     <%= link_to "Inventories", inventories_path, class: "nav-tab#{' is-active' if active_tab == :inventories}" %>
   </nav>

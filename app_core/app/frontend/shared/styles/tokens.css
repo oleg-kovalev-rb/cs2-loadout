@@ -170,15 +170,6 @@ html {
 .dash-root .nav-tab.is-active {
   color: var(--text);
 }
-.dash-root .nav-tab .pip {
-  margin-left: 6px;
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 1px 5px;
-  border-radius: 999px;
-}
 .dash-root .brand-mark {
   font-family: var(--font-display);
   font-weight: 800;
