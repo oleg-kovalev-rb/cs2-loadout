@@ -1,14 +1,15 @@
 import { Sparkline } from '../../shared/components/Sparkline'
+import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 import { changePct } from '../utils/filters'
 
 export function ItemRow({ item, isSelected, onSelect }) {
   const hasPrice = item.currentPriceCents != null
   const isTradable = item.currentPriceCents !== 0
-  const showDelta = isTradable && hasPrice
   const pct = changePct(item)
-  const direction = pct >= 0 ? 'up' : 'down'
-  const arrow = pct >= 0 ? '▲' : '▼'
+  const direction = trendDirection(pct)
+  const showDelta = isTradable && hasPrice && direction !== 'flat'
+  const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
 
   return (

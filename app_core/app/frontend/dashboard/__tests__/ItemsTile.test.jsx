@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, test, expect } from 'vitest'
 import { ItemsTile } from '../components/ItemsTile'
-import { dashboardReducer, initialState } from '../reducer'
+import { dashboardReducer, initialState, PAGE_SIZE } from '../reducer'
 
 const items = [
   {
@@ -167,5 +167,32 @@ describe('ItemsTile (item not yet priced by item_prices/dynamics)', () => {
     const row = screen.getByRole('button', { name: /Fade/ })
     expect(within(row).getByText('—')).toBeInTheDocument()
     expect(within(row).queryByText(/▲|▼/)).not.toBeInTheDocument()
+  })
+})
+
+describe('ItemsTile (fixed-height list)', () => {
+  const fullPageItems = Array.from({ length: PAGE_SIZE }, (_, index) => ({
+    ...items[0],
+    marketHashName: `AK-47 | Item ${index} (FT)`,
+    itemName: `Item ${index}`,
+    currentPriceCents: 1000 + index,
+    change24hPercent: 1,
+    trendPoints: [],
+  }))
+
+  test('pads a partial page up to PAGE_SIZE with inert placeholder slots', () => {
+    const { container } = render(<Harness />)
+
+    // 5 real items -> 3 empty slots so the tile stays PAGE_SIZE rows tall.
+    expect(container.querySelectorAll('.mover-row-empty')).toHaveLength(PAGE_SIZE - items.length)
+    // Placeholders are decorative: still only 5 real list items to a11y.
+    expect(screen.getAllByRole('listitem')).toHaveLength(items.length)
+  })
+
+  test('renders no placeholder slots for a full page', () => {
+    const { container } = render(<Harness items={fullPageItems} />)
+
+    expect(container.querySelectorAll('.mover-row-empty')).toHaveLength(0)
+    expect(screen.getAllByRole('listitem')).toHaveLength(PAGE_SIZE)
   })
 })

@@ -1,12 +1,14 @@
 import { Sparkline } from '../../shared/components/Sparkline'
+import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 import { rarityColor } from '../utils/format'
 
 function ItemCard({ item }) {
   const hasPrice = item.currentPriceCents != null
   const pct = item.change24hPercent || 0
-  const direction = pct >= 0 ? 'up' : 'down'
-  const arrow = pct >= 0 ? '▲' : '▼'
+  const direction = trendDirection(pct)
+  const showDelta = hasPrice && direction !== 'flat'
+  const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
   const gradientId = `tracked-item-spark-${item.marketHashName.replace(/[^a-zA-Z0-9]/g, '-')}`
 
@@ -28,7 +30,7 @@ function ItemCard({ item }) {
       </div>
       <div className="card-price-row">
         <span className="card-price tabular">{fmtPrice(item.currentPriceCents)}</span>
-        {hasPrice && (
+        {showDelta && (
           <span className={`card-delta ${direction}`}>
             {arrow} {Math.abs(pct).toFixed(1)}%
           </span>

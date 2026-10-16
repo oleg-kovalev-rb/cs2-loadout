@@ -204,4 +204,57 @@ describe('TrackedItems', () => {
     const [url] = fetchMock.mock.calls[1]
     expect(new URL(url).searchParams.get('search')).toBe('redline')
   })
+
+  const flatItem = {
+    market_hash_name: 'AK-47 | Flatline (Field-Tested)',
+    metadata: {
+      weapon_type: 'AK-47',
+      item_name: 'Flatline',
+      category: 'Rifles',
+      condition: 'Field-Tested',
+      stattrak: false,
+      icon_url: null,
+      rarity: 'Classified',
+    },
+    current_price_cents: 4000,
+    change_24h_cents: 0,
+    change_24h_percent: 0,
+    trend_7d: [
+      { at: '2026-10-10T00:00:00Z', price_cents: 4000 },
+      { at: '2026-10-11T00:00:00Z', price_cents: 4000 },
+    ],
+  }
+
+  test('ticker: a priced item with a zero change shows no delta and a neutral sparkline', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => jsonResponse(catalogBody({ items: [flatItem] })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<TrackedItems fetcherUrl="http://fetcher.test" />)
+
+    const row = await screen.findByText('AK-47 | Flatline', { exact: false })
+    const rowEl = row.closest('.ticker-row')
+    expect(within(rowEl).queryByText(/▲|▼/)).not.toBeInTheDocument()
+    expect(rowEl.querySelector('.row-spark path')).toHaveAttribute('stroke', 'var(--text-muted)')
+  })
+
+  test('grid: a priced item with a zero change shows no delta and a neutral sparkline', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => jsonResponse(catalogBody({ items: [flatItem] })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<TrackedItems fetcherUrl="http://fetcher.test" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    await user.click(screen.getByRole('button', { name: 'Grid' }))
+
+    const card = document.querySelector('.item-card')
+    expect(card.querySelector('.card-delta')).toBeNull()
+    // showArea adds a filled area path first; the line is the last path.
+    const paths = card.querySelectorAll('.card-spark path')
+    expect(paths[paths.length - 1]).toHaveAttribute('stroke', 'var(--text-muted)')
+  })
 })

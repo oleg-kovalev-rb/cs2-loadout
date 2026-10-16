@@ -41,4 +41,43 @@ describe('ItemRow', () => {
 
     expect(container.querySelector('img')).not.toBeInTheDocument()
   })
+
+  test('renders an up delta with an up arrow for a positive change', () => {
+    const { container } = renderRow(baseItem)
+
+    const delta = container.querySelector('.mover-delta')
+    expect(delta).toHaveClass('up')
+    expect(delta.textContent).toMatch(/▲/)
+  })
+
+  test('renders a down delta with a down arrow for a negative change', () => {
+    const { container } = renderRow({ ...baseItem, change24hPercent: -1.36 })
+
+    const delta = container.querySelector('.mover-delta')
+    expect(delta).toHaveClass('down')
+    expect(delta.textContent).toMatch(/▼/)
+  })
+
+  test('hides the delta and greys the sparkline for a zero change', () => {
+    const { container } = renderRow({
+      ...baseItem,
+      change24hPercent: 0,
+      trendPoints: [
+        { at: 1, priceCents: 4000 },
+        { at: 2, priceCents: 4000 },
+      ],
+    })
+
+    expect(container.querySelector('.mover-delta')).not.toBeInTheDocument()
+    expect(container.querySelector('.row-spark path')).toHaveAttribute(
+      'stroke',
+      'var(--text-muted)',
+    )
+  })
+
+  test('hides the delta for a missing change', () => {
+    const { container } = renderRow({ ...baseItem, change24hPercent: undefined })
+
+    expect(container.querySelector('.mover-delta')).not.toBeInTheDocument()
+  })
 })

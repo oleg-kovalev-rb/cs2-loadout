@@ -28,7 +28,13 @@ export function Sparkline({
   const points = computePoints(values, width, height, 1, 2)
   const line = pathFromPoints(points)
   const color =
-    variant === 'down' ? 'var(--down)' : variant === 'volume' ? 'var(--accent)' : 'var(--up)'
+    variant === 'down'
+      ? 'var(--down)'
+      : variant === 'flat'
+        ? 'var(--text-muted)'
+        : variant === 'volume'
+          ? 'var(--accent)'
+          : 'var(--up)'
 
   const area =
     showArea && points.length > 0
