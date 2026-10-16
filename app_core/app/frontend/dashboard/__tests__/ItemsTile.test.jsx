@@ -105,12 +105,12 @@ describe('ItemsTile (filter -> sort -> paginate integration)', () => {
 
     const rows = screen.getAllByRole('listitem')
     expect(rows).toHaveLength(2)
-    // default sort is 24h Δ desc by *percentage*: Asiimov (100/5700=1.75%) outranks Neo-Noir (50/7550=0.66%)
-    expect(within(rows[0]).getByText(/Asiimov/)).toBeInTheDocument()
-    expect(within(rows[1]).getByText(/Neo-Noir/)).toBeInTheDocument()
+    // default sort is price desc: pricier Neo-Noir (7600) outranks Asiimov (5800)
+    expect(within(rows[0]).getByText(/Neo-Noir/)).toBeInTheDocument()
+    expect(within(rows[1]).getByText(/Asiimov/)).toBeInTheDocument()
 
     // switch sort to price ascending — cheaper AWP (Asiimov) should now come first
-    await user.click(screen.getByRole('button', { name: /24H Δ/i }))
+    await user.click(screen.getByRole('button', { name: /price ↓/i }))
     await user.click(screen.getByRole('button', { name: /price ↑/i }))
 
     const resorted = screen.getAllByRole('listitem')

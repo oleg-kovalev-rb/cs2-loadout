@@ -5,7 +5,7 @@ export const initialState = {
   portfolioRange: '7d', // '7d' | '30d' | '1y' | 'all'
   itemRange: '7d', // '24h' | '7d' | '30d' | '1y' | 'all'
   selectedItem: null,
-  sort: 'delta_desc',
+  sort: 'price_desc',
   filters: { weapons: new Set(), conditions: new Set(), stattrakOnly: false },
   page: 0,
   openDropdown: null, // 'sort' | 'filter' | null
