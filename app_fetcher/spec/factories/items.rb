@@ -16,5 +16,9 @@ FactoryBot.define do
     trait :non_marketable do
       metadata { { marketable: false } }
     end
+
+    trait :price_unavailable do
+      price_unavailable { true }
+    end
   end
 end

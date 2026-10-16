@@ -50,7 +50,9 @@ Don't use it for internal `app_fetcher` domain data (e.g. `Item`,
 
 - `Steam::Response[DataClass]` — generic `T::Struct` with `const :status,
   Integer`, `const :data, T.nilable(DataClass)`, `const :error,
-  T.nilable(String)`, and `#success?` (`status == 200`).
+  T.nilable(String)`, and status-derived predicates: `#success?`
+  (`status == 200`) and `#not_found?` (`status == 404`). Callers use these
+  predicates; more are added the same way as the need arises (see Rules).
 - A caller that has checked `#success?` reads `#data` exactly **once**
   and narrows it — `data = T.must(response.data)` — then reads fields off
   that local. `#data` stays `T.nilable` because the type can't encode
@@ -97,6 +99,14 @@ JSON.
   `app/services/user_inventory_sync_service.rb` are the deviation this
   rule exists to prevent (and are logged in
   `agent/styleguides/fix_me.md`).
+- Branch on a **semantic predicate** (`#success?`, `#not_found?`, ...),
+  never on `#status` (or its numeric value), at a call site. A raw
+  HTTP-status check in a worker is exactly what
+  `agent/styleguides/fetcher/background-jobs.md` prohibits. `#success?`
+  already models this; any other failure class a caller must distinguish
+  gets its own named predicate on `Steam::Response` — added alongside
+  `#success?`, still deriving from the same single `status` — rather than
+  being re-derived from `#status` at each call site.
 
 ### SHOULD
 
@@ -111,6 +121,8 @@ JSON.
 - Do not give a DTO knowledge of HTTP status codes or rate limiting —
   that's `Steam::Client`'s job; a DTO only knows how to parse a body it's
   handed.
+- Don't read `Steam::Response#status` at a call site to branch on a
+  specific failure — use (or add) a named predicate instead.
 
 ## Error Handling
 

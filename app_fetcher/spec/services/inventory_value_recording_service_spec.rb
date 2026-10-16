@@ -37,6 +37,25 @@ RSpec.describe InventoryValueRecordingService do
     end
   end
 
+  context "with an unpriced but price-unavailable marketable item" do
+    let(:priced_item) { create(:item, current_price_cents: 3845) }
+    let(:unavailable_item) { create(:item, :without_price, :price_unavailable) }
+    let!(:user_inventory) do
+      create(:user_inventory, steam_id: steam_id, items: [ priced_item, unavailable_item ])
+    end
+
+    it "writes the log, not blocking on the price-unavailable item" do
+      record
+
+      log = InventoryValueLog.find_by(steam_id: steam_id, log_date: Date.current)
+
+      aggregate_failures do
+        expect(record.success?).to be(true)
+        expect(log.total_value_cents).to eq(3845)
+      end
+    end
+  end
+
   context "with an unpriced non-marketable item (which never gets a price)" do
     let(:priced_item) { create(:item, current_price_cents: 3845) }
     let(:unpriced_non_marketable) { create(:item, :without_price, :non_marketable) }

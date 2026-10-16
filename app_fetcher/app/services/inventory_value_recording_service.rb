@@ -32,7 +32,7 @@ class InventoryValueRecordingService
 
     sig { params(user_inventory: UserInventory).returns(T::Boolean) }
     def unpriced_marketable?(user_inventory)
-      user_inventory.items.marketable.where(current_price_cents: nil).exists?
+      user_inventory.items.marketable.where(current_price_cents: nil, price_unavailable: false).exists?
     end
   end
 end

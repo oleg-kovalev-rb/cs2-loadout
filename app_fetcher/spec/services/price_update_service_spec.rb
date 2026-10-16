@@ -50,5 +50,15 @@ RSpec.describe PriceUpdateService do
         end
       end
     end
+
+    context "when the item was previously marked price_unavailable" do
+      let(:item) { create(:item, :without_price, :price_unavailable) }
+
+      it "clears the price_unavailable flag" do
+        described_class.call(item, price_data)
+
+        expect(item.reload.price_unavailable).to be(false)
+      end
+    end
   end
 end

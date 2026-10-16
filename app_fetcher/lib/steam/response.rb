@@ -16,6 +16,11 @@ module Steam
       status == 200
     end
 
+    sig { returns(T::Boolean) }
+    def not_found?
+      status == 404
+    end
+
     module DataClassMethods
       extend T::Sig
       extend T::Helpers
