@@ -11,11 +11,6 @@
       data-bridge-token="<%= @bridge_token %>"
       data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
     ></div>
-
-    <footer class="dash-footer">
-      <span class="sync-pill"><span class="pulse-dot" aria-hidden="true"></span>Snapshot loaded just now</span>
-      <span class="footer-note">Auto-refresh isn&rsquo;t wired up yet &mdash; reload the page for the latest prices</span>
-    </footer>
   <% else %>
     <div class="signin-stage">
       <div class="signin-card">
