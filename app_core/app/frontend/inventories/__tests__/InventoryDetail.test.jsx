@@ -74,7 +74,9 @@ describe('InventoryDetail', () => {
     const fetchMock = vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload()))
     vi.stubGlobal('fetch', fetchMock)
 
-    render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
+    const { container } = render(
+      <InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />,
+    )
 
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
 
@@ -88,6 +90,30 @@ describe('InventoryDetail', () => {
     expect(screen.getByText('$5,000.00')).toBeInTheDocument() // total_value_cents
     expect(screen.getByText('127')).toBeInTheDocument() // items_count
     expect(screen.getByText(/Crimson Web/)).toBeInTheDocument() // priciest item note
+    expect(container.querySelector('.hero-delta')).toHaveClass('is-up')
+  })
+
+  test('a zero change renders the total value with no delta badge', async () => {
+    const payload = detailPayload({
+      portfolio: {
+        total_value_cents: 500000,
+        change_cents: 0,
+        change_percent: 0,
+        range: '7d',
+        history: [{ at: '2026-10-12T15:30:45Z', total_value_cents: 500000 }],
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(payload)),
+    )
+
+    const { container } = render(
+      <InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />,
+    )
+
+    await waitFor(() => expect(screen.getByText('$5,000.00')).toBeInTheDocument())
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
   })
 
   test('changing the range re-fetches with the new range', async () => {

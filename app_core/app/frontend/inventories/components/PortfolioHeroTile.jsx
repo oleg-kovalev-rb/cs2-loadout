@@ -7,6 +7,9 @@ import { INVENTORY_DETAIL_RANGES } from '../chartConfig'
 // toggle here, just this one inventory's value over time.
 export function PortfolioHeroTile({ portfolio, onRangeChange }) {
   const up = portfolio.changeCents >= 0
+  // A single-point history (no change) must not read as a green "▲ $0.00";
+  // see react-dashboard.md's hero-delta rule.
+  const showDelta = portfolio.changeCents !== 0
 
   return (
     <section className="tile tile-hero">
@@ -21,10 +24,12 @@ export function PortfolioHeroTile({ portfolio, onRangeChange }) {
 
       <div className="hero-value-row">
         <span className="hero-value tabular">{fmtUSD(centsToUSD(portfolio.totalValueCents))}</span>
-        <span className={`hero-delta tabular ${up ? 'is-up' : 'is-down'}`}>
-          {up ? '▲' : '▼'} {fmtUSD(centsToUSD(Math.abs(portfolio.changeCents)))} ({up ? '+' : '-'}
-          {Math.abs(portfolio.changePercent).toFixed(2)}%)
-        </span>
+        {showDelta && (
+          <span className={`hero-delta tabular ${up ? 'is-up' : 'is-down'}`}>
+            {up ? '▲' : '▼'} {fmtUSD(centsToUSD(Math.abs(portfolio.changeCents)))} ({up ? '+' : '-'}
+            {Math.abs(portfolio.changePercent).toFixed(2)}%)
+          </span>
+        )}
       </div>
 
       <HeroChart values={portfolio.history} range={portfolio.range} />

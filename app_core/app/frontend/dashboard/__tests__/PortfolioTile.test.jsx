@@ -63,6 +63,43 @@ describe('PortfolioTile', () => {
     expect(container.querySelector('.hero-delta')).toBeInTheDocument()
   })
 
+  test('portfolio mode: a single-point series shows the value but no delta', () => {
+    const { container } = renderTile({ portfolioSeries: [{ at: 1, value: 15000 }] })
+
+    expect(screen.getByText('$150.00')).toBeInTheDocument()
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('portfolio mode: a series that ends where it started shows no delta', () => {
+    const { container } = renderTile({
+      portfolioSeries: [
+        { at: 1, value: 14000 },
+        { at: 2, value: 15000 },
+        { at: 3, value: 14000 },
+      ],
+    })
+
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('item mode: a single-point history shows no delta', () => {
+    const { container } = renderTile({
+      mode: 'item',
+      selectedItem: {
+        marketHashName: 'AK-47 | Redline (FT)',
+        weaponType: 'AK-47',
+        itemName: 'Redline',
+        condition: 'Field-Tested',
+        stattrak: false,
+        currentPriceCents: 4000,
+      },
+      itemHistorySeries: [{ at: 1, value: 4000 }],
+      itemHistoryStatus: 'ready',
+    })
+
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
   test('item mode: shows a loading state while item history is pending, not a zero', () => {
     const { container } = renderTile({
       mode: 'item',

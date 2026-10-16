@@ -34,7 +34,7 @@ export function PortfolioTile({
   const delta = last - first
   const pct = first ? (delta / first) * 100 : 0
   const up = delta >= 0
-  const showDelta = isTradable && hasData
+  const showDelta = isTradable && hasData && delta !== 0
 
   return (
     <section className={`tile tile-hero${isItemMode ? ' is-item-mode' : ''}`}>
