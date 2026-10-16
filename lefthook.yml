@@ -21,11 +21,11 @@ pre-commit:
     rubocop-app-fetcher:
       root: "app_fetcher/"
       glob: "*.rb"
-      run: docker compose run --rm --no-deps app_fetcher bin/rubocop {staged_files}
+      run: docker compose run --rm --no-deps app_fetcher bin/rubocop --force-exclusion {staged_files}
     rubocop-app-core:
       root: "app_core/"
       glob: "*.rb"
-      run: docker compose run --rm --no-deps app_core bin/rubocop {staged_files}
+      run: docker compose run --rm --no-deps app_core bin/rubocop --force-exclusion {staged_files}
     eslint-app-core:
       root: "app_core/"
       glob: "app/frontend/**/*.{js,jsx}"
