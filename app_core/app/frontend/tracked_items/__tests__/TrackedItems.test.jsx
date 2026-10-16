@@ -11,7 +11,7 @@ function catalogBody(overrides = {}) {
   return {
     meta: {
       page: 1,
-      per_page: 25,
+      per_page: 20,
       total_count: 2,
       total_pages: 1,
       gaining_count: 1,
@@ -165,12 +165,12 @@ describe('TrackedItems', () => {
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    await user.selectOptions(screen.getByLabelText(/per page/i), '50')
+    await user.selectOptions(screen.getByLabelText(/per page/i), '40')
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     const [url] = fetchMock.mock.calls[1]
     const params = new URL(url).searchParams
-    expect(params.get('per_page')).toBe('50')
+    expect(params.get('per_page')).toBe('40')
     expect(params.get('page')).toBe('1')
   })
 
