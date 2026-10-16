@@ -1,12 +1,14 @@
 import { Sparkline } from '../../shared/components/Sparkline'
+import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 import { rarityColor } from '../utils/format'
 
 function TickerRow({ item }) {
   const hasPrice = item.currentPriceCents != null
   const pct = item.change24hPercent || 0
-  const direction = pct >= 0 ? 'up' : 'down'
-  const arrow = pct >= 0 ? '▲' : '▼'
+  const direction = trendDirection(pct)
+  const showDelta = hasPrice && direction !== 'flat'
+  const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
 
   return (
@@ -27,7 +29,7 @@ function TickerRow({ item }) {
       </span>
       <span className="ticker-figures">
         <span className="ticker-price tabular">{fmtPrice(item.currentPriceCents)}</span>
-        {hasPrice && (
+        {showDelta && (
           <span className={`ticker-delta tabular ${direction}`}>
             {arrow} {Math.abs(pct).toFixed(1)}%
           </span>

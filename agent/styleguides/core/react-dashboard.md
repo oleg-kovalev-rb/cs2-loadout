@@ -1,5 +1,5 @@
 ---
-description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and fixed-height paginated lists, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
 ---
 
 # React Islands (`app_core/app/frontend/`)
@@ -191,6 +191,29 @@ Context.
   a fixed-width icon column) instead of the row collapsing around a
   missing image. Cover both branches with explicit tests, the same as any
   other conditional rendering (see `ItemRow.test.jsx`).
+- **A zero or absent 24h change is a `flat` trend, never `up`.** Every
+  item row derives its trend direction through `shared/utils/trend.js`'s
+  pure `trendDirection(pct)` (`'up' | 'down' | 'flat'`), not an inline
+  `pct >= 0 ? 'up' : 'down'` — the latter maps a `0`/missing change into
+  the green `--up` bucket and renders a misleading `▲ 0.0%`. A `flat` row
+  shows **no** delta badge at all (the badge is gated on `direction !==
+  'flat'`) and passes `variant="flat"` to `Sparkline`, which strokes the
+  line in the neutral `--text-muted` rather than `--up`, so a flat row
+  doesn't read as rising. The helper lives in `shared/` because more than
+  one island's item row needs the identical rule (see Reuse Across
+  Islands). Canonical: `dashboard/components/ItemRow.jsx`,
+  `inventories/components/InventoryItemRow.jsx`.
+- **A paginated list keeps a stable `PAGE_SIZE` height with decorative
+  placeholder rows.** When the current page holds fewer than `PAGE_SIZE`
+  items, render the missing slots as empty `<li>`s that reuse the row's
+  own layout classes (`.mover-row` plus a `.mover-icon` span) so each
+  placeholder has exactly a real row's footprint — instead of a magic
+  `min-height` on the list container (which duplicates the row height and
+  fights the responsive `max-height` clamp) or letting the tile collapse
+  to a partial page's height. Mark every placeholder `aria-hidden="true"`
+  so it is neither focusable nor counted as a list item by role queries
+  (`getAllByRole('listitem')` still returns only the real rows). Canonical:
+  `dashboard/components/ItemsTile.jsx`.
 
 ## Linting & Formatting
 
@@ -585,6 +608,9 @@ patterns.
 - `app_core/app/frontend/shared/components/Sparkline.jsx` vs.
   `app_core/app/frontend/shared/components/HeroChart.jsx` — the
   charting-tool boundary
+- `app_core/app/frontend/shared/utils/trend.js` — the shared `up`/`down`/
+  `flat` trend-direction helper every island's item row derives through
+  (see Component Conventions)
 - `app_core/app/frontend/dashboard/__tests__/ItemsTile.test.jsx`,
   `useDashboardData.test.js`, `portfolioSeries.test.js`
 - `app_core/app/frontend/admin-panel/AdminPanel.jsx`,

@@ -1,4 +1,5 @@
 import { Sparkline } from '../../shared/components/Sparkline'
+import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 
 // Read-only — unlike dashboard's ItemRow, there's no selection/drill-down
@@ -7,8 +8,9 @@ import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
 export function InventoryItemRow({ item }) {
   const hasPrice = item.currentPriceCents != null
   const pct = item.change24hPercent
-  const direction = pct >= 0 ? 'up' : 'down'
-  const arrow = pct >= 0 ? '▲' : '▼'
+  const direction = trendDirection(pct)
+  const showDelta = hasPrice && direction !== 'flat'
+  const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
 
   return (
@@ -31,7 +33,7 @@ export function InventoryItemRow({ item }) {
         <Sparkline values={sparkValues} variant={direction} />
         <span className="mover-figures">
           <span className="mover-price tabular">{fmtPrice(item.currentPriceCents)}</span>
-          {hasPrice && (
+          {showDelta && (
             <span className={`mover-delta tabular ${direction}`}>
               {arrow} {Math.abs(pct).toFixed(1)}%
             </span>

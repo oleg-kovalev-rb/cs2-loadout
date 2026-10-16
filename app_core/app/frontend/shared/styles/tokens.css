@@ -637,6 +637,12 @@ html {
   border-color: rgba(131, 104, 255, 0.4);
 }
 
+/* Decorative fixed-height filler (ItemsTile): keeps a partial page PAGE_SIZE
+   rows tall without being hoverable/clickable. */
+.dash-root .mover-row-empty {
+  pointer-events: none;
+}
+
 .dash-root .mover-icon {
   width: 64px;
   height: 64px;

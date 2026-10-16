@@ -57,4 +57,28 @@ describe('InventoryItemRow', () => {
     expect(delta).toHaveClass('up')
     expect(delta.textContent).toMatch(/▲/)
   })
+
+  test('renders a down delta with a down arrow', () => {
+    const { container } = renderRow({ ...baseItem, change24hPercent: -2.4 })
+    const delta = container.querySelector('.mover-delta')
+    expect(delta).toHaveClass('down')
+    expect(delta.textContent).toMatch(/▼/)
+  })
+
+  test('hides the delta and greys the sparkline for a zero change', () => {
+    const { container } = renderRow({
+      ...baseItem,
+      change24hPercent: 0,
+      trendPoints: [
+        { at: 1, priceCents: 4218 },
+        { at: 2, priceCents: 4218 },
+      ],
+    })
+
+    expect(container.querySelector('.mover-delta')).not.toBeInTheDocument()
+    expect(container.querySelector('.row-spark path')).toHaveAttribute(
+      'stroke',
+      'var(--text-muted)',
+    )
+  })
 })
