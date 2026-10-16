@@ -18,6 +18,7 @@ Rails.application.routes.draw do
     get :callback
   end
 
+  get "inventories/profiles", to: "inventories#profiles"
   resources :inventories, only: %i[index show], param: :steam_id
 
   namespace :admin do

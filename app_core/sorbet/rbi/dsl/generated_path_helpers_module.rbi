@@ -22,6 +22,9 @@ module GeneratedPathHelpersModule
   def inventories_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def inventories_profiles_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def inventory_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }

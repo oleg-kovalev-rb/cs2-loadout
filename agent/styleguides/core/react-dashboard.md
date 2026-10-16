@@ -201,8 +201,18 @@ Context.
   line in the neutral `--text-muted` rather than `--up`, so a flat row
   doesn't read as rising. The helper lives in `shared/` because more than
   one island's item row needs the identical rule (see Reuse Across
-  Islands). Canonical: `dashboard/components/ItemRow.jsx`,
+  Islands). Canonical item rows: `dashboard/components/ItemRow.jsx`,
   `inventories/components/InventoryItemRow.jsx`.
+- **The same flat rule applies to an aggregate card delta — a `0`/absent
+  24h change hides its badge too.** `inventories/components/InventoryCard.jsx`'s
+  `.inv-delta` (an inventory's summed 24h change) derives its direction
+  through the same `trendDirection(pct)` helper and renders the badge
+  only when the direction isn't `flat`, so a card with `0`/absent
+  `change24hPercent` never shows `▲ 0.0%`. This is deliberately the
+  `trendDirection` helper, **not** the bare `!== 0` guard the hero/
+  portfolio delta below uses — the card delta is a 24h change (same
+  meaning as an item row's), while the hero delta is a range-over-range
+  value difference. Canonical: `inventories/components/InventoryCard.jsx`.
 - **A hero/portfolio delta is rendered only when there is an actual
   change.** The chart-hero delta (`PortfolioTile`'s and
   `PortfolioHeroTile`'s `.hero-delta`) must be omitted — not drawn as a
@@ -409,7 +419,17 @@ non-paginated detail fetch) gets its own hook rather than being forced
 into `useAdminList`. For a public, unauthenticated island (`inventories/`),
 each distinct endpoint still gets its own hook
 (`useInventoryCatalog`/`useInventoryDetail`) — no bridge token to thread
-through, just `fetcherUrl` and that endpoint's own query params.
+through, just `fetcherUrl` and that endpoint's own query params. A public
+island's hooks are normally all against `app_fetcher`'s `Api::Public::`,
+but it may have exactly one extra hook for an `app_core`-hosted endpoint
+serving app_core-owned enrichment — see `architecture-layers.md`'s
+app_core-owned enrichment carve-out: `inventories/`'s `useInventoryProfiles`
+reads app_core's profile map (nickname/avatar) for the page's `steam_id`s
+from the same-origin `/inventories/profiles`. Such a hook's failure must be
+**non-fatal** — it resolves to an empty/degraded value and the page
+renders its own fallback (`steam_id` + letter avatar) rather than entering
+its error state, since the enrichment is additive to the `app_fetcher`-
+sourced render, never a gate on it.
 
 Regardless of island, every data-loading hook returns `{data, status,
 error}` with `status` a flat string enum. Three rules that generalize
@@ -639,6 +659,12 @@ patterns.
   reducer and hook, both reading `shared/` components directly; also the
   canonical root-component-owns-its-own-fetch integration test pattern
   (see Testing)
+- `app_core/app/frontend/inventories/hooks/useInventoryProfiles.js` — the
+  one sanctioned non-`app_fetcher` (app_core-owned enrichment) hook and
+  its non-fatal failure fallback (see State & Data Loading)
+- `app_core/app/frontend/inventories/components/InventoryCard.jsx` — an
+  aggregate card delta deriving through `trendDirection` and hiding its
+  badge when flat (see Component Conventions)
 - `app_core/app/frontend/inventories/utils/rarity.js` — a pure derivation
   module with no reducer/state coupling, kept island-local (not moved to
   `shared/`) since `inventories/` remains its only consumer

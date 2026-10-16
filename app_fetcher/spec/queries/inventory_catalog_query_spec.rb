@@ -88,24 +88,26 @@ RSpec.describe InventoryCatalogQuery do
         expect(steam_ids.index(many.steam_id)).to be < steam_ids.index(few.steam_id)
       end
 
-      it "recently_synced orders by last synced (updated_at) descending" do
-        older = create(:user_inventory, updated_at: 2.days.ago)
-        newer = create(:user_inventory, updated_at: 1.hour.ago)
+      it "value_asc orders by aggregated total_value_cents ascending" do
+        low = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: low, item: create(:item, current_price_cents: 100))
+        high = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: high, item: create(:item, current_price_cents: 900))
 
-        steam_ids = described_class.call(ActionController::Parameters.new(sort: "recently_synced")).inventories.map(&:steam_id)
+        steam_ids = described_class.call(ActionController::Parameters.new(sort: "value_asc")).inventories.map(&:steam_id)
 
-        expect(steam_ids.index(newer.steam_id)).to be < steam_ids.index(older.steam_id)
+        expect(steam_ids.index(low.steam_id)).to be < steam_ids.index(high.steam_id)
       end
 
-      it "change_24h_desc orders by aggregated change_24h_cents descending" do
-        losing = create(:user_inventory)
-        create(:user_inventory_item, user_inventory: losing, item: create(:item, change_24h_cents: -50))
-        gaining = create(:user_inventory)
-        create(:user_inventory_item, user_inventory: gaining, item: create(:item, change_24h_cents: 100))
+      it "items_asc orders by items_count ascending" do
+        few = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: few, item: create(:item))
+        many = create(:user_inventory)
+        create_list(:item, 2).each { |item| create(:user_inventory_item, user_inventory: many, item: item) }
 
-        steam_ids = described_class.call(ActionController::Parameters.new(sort: "change_24h_desc")).inventories.map(&:steam_id)
+        steam_ids = described_class.call(ActionController::Parameters.new(sort: "items_asc")).inventories.map(&:steam_id)
 
-        expect(steam_ids.index(gaining.steam_id)).to be < steam_ids.index(losing.steam_id)
+        expect(steam_ids.index(few.steam_id)).to be < steam_ids.index(many.steam_id)
       end
 
       it "raises Api::Public::UnsupportedParamError for an unrecognized sort value, without rescuing it" do

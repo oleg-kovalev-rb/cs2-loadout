@@ -50,13 +50,22 @@ function page(overrides = {}) {
   }
 }
 
+// The island now makes two calls: the app_fetcher catalog (absolute URL)
+// and the app_core profile enrichment (relative URL). Dispatch by URL.
+function mockFetch({ pageBody = page(), profilesBody = { profiles: {} } } = {}) {
+  return vi.fn().mockImplementation((url) => {
+    if (String(url).startsWith('/inventories/profiles')) return jsonResponse(profilesBody)
+    return jsonResponse(pageBody)
+  })
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('InventoriesIndex', () => {
   test('loads the catalog with no auth header and renders a card per inventory', async () => {
-    const fetchMock = vi.fn().mockImplementationOnce(() => jsonResponse(page()))
+    const fetchMock = mockFetch()
     vi.stubGlobal('fetch', fetchMock)
 
     render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
@@ -74,8 +83,28 @@ describe('InventoriesIndex', () => {
     expect(screen.getByText('#2')).toBeInTheDocument()
   })
 
+  test('enriches cards with the app_core profile map for the page steam_ids', async () => {
+    const fetchMock = mockFetch({
+      profilesBody: {
+        profiles: { '76561198000000001': { nickname: 'Ada', avatar_url: 'https://x/a.png' } },
+      },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
+
+    await waitFor(() => expect(screen.getByText('Ada')).toBeInTheDocument())
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/inventories/profiles?steam_ids[]=76561198000000001&steam_ids[]=76561198000000002',
+      expect.anything(),
+    )
+    // The second inventory has no profile, so it keeps its steam_id.
+    expect(screen.getByText('76561198000000002')).toBeInTheDocument()
+  })
+
   test('changing sort re-fetches with the new sort and resets to page 1', async () => {
-    const fetchMock = vi.fn().mockImplementation(() => jsonResponse(page()))
+    const fetchMock = mockFetch()
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
 
@@ -83,10 +112,10 @@ describe('InventoriesIndex', () => {
     await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))
 
     await user.click(screen.getByRole('button', { name: /sort:/i }))
-    await user.click(screen.getByRole('button', { name: 'Item count' }))
+    await user.click(screen.getByRole('button', { name: 'Items, high to low' }))
 
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenLastCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         'http://fetcher.test/api/public/inventories?page=1&per_page=24&sort=items_desc',
         expect.anything(),
       ),
@@ -96,14 +125,12 @@ describe('InventoriesIndex', () => {
   test('an empty catalog renders the empty state instead of a card grid', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementationOnce(() =>
-        jsonResponse(
-          page({
-            inventories: [],
-            meta: { page: 1, per_page: 24, total_count: 0, total_pages: 0 },
-          }),
-        ),
-      ),
+      mockFetch({
+        pageBody: page({
+          inventories: [],
+          meta: { page: 1, per_page: 24, total_count: 0, total_pages: 0 },
+        }),
+      }),
     )
 
     render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
@@ -113,10 +140,7 @@ describe('InventoriesIndex', () => {
   })
 
   test('the search field is present but disabled', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementationOnce(() => jsonResponse(page())),
-    )
+    vi.stubGlobal('fetch', mockFetch())
 
     render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
     await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))

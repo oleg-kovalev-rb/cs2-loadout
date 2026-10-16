@@ -37,11 +37,40 @@ describe('InventoryCard', () => {
     expect(delta.textContent).toMatch(/▼/)
   })
 
-  test('renders the rank and steam_id (no nickname/avatar available)', () => {
-    render(<InventoryCard inventory={baseInventory} rank={3} />)
+  test('renders no delta badge for a flat (zero) change', () => {
+    const { container } = render(
+      <InventoryCard inventory={{ ...baseInventory, change24hPercent: 0 }} rank={3} />,
+    )
+
+    expect(container.querySelector('.inv-delta')).not.toBeInTheDocument()
+  })
+
+  test('falls back to steam_id and a letter-circle avatar when no profile is known', () => {
+    const { container } = render(<InventoryCard inventory={baseInventory} rank={3} />)
 
     expect(screen.getByText('#3')).toBeInTheDocument()
     expect(screen.getByText('76561198000000001')).toBeInTheDocument()
+    const avatar = container.querySelector('span.inv-avatar')
+    expect(avatar).toBeInTheDocument()
+    expect(avatar.textContent).toBe('7')
+    expect(container.querySelector('img.inv-avatar')).not.toBeInTheDocument()
+  })
+
+  test('renders the nickname and avatar image when a profile is known', () => {
+    const { container } = render(
+      <InventoryCard
+        inventory={baseInventory}
+        rank={1}
+        profile={{ nickname: 'Ada', avatarUrl: 'https://example.com/a.png' }}
+      />,
+    )
+
+    expect(screen.getByText('Ada')).toBeInTheDocument()
+    expect(screen.queryByText('76561198000000001')).not.toBeInTheDocument()
+    expect(container.querySelector('img.inv-avatar')).toHaveAttribute(
+      'src',
+      'https://example.com/a.png',
+    )
   })
 
   test('links to the detail page for this steam_id', () => {

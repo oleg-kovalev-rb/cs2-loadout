@@ -5,6 +5,12 @@ import { InventoryDetail } from '../inventories/InventoryDetail'
 
 const mountNode = document.getElementById('inventory-detail-root')
 if (mountNode) {
-  const { fetcherUrl, steamId } = mountNode.dataset
-  createRoot(mountNode).render(<InventoryDetail fetcherUrl={fetcherUrl} steamId={steamId} />)
+  const { fetcherUrl, steamId, nickname, avatarUrl } = mountNode.dataset
+  createRoot(mountNode).render(
+    <InventoryDetail
+      fetcherUrl={fetcherUrl}
+      steamId={steamId}
+      profile={{ nickname: nickname || undefined, avatarUrl: avatarUrl || undefined }}
+    />,
+  )
 }

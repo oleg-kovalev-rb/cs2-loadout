@@ -1,6 +1,7 @@
 import { useReducer } from 'react'
 import { catalogReducer, initialCatalogState } from './reducer'
 import { useInventoryCatalog } from './hooks/useInventoryCatalog'
+import { useInventoryProfiles } from './hooks/useInventoryProfiles'
 import { InventoriesToolbar } from './components/InventoriesToolbar'
 import { InventoryGrid } from './components/InventoryGrid'
 import { Pagination } from '../shared/components/Pagination'
@@ -13,6 +14,9 @@ export function InventoriesIndex({ fetcherUrl }) {
     page: state.page,
     sort: state.sort,
   })
+  // app_core-owned enrichment for the page's steam_ids; non-fatal (an
+  // empty map just means every card falls back to steam_id + a letter).
+  const profiles = useInventoryProfiles(inventories.map((inventory) => inventory.steamId))
 
   if (status === 'loading') {
     return <p className="dash-loading">Loading inventories…</p>
@@ -45,7 +49,7 @@ export function InventoriesIndex({ fetcherUrl }) {
         onSortChange={(sort) => dispatch({ type: 'SORT_CHANGED', sort })}
       />
 
-      <InventoryGrid inventories={inventories} meta={meta} />
+      <InventoryGrid inventories={inventories} meta={meta} profiles={profiles} />
 
       <Pagination
         page={state.page - 1}

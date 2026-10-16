@@ -164,6 +164,41 @@ describe('InventoryDetail', () => {
     await waitFor(() => expect(screen.getByText(/no priced items yet/i)).toBeInTheDocument())
   })
 
+  test('falls back to steam_id in the profile header when no profile is passed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload())),
+    )
+
+    render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
+
+    await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
+    expect(screen.getByText('76561198000000001')).toBeInTheDocument()
+  })
+
+  test('renders the enriched nickname/avatar in the profile header when a profile is passed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload())),
+    )
+
+    const { container } = render(
+      <InventoryDetail
+        fetcherUrl="http://fetcher.test"
+        steamId="76561198000000001"
+        profile={{ nickname: 'Ada', avatarUrl: 'https://x/a.png' }}
+      />,
+    )
+
+    await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
+
+    expect(screen.getByText('Ada')).toBeInTheDocument()
+    expect(container.querySelector('img.profile-head-avatar')).toHaveAttribute(
+      'src',
+      'https://x/a.png',
+    )
+  })
+
   test('a 404 renders the not-tracked state with a link back to the list', async () => {
     vi.stubGlobal(
       'fetch',

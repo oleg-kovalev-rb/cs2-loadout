@@ -28,6 +28,11 @@
   gap: 8px;
   margin-bottom: 18px;
 }
+/* Keep the search field and the sort button the same control height. */
+.dash-root .inv-toolbar .search-field input,
+.dash-root .inv-toolbar .toolbar-btn {
+  height: 36px;
+}
 .dash-root .search-field {
   position: relative;
   flex: 1;
@@ -105,6 +110,12 @@
   flex-shrink: 0;
   background: var(--surface-raised);
   border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
 }
 .dash-root .inv-id {
   min-width: 0;
@@ -197,6 +208,13 @@
   flex-shrink: 0;
   background: var(--surface-raised);
   border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--text-muted);
 }
 .dash-root .profile-head-name {
   font-family: var(--font-display);

@@ -1,9 +1,9 @@
-const SORT_OPTIONS = ['value_desc', 'items_desc', 'recently_synced', 'change_24h_desc']
+const SORT_OPTIONS = ['value_desc', 'value_asc', 'items_desc', 'items_asc']
 const SORT_LABELS = {
   value_desc: 'Value, high to low',
-  items_desc: 'Item count',
-  recently_synced: 'Recently synced',
-  change_24h_desc: '24h change',
+  value_asc: 'Value, low to high',
+  items_desc: 'Items, high to low',
+  items_asc: 'Items, low to high',
 }
 
 export function InventorySortDropdown({ isOpen, onToggle, sort, onSortChange }) {

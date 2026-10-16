@@ -11,7 +11,7 @@ import { fmtUSD, fmtPrice, centsToUSD, fmtDateTime } from '../shared/utils/forma
 
 const ITEMS_PER_PAGE = 12
 
-export function InventoryDetail({ fetcherUrl, steamId }) {
+export function InventoryDetail({ fetcherUrl, steamId, profile }) {
   const [state, dispatch] = useReducer(detailReducer, initialDetailState)
   const { data, status } = useInventoryDetail(fetcherUrl, steamId, {
     range: state.range,
@@ -27,6 +27,8 @@ export function InventoryDetail({ fetcherUrl, steamId }) {
   }
 
   const priciest = data.priciestItem
+  const name = profile?.nickname || data.steamId
+  const initial = name.charAt(0).toUpperCase()
 
   return (
     <main>
@@ -35,10 +37,16 @@ export function InventoryDetail({ fetcherUrl, steamId }) {
       </a>
 
       <div className="profile-head">
-        <span className="profile-head-avatar" aria-hidden="true" />
+        {profile?.avatarUrl ? (
+          <img className="profile-head-avatar" src={profile.avatarUrl} alt="" />
+        ) : (
+          <span className="profile-head-avatar" aria-hidden="true">
+            {initial}
+          </span>
+        )}
         <div>
           <div className="profile-head-name">
-            <span>{data.steamId}</span>
+            <span>{name}</span>
           </div>
           <p className="profile-head-sub">
             Public inventory &middot; synced {fmtDateTime(new Date(data.lastSyncedAt).getTime())}

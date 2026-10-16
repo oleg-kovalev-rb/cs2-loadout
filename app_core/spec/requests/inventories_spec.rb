@@ -39,6 +39,62 @@ RSpec.describe "GET /inventories/:steam_id", type: :request do
       expect(response.body).to include('data-steam-id="76561198000000000"')
     end
   end
+
+  it "embeds the nickname/avatar when app_core knows the steam_id" do
+    create(:user, steam_id: "76561198000000042", nickname: "Ada", avatar_url: "https://example.com/a.jpg")
+
+    get inventory_path("76561198000000042")
+
+    aggregate_failures do
+      expect(response.body).to include('data-nickname="Ada"')
+      expect(response.body).to include('data-avatar-url="https://example.com/a.jpg"')
+    end
+  end
+
+  it "embeds blank profile attributes when app_core doesn't know the steam_id" do
+    get inventory_path("76561198000000000")
+
+    aggregate_failures do
+      expect(response.body).to include('data-nickname=""')
+      expect(response.body).to include('data-avatar-url=""')
+    end
+  end
+end
+
+RSpec.describe "GET /inventories/profiles", type: :request do
+  it "returns a profile map for the requested steam_ids that exist, with no auth header" do
+    create(:user, steam_id: "76561198111111111", nickname: "Ada", avatar_url: "https://example.com/a.jpg")
+    create(:user, steam_id: "76561198222222222", nickname: "Grace", avatar_url: nil)
+
+    get "/inventories/profiles",
+        params: { steam_ids: %w[76561198111111111 76561198333333333 76561198222222222] }
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(JSON.parse(response.body)["profiles"]).to eq(
+        "76561198111111111" => { "nickname" => "Ada", "avatar_url" => "https://example.com/a.jpg" },
+        "76561198222222222" => { "nickname" => "Grace", "avatar_url" => nil }
+      )
+    end
+  end
+
+  it "returns an empty map when no steam_ids are given" do
+    get "/inventories/profiles"
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(JSON.parse(response.body)["profiles"]).to eq({})
+    end
+  end
+
+  it "caps the requested steam_ids at 100" do
+    steam_ids = Array.new(101) { |n| format("cap-%03d", n) }
+    steam_ids.each { |steam_id| create(:user, steam_id: steam_id) }
+
+    get "/inventories/profiles", params: { steam_ids: steam_ids }
+
+    expect(JSON.parse(response.body)["profiles"].keys).to have_attributes(size: 100)
+  end
 end
 
 RSpec.describe "shared topbar nav tabs", type: :request do
