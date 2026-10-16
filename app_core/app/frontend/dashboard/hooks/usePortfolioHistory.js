@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
+export function usePortfolioHistory(fetcherUrl, bridgeToken, period, refreshKey) {
   const [series, setSeries] = useState([])
   const [status, setStatus] = useState('loading')
 
@@ -32,7 +32,7 @@ export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, bridgeToken, period])
+  }, [fetcherUrl, bridgeToken, period, refreshKey])
 
   return { series, status }
 }

@@ -5,6 +5,7 @@ import { useItemPrices } from './hooks/useItemPrices'
 import { useItemTrend } from './hooks/useItemTrend'
 import { usePortfolioHistory } from './hooks/usePortfolioHistory'
 import { useItemHistory } from './hooks/useItemHistory'
+import { isFullyPriced, pricedTotalCents } from './utils/valuation'
 import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
@@ -21,13 +22,6 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
 
   const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, names)
   const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
-  const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioRange)
-  const itemHistory = useItemHistory(
-    fetcherUrl,
-    bridgeToken,
-    state.selectedItem?.marketHashName ?? null,
-    state.itemRange,
-  )
 
   const items = useMemo(() => {
     if (!data) return []
@@ -37,6 +31,25 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
       trendPoints: trendByName[item.marketHashName] || [],
     }))
   }, [data, pricesByName, trendByName])
+
+  // Drives the portfolio hero's estimating state and re-fetches the value
+  // history once every marketable item has a price (the backend's first
+  // InventoryValueLog row is written only then).
+  const fullyPriced = useMemo(() => isFullyPriced(items), [items])
+  const estimatedValueCents = useMemo(() => pricedTotalCents(items), [items])
+
+  const portfolioHistory = usePortfolioHistory(
+    fetcherUrl,
+    bridgeToken,
+    state.portfolioRange,
+    fullyPriced ? 'ready' : 'estimating',
+  )
+  const itemHistory = useItemHistory(
+    fetcherUrl,
+    bridgeToken,
+    state.selectedItem?.marketHashName ?? null,
+    state.itemRange,
+  )
 
   if (status === 'loading') {
     return <DashboardSkeleton />
@@ -71,6 +84,8 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
           })
         }
         onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}
+        isEstimating={!fullyPriced}
+        estimatedValueCents={estimatedValueCents}
       />
 
       <ItemsTile

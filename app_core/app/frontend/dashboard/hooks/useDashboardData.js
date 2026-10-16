@@ -9,6 +9,7 @@ function mapItem(raw) {
     itemName: metadata.item_name,
     condition: metadata.condition,
     stattrak: metadata.stattrak || false,
+    marketable: metadata.marketable || false,
     iconUrl: metadata.icon_url,
     currentPriceCents: null,
     changeCents: 0,

@@ -19,13 +19,13 @@ class PriceUpdateWorker
       return
     end
 
-    PriceUpdateService.call(item, T.must(response.data))
-    update_related_cache(item.market_hash_name)
+    updated_item = T.must(PriceUpdateService.call(item, T.must(response.data)).data)
+    update_related_cache(updated_item.market_hash_name)
 
-    price = item.current_price_cents
+    price = updated_item.current_price_cents
     return if price.nil?
 
-    publish_to_stream(item.market_hash_name, price, item.change_24h_cents || 0)
+    publish_to_stream(updated_item.market_hash_name, price, updated_item.change_24h_cents || 0)
   end
 
   private

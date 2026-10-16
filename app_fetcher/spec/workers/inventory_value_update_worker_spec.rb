@@ -20,26 +20,22 @@ RSpec.describe InventoryValueUpdateWorker do
       end
     end
 
-    context "with an item that has no price yet" do
+    context "with an unpriced marketable item in the inventory" do
       let(:unpriced_item) { create(:item, :without_price) }
       let!(:user_inventory) { create(:user_inventory, steam_id: steam_id, items: [ unpriced_item ]) }
 
-      it "counts it as 0" do
+      it "does not write a log entry" do
         perform
 
-        log = InventoryValueLog.find_by(steam_id: steam_id, log_date: Date.current)
-
-        expect(log.total_value_cents).to eq(0)
+        expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
       end
     end
 
     context "with no UserInventory row at all for this steam_id" do
-      it "counts it as 0 without error" do
+      it "does not write a log entry and does not error" do
         perform
 
-        log = InventoryValueLog.find_by(steam_id: steam_id, log_date: Date.current)
-
-        expect(log.total_value_cents).to eq(0)
+        expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
       end
     end
 

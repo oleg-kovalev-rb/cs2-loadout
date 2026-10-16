@@ -423,6 +423,19 @@ html {
   color: var(--down);
   background: var(--down-soft);
 }
+.dash-root .hero-estimating {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  letter-spacing: 0.2px;
+}
+.dash-root .hero-value-skeleton {
+  display: inline-block;
+  width: 160px;
+  height: 2.875rem;
+  background: var(--surface-raised);
+  border-radius: var(--radius-sm);
+}
 
 /* ---------- chart with axes (HeroChart/ChartTooltip) ---------- */
 .dash-root .chart-wrap {
@@ -759,6 +772,9 @@ html {
   }
   .dash-root .hero-value {
     font-size: 2.125rem;
+  }
+  .dash-root .hero-value-skeleton {
+    height: 2.125rem;
   }
   .dash-root .chart-yaxis,
   .dash-root .chart-xaxis-spacer {

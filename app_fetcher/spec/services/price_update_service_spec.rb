@@ -24,6 +24,16 @@ RSpec.describe PriceUpdateService do
           expect(item.change_24h_cents).to eq(0)
         end
       end
+
+      it "returns an Ok ServiceResult carrying the updated Item" do
+        result = described_class.call(item, price_data)
+
+        aggregate_failures do
+          expect(result.success?).to be(true)
+          expect(result.data).to eq(item)
+          expect(result.error).to be_nil
+        end
+      end
     end
 
     context "with a price log older than 24h" do

@@ -3,23 +3,17 @@
 class UserInventorySyncService
   extend T::Sig
 
-  # Temporary: this Result shape is defined inline per-service (see also
-  # PriceUpdateService). Revisit extracting a shared base-service/Result
-  # abstraction once app/services/ has enough members to show what that
-  # shape should actually be.
-  class Result < T::Struct
-    const :success, T::Boolean
-    const :error, T.nilable(String)
-    const :items, T.nilable(T::Array[Item])
-  end
-
   class << self
     extend T::Sig
 
-    sig { params(steam_id: String).returns(UserInventorySyncService::Result) }
+    sig { params(steam_id: String).returns(ServiceResult[T::Array[Item]]) }
     def call(steam_id)
       response = Steam::Client.new.fetch_user_inventory(steam_id)
-      return Result.new(success: false, error: response.error, items: nil) unless response.success?
+      unless response.success?
+        return ServiceResult[T::Array[Item]].new(
+          status: ServiceResult::Status::Failed, data: nil, error: response.error
+        )
+      end
 
       data = T.must(response.data)
       Rails.logger.warn("[UserInventorySyncService] steam_id=#{steam_id} inventory truncated (more_items)") if data.more_items
@@ -48,7 +42,7 @@ class UserInventorySyncService
       UserInventory.sync!(steam_id, all_items.map(&:id))
       UserInventoryCache.invalidate(steam_id)
 
-      Result.new(success: true, error: nil, items: all_items)
+      ServiceResult[T::Array[Item]].new(status: ServiceResult::Status::Ok, data: all_items, error: nil)
     end
   end
 end

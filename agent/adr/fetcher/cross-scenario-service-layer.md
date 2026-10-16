@@ -82,6 +82,15 @@ shape below once the resulting split call convention across this
 layer's three members turned out to read as inconsistent in practice,
 not merely stylistically different.)
 
+**Return shape (superseded).** The per-service return values described
+above — `UserInventorySyncService`'s nested `Result`, and
+`InventoryValueRecordingService` returning the written record — no longer
+describe the layer. All `app/services/` classes now return a single
+shared `ServiceResult[Payload]` value object; see
+`agent/adr/fetcher/service-result-contract.md` and
+`agent/styleguides/fetcher/services.md`. The `.call` naming/entry-point
+mandate below still holds; only the return-shape guidance is superseded.
+
 This is deliberately **not** a re-introduction of `app_core`'s
 `app/actions/` layer. `app_core`'s actions exist as a general
 per-request orchestration convenience for its controllers — any

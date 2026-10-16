@@ -125,3 +125,10 @@ a change's scope just because an unrelated file is flagged here.
   `flash`, specifically to avoid building a new feature on top of this
   gap. Not fixed here since `application.html.erb` isn't otherwise
   touched by that work.
+- `app_core/app/frontend/inventories/InventoriesIndex.jsx` — fails
+  `prettier --check` (`npm run format:check` reports it as a
+  `[warn]` file), so the frontend format gate is currently red on a file
+  no recent change touched. Found while implementing
+  portfolio-first-snapshot-race (the change's own new/changed frontend
+  files were run through `prettier --write` and pass); not reformatted to
+  keep that change's diff focused.
