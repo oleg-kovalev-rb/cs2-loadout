@@ -31,14 +31,14 @@ module Api
 
       private
 
-      sig { params(result: UserInventorySyncService::Result).void }
+      sig { params(result: ServiceResult[T::Array[Item]]).void }
       def render_resolved(result)
-        unless result.success
+        unless result.success?
           render json: { message: result.error }, status: :bad_request
           return
         end
 
-        render_inventory(T.must(result.items))
+        render_inventory(T.must(result.data))
       end
 
       sig { params(items: T::Array[Item]).void }

@@ -28,8 +28,8 @@ RSpec.describe UserInventorySyncService do
         call
 
         aggregate_failures do
-          expect(call.success).to be(true)
-          expect(call.items).to contain_exactly(known_item)
+          expect(call.success?).to be(true)
+          expect(call.data).to contain_exactly(known_item)
           expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(known_item)
         end
       end
@@ -47,9 +47,9 @@ RSpec.describe UserInventorySyncService do
         backfilled = Item.find_by(market_hash_name: unknown_name)
 
         aggregate_failures do
-          expect(call.success).to be(true)
+          expect(call.success?).to be(true)
           expect(backfilled).to be_present
-          expect(call.items).to contain_exactly(known_item, backfilled)
+          expect(call.data).to contain_exactly(known_item, backfilled)
           expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(known_item, backfilled)
         end
       end
@@ -237,7 +237,7 @@ RSpec.describe UserInventorySyncService do
       call
 
       aggregate_failures do
-        expect(call.success).to be(false)
+        expect(call.failed?).to be(true)
         expect(call.error).to be_present
         expect(UserInventory.find_by(steam_id: steam_id)).to be_nil
       end

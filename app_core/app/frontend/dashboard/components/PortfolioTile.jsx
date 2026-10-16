@@ -12,6 +12,8 @@ export function PortfolioTile({
   selectedItem,
   onRangeChange,
   onBack,
+  isEstimating = false,
+  estimatedValueCents = 0,
 }) {
   const isItemMode = mode === 'item' && Boolean(selectedItem)
   const ranges = isItemMode ? ITEM_RANGES : PORTFOLIO_RANGES
@@ -21,6 +23,8 @@ export function PortfolioTile({
     !isItemMode || (selectedItem.currentPriceCents != null && selectedItem.currentPriceCents !== 0)
 
   const hasData = values.length > 0 && !isLoadingItemHistory
+  const isEstimatingPortfolio = !isItemMode && !hasData && isEstimating
+  const showEstimate = isEstimatingPortfolio && estimatedValueCents > 0
   const last = hasData
     ? values[values.length - 1].value
     : isItemMode
@@ -59,9 +63,20 @@ export function PortfolioTile({
       </header>
 
       <div className="hero-value-row">
-        <span className="hero-value tabular">
-          {isItemMode ? fmtPrice(last) : fmtUSD(centsToUSD(last))}
-        </span>
+        {isEstimatingPortfolio ? (
+          <>
+            {showEstimate ? (
+              <span className="hero-value tabular">{fmtUSD(centsToUSD(estimatedValueCents))}</span>
+            ) : (
+              <span className="hero-value-skeleton" aria-hidden="true" />
+            )}
+            <span className="hero-estimating">Estimating…</span>
+          </>
+        ) : (
+          <span className="hero-value tabular">
+            {isItemMode ? fmtPrice(last) : fmtUSD(centsToUSD(last))}
+          </span>
+        )}
         {showDelta && (
           <span className={`hero-delta tabular ${up ? 'is-up' : 'is-down'}`}>
             {up ? '▲' : '▼'} {fmtUSD(centsToUSD(Math.abs(delta)))} ({up ? '+' : '-'}

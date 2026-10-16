@@ -53,6 +53,18 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
         end
       end
 
+      it "returns an empty list and writes nothing while the inventory is not fully priced" do
+        create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, :without_price))
+
+        get "/api/v1/inventory_values", headers: headers
+
+        aggregate_failures do
+          expect(response).to have_http_status(:success)
+          expect(JSON.parse(response.body)).to eq([])
+          expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
+        end
+      end
+
       it "does not create a duplicate row for today on a repeat request" do
         get "/api/v1/inventory_values", headers: headers
         get "/api/v1/inventory_values", headers: headers

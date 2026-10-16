@@ -40,7 +40,7 @@ module Api
       def sync
         result = UserInventorySyncService.call(params[:steam_id].to_s)
 
-        unless result.success
+        unless result.success?
           render json: { message: result.error }, status: :bad_request
           return
         end

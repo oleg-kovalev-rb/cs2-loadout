@@ -18,11 +18,37 @@ function renderTile(overrides = {}) {
 }
 
 describe('PortfolioTile', () => {
-  test('portfolio mode: shows a zero value and no delta when the series has no points yet', () => {
+  test('portfolio mode: shows a zero value and no delta when fully priced but the series has no points yet', () => {
     const { container } = renderTile({ portfolioSeries: [] })
 
     expect(screen.getByText('$0.00')).toBeInTheDocument()
     expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('portfolio mode: shows the partial sum with an Estimating caption while prices are still loading', () => {
+    const { container } = renderTile({
+      portfolioSeries: [],
+      isEstimating: true,
+      estimatedValueCents: 1234,
+    })
+
+    expect(screen.getByText('Estimating…')).toBeInTheDocument()
+    expect(screen.getByText('$12.34')).toBeInTheDocument()
+    expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-value-skeleton')).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('portfolio mode: shows a placeholder instead of a number when nothing is priced yet', () => {
+    const { container } = renderTile({
+      portfolioSeries: [],
+      isEstimating: true,
+      estimatedValueCents: 0,
+    })
+
+    expect(screen.getByText('Estimating…')).toBeInTheDocument()
+    expect(container.querySelector('.hero-value-skeleton')).toBeInTheDocument()
+    expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
   })
 
   test('portfolio mode: renders the last series value and a delta once the series has points', () => {

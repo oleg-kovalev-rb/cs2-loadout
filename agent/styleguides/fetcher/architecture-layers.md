@@ -106,7 +106,9 @@ Models (app/models/, write)
   directly and persist models; unlike every other Scenario-1 rule, it
   may be called synchronously, inline, from a controller action before
   rendering — but only for the specific call sites that ADR names, not
-  as a general permission.
+  as a general permission. Its full rules — including the uniform
+  `ServiceResult[Payload]` return contract every `.call` uses — live in
+  `agent/styleguides/fetcher/services.md`.
 - **Query objects** (`app/queries/`, flat, one `<Resource>CatalogQuery`
   per resource, plus `app/queries/appliers/` → `Appliers::` and
   `app/queries/options/` → `Options::` for resource-agnostic
@@ -225,20 +227,20 @@ available for a future, similar case — it just no longer describes what
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
   `InventoryValueRecordingService`, called identically from
   `InventoryValuesController#index`'s cold-start seed (Scenario 1) and
-  `InventoryValueUpdateWorker` (Scenario 3); class-method `.call`, the
-  mandated shape for this layer (see
-  `agent/adr/fetcher/cross-scenario-service-layer.md`'s Implementation
-  Constraints) — same as `UserInventorySyncService`.
+  `InventoryValueUpdateWorker` (Scenario 3); a precondition-gated write —
+  it returns `ServiceResult::Skipped` (writing nothing) when the
+  inventory is not yet fully priced, else `Ok(data: <the log>)`. See
+  `agent/styleguides/fetcher/services.md` and
+  `agent/adr/fetcher/service-result-contract.md`.
 - `app_fetcher/app/services/price_update_service.rb` —
   `PriceUpdateService`, called from `PriceUpdateWorker` (Scenario 3);
   a single-Scenario service extracted for SRP — keeps `perform` as thin
   orchestration glue by moving the 24h-change calculation and DB
-  transaction out of the worker. `.call` returns `void`; it has no
-  failure branch (its writes are bang methods that raise rather than
-  returning a false/error result), so it doesn't return a `Result`
-  object the way `UserInventorySyncService` does — the caller reads the
-  updated price/change fields directly off the same `Item` instance it
-  passed in.
+  transaction out of the worker. `.call` returns
+  `ServiceResult[Item]` (`Ok(data: <the updated Item>)`); it has no
+  `Failed` branch (its writes are bang methods that raise), and the
+  caller reads the result off `result.data` rather than the mutated
+  argument (see `agent/styleguides/fetcher/services.md`).
 - Query objects / Appliers / Options / Serializers: none implemented
   yet — `app_fetcher/app/queries/item_catalog_query.rb` and siblings
   (`agent/plans/item-catalog-query-refactor.md`) will be this layer's

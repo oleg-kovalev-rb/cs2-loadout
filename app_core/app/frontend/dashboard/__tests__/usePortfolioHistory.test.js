@@ -56,6 +56,23 @@ describe('usePortfolioHistory', () => {
     )
   })
 
+  test('re-fetches when refreshKey changes', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => jsonResponse([]))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { rerender } = renderHook(
+      ({ refreshKey }) =>
+        usePortfolioHistory('http://fetcher.test', 'token-123', '30d', refreshKey),
+      { initialProps: { refreshKey: 'estimating' } },
+    )
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    rerender({ refreshKey: 'ready' })
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  })
+
   test('surfaces an error status when the fetch fails', async () => {
     vi.stubGlobal(
       'fetch',
