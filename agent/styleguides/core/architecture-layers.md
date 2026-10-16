@@ -83,7 +83,9 @@ Public/unauthenticated pattern (no identity stack at all):
 
 Controller (app/controllers/ — e.g. InventoriesController)
     ↓  no current_user/current_admin_user gate, no auth guard, renders directly
-    (no action/lib layer needed — nothing to orchestrate beyond rendering)
+    (no action/lib layer needed for rendering itself; see the
+     app_core-owned enrichment carve-out below for the one read a public
+     page may additionally need)
 
 Browser (React island, app/frontend/inventories/)
     → HTTPS, no auth header at all → app_fetcher's Api::Public:: endpoints
@@ -91,6 +93,10 @@ Browser (React island, app/frontend/inventories/)
        public; the page-serving controller mints no bridge token and
        embeds none — never proxied through app_core, same rule as both
        identity-scoped stacks)
+    → same-origin, no auth header → app_core's own JSON enrichment
+      endpoint, for app_core-owned data app_fetcher doesn't have (e.g. a
+      tracked steam_id's nickname/avatar). Not an app_fetcher proxy — see
+      the app_core-owned enrichment carve-out below.
 ```
 
 - **Controllers**: routing, auth guard (`require_login` for the Steam/
@@ -99,17 +105,24 @@ Browser (React island, app/frontend/inventories/)
   plain `find_by`) is the one model access allowed directly in a
   controller; anything else goes through an action, in whichever stack
   has one. A public-data controller (`InventoriesController`) has no
-  guard and nothing to delegate to an action either — its pages are
-  reachable signed-in or signed-out alike (see Interaction With Other
-  Layers).
+  guard and nothing to delegate to an action for rendering its page
+  either — its pages are reachable signed-in or signed-out alike (see
+  Interaction With Other Layers). It may, additionally, expose one thin
+  JSON action serving app_core-owned enrichment (see the app_core-owned
+  enrichment carve-out), which is the only thing it ever delegates.
 - **Actions** (`app/actions/steam/`): `.call` entry point, Sorbet-typed,
   orchestrate `lib/steam/` calls and model persistence for one request-
   scoped operation (e.g. `Steam::LoginUser`). The admin stack has no
   `app/actions/admin/` yet — `admin-authentication.md`'s own
   Responsibilities section already names that as where any future logic
   beyond a single lookup would go, once there's actually logic beyond
-  that to extract. The public-data pattern has no action layer by
-  design — there's no app_core-side business logic to orchestrate.
+  that to extract. A public-data page has no action layer for its own
+  rendering — there's no app_core-side business logic in serving the
+  page. Its one exception is an app_core-owned enrichment read (see the
+  app_core-owned enrichment carve-out below): that lookup still goes
+  through an action (`app/actions/inventories/<Concern>`), in its own
+  `inventories/` namespace rather than `steam/`, since it isn't part of
+  the Steam login stack.
 - **`lib/steam/`**: external HTTP (Steam OpenID, Steam Web API) and
   crypto (JWT bridge-token minting). No AR references. **`lib/admin/`**:
   the admin stack's sibling folder, crypto only (`Admin::BridgeToken`
@@ -165,7 +178,10 @@ One-directional, per `rails-layering.md`. Concretely for this app:
 - Admin-stack controllers depend on `AdminUser` (for `current_admin_user`)
   and `Admin::BridgeToken`.
 - A public-data controller depends on nothing beyond routing/rendering —
-  no model, no action, no `lib/` client.
+  no model, no action, no `lib/` client — except its single
+  app_core-owned enrichment action (see the app_core-owned enrichment
+  carve-out), which in turn depends only on the `User` model (a plain
+  read of public profile fields, never session/auth identity).
 - Actions depend on `lib/steam/` and models.
 - `lib/steam/`/`lib/admin/` depend on nothing else in the app (external
   HTTP/crypto only).
@@ -211,6 +227,45 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   stays within its own stack's `app_fetcher` namespace. A public-data
   island never needs to call either authenticated namespace.
 
+## App_core-Owned Enrichment (Public Pages)
+
+A public-data page sometimes needs a piece of app_core-owned data that
+`app_fetcher` doesn't have — today, the nickname/avatar
+(`users.nickname`/`users.avatar_url`) for a tracked `steam_id` shown in
+`inventories/`. The MUST NOT rule above ("don't add an `app_core`
+endpoint that proxies or re-serves `app_fetcher` data") is specifically
+about **not re-serving `app_fetcher` data**; it does not forbid an
+`app_core`-hosted endpoint that serves app_core's *own* data. That
+endpoint is the one sanctioned second data source for a public island,
+with these constraints:
+
+- it lives on the same page-serving controller (e.g.
+  `InventoriesController#profiles`) as a thin JSON action, and delegates
+  the read to one `app/actions/inventories/<Concern>` action — never an
+  inline model query beyond the single lookup the controller rule above
+  allows;
+- it takes an explicit list of identifiers from the caller (e.g.
+  `steam_ids[]`), bounds that list, and returns only the rows the caller
+  already named — it never enumerates or pages the `User` table;
+- it carries no caller identity and needs no guard, exactly like the
+  public-data pages themselves. It reads `User` records as *data*, never
+  as session identity, so "the stacks never depend on each other" still
+  holds — this is not the Steam/`User` stack's auth being reused;
+- the island calls it same-origin with no auth header, **in addition to**
+  its `app_fetcher` reads, never instead of them — an enrichment failure
+  degrades to the page's own fallback, it doesn't replace or gate the
+  `app_fetcher`-sourced render.
+
+The detail case needs no endpoint at all: when app_core already knows the
+identifier from the URL (`/inventories/:steam_id`), the controller does
+the single allowed `User.find_by(steam_id:)` lookup and embeds the value
+in the rendered page.
+
+This is not a general licence to add `app_core` endpoints for every
+island need — it is scoped to app_core-owned data an `app_fetcher`-only
+page genuinely lacks. An endpoint that would serve `app_fetcher` data
+(even re-shaped) is still forbidden; extend `app_fetcher` instead.
+
 ## Interaction With Other Layers
 
 ```text
@@ -252,6 +307,11 @@ GET /inventories, GET /inventories/:steam_id
         → browser React island fetches app_fetcher's
           Api::Public::InventoriesController directly, with no
           Authorization header at all
+        → the list island additionally fetches app_core's own
+          InventoriesController#profiles (same-origin, no auth) for the
+          page's steam_ids' nickname/avatar; #show embeds the same
+          profile directly instead (see the app_core-owned enrichment
+          carve-out)
 ```
 
 ## Canonical Implementations
@@ -262,7 +322,10 @@ GET /inventories, GET /inventories/:steam_id
   bridge-token-minting controller shape
 - `app_core/app/controllers/inventories_controller.rb` — the
   no-bridge-token, no-identity-stack controller shape, same thinness,
-  different auth need
+  different auth need; its `#profiles`/`#show` also are the first
+  implementation of the app_core-owned enrichment carve-out above (a JSON
+  action delegating to `app_core/app/actions/inventories/profiles.rb`, and
+  a single `User.find_by` embedded for the detail page).
 - `app_core/app/views/shared/_topbar.html.erb` — the chrome partial
   shared across every page-serving controller above
 - `app_core/lib/steam/bridge_token.rb`,

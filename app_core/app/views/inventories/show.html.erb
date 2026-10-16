@@ -9,6 +9,8 @@
     id="inventory-detail-root"
     data-fetcher-url="<%= ENV.fetch('APP_FETCHER_PUBLIC_URL') %>"
     data-steam-id="<%= params[:steam_id] %>"
+    data-nickname="<%= @profile&.nickname %>"
+    data-avatar-url="<%= @profile&.avatar_url %>"
   ></div>
 </div>
 

@@ -62,6 +62,37 @@ RSpec.describe "Api::Public::Inventories", type: :request do
         expect(steam_ids.index(high.steam_id)).to be < steam_ids.index(low.steam_id)
       end
 
+      it "accepts value_asc, ordering low before high" do
+        get "/api/public/inventories", params: { sort: "value_asc" }
+
+        steam_ids = JSON.parse(response.body)["inventories"].map { |i| i["steam_id"] }
+        expect(steam_ids.index(low.steam_id)).to be < steam_ids.index(high.steam_id)
+      end
+
+      it "accepts items_desc and items_asc" do
+        many = create(:user_inventory)
+        create_list(:item, 2).each { |item| create(:user_inventory_item, user_inventory: many, item: item) }
+
+        get "/api/public/inventories", params: { sort: "items_desc" }
+        desc = JSON.parse(response.body)["inventories"].map { |i| i["steam_id"] }
+        expect(desc.index(many.steam_id)).to be < desc.index(low.steam_id)
+
+        get "/api/public/inventories", params: { sort: "items_asc" }
+        asc = JSON.parse(response.body)["inventories"].map { |i| i["steam_id"] }
+        expect(asc.index(many.steam_id)).to be > asc.index(low.steam_id)
+      end
+
+      it "rejects the removed recently_synced/change_24h_desc values with :bad_request" do
+        %w[recently_synced change_24h_desc].each do |removed|
+          get "/api/public/inventories", params: { sort: removed }
+
+          aggregate_failures do
+            expect(response).to have_http_status(:bad_request)
+            expect(JSON.parse(response.body)["message"]).to eq("Unsupported sort: #{removed}")
+          end
+        end
+      end
+
       it "rejects an unrecognized sort value with :bad_request" do
         get "/api/public/inventories", params: { sort: "bogus" }
 

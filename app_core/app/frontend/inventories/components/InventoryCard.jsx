@@ -1,27 +1,39 @@
 import { fmtUSD, centsToUSD, fmtDateTime } from '../../shared/utils/format'
+import { trendDirection } from '../../shared/utils/trend'
 import { RarityMixBar } from './RarityMixBar'
 
-// No nickname/avatar/steam_level here by design — app_fetcher's public
-// inventories response deliberately excludes app_core-owned profile
-// fields (see the architecture-layers.md amendment). steam_id is the
-// only identity shown.
-export function InventoryCard({ inventory, rank }) {
-  const up = inventory.change24hPercent >= 0
+// The nickname/avatar come from app_core's own enrichment endpoint (see
+// agent/styleguides/core/architecture-layers.md's app_core-owned
+// enrichment carve-out). app_fetcher's public inventories response
+// deliberately carries neither, so `profile` is optional and the card
+// falls back to steam_id + a letter-circle avatar.
+export function InventoryCard({ inventory, rank, profile }) {
+  const direction = trendDirection(inventory.change24hPercent)
+  const name = profile?.nickname || inventory.steamId
+  const initial = name.charAt(0).toUpperCase()
 
   return (
     <a className="inv-card" href={`/inventories/${inventory.steamId}`}>
       <div className="inv-card-top">
         <span className="inv-rank tabular">#{rank}</span>
-        <span className="inv-avatar" aria-hidden="true" />
+        {profile?.avatarUrl ? (
+          <img className="inv-avatar" src={profile.avatarUrl} alt="" />
+        ) : (
+          <span className="inv-avatar" aria-hidden="true">
+            {initial}
+          </span>
+        )}
         <span className="inv-id">
-          <span className="inv-name">{inventory.steamId}</span>
+          <span className="inv-name">{name}</span>
         </span>
       </div>
       <div className="inv-value-row">
         <span className="inv-value tabular">{fmtUSD(centsToUSD(inventory.totalValueCents))}</span>
-        <span className={`inv-delta tabular ${up ? 'is-up' : 'is-down'}`}>
-          {up ? '▲' : '▼'} {Math.abs(inventory.change24hPercent).toFixed(1)}%
-        </span>
+        {direction !== 'flat' && (
+          <span className={`inv-delta tabular ${direction === 'up' ? 'is-up' : 'is-down'}`}>
+            {direction === 'up' ? '▲' : '▼'} {Math.abs(inventory.change24hPercent).toFixed(1)}%
+          </span>
+        )}
       </div>
       <RarityMixBar percentages={inventory.rarityMixPercent} className="inv-mix" />
       <div className="inv-card-foot">

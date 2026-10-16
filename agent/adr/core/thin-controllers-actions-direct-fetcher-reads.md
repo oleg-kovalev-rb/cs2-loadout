@@ -96,7 +96,9 @@ gives the browser a scoped, time-limited credential without needing
   or per-user authorization on `app_fetcher` data would need a new
   decision — either a proxy endpoint at that point, or extending the
   bridge token's scope. This ADR's "no proxy" decision covers today's
-  read-only dashboard case, not every future one.
+  read-only dashboard case, not every future one. (One such future
+  feature — app_core-owned enrichment for a public island — has since
+  been decided; see the 2026-10-16 amendment below.)
 
 ## Implementation Constraints
 
@@ -108,7 +110,68 @@ gives the browser a scoped, time-limited credential without needing
 - If the React island needs new `app_fetcher` data, extend
   `app_fetcher`'s API and the bridge token's claims rather than adding a
   proxy route in `app_core`, unless the data needs `app_core`-only
-  enrichment that would justify revisiting this decision.
+  enrichment that would justify revisiting this decision (see the
+  2026-10-16 amendment below for the decision taken once that case
+  arose).
+
+## Amendment (2026-10-16): App_core-Owned Enrichment Endpoints
+
+### Context
+
+The public `inventories/` island needed app_core-owned data that
+`app_fetcher` doesn't have — a tracked `steam_id`'s nickname/avatar
+(app_core's `users` table) — to render inventory cards and the detail
+header. This is the "future feature" the Risks section above anticipated,
+but it is *not* the case that section describes: it is not `app_fetcher`
+data needing app_core transformation; it is app_core's own data, which
+`app_fetcher` was never meant to hold.
+
+### Decision
+
+The "no proxy/re-serve `app_fetcher` data" rule is unchanged: every React
+island still reads `app_fetcher`'s API directly, and no `app_core`
+endpoint re-serves `app_fetcher` response shapes.
+
+Additionally, an island may call an `app_core`-hosted endpoint that
+serves **app_core-owned** data as enrichment. The inventories profile
+endpoint (`InventoriesController#profiles`, delegating to
+`app/actions/inventories/profiles.rb`) is the first: it returns
+`users.nickname`/`users.avatar_url` for an explicit, bounded list of
+`steam_id`s the caller already supplied, carries no caller identity, and
+needs no guard — mirroring the public page it serves.
+
+### Constraints
+
+- The endpoint serves only app_core's own data. An endpoint that would
+  serve (or re-shape) `app_fetcher` data is still forbidden — extend
+  `app_fetcher` instead.
+- It takes an explicit identifier list and bounds it; it never
+  enumerates or pages the `User` table.
+- It carries no caller identity or session — reading `User` rows as data
+  is not reusing either identity stack (see
+  `agent/styleguides/core/architecture-layers.md`'s app_core-owned
+  enrichment carve-out).
+- The island calls it **in addition to** its `app_fetcher` reads; a
+  failure degrades to the page's own fallback rather than gating the
+  `app_fetcher`-sourced render.
+- The detail case (`/inventories/:steam_id`), where app_core knows the
+  identifier from the URL, performs the single allowed `User.find_by`
+  lookup and embeds the value directly instead of adding a request.
+
+### Alternatives Considered
+
+- **Embed the enrichment data in the rendered page instead of an
+  endpoint.** Rejected for the list: app_core doesn't know a page's
+  `steam_id`s at render time (the list is fetched client-side from
+  `app_fetcher`), so it would have to embed *every* user's profile —
+  unbounded payload and a public exposure of the whole `users` table.
+- **Embed only the signed-in `current_user`'s profile.** Rejected: it
+  leaves every other tracked inventory without a real nickname/avatar,
+  which is the main thing the page needs.
+- **Add nickname/avatar to `app_fetcher`'s public responses.** Rejected:
+  profile data is app_core-owned and stays there (the standing
+  `public-inventory-endpoints` decision); syncing it into `app_fetcher`
+  would add a cross-app data flow for data app_core already has.
 
 ## Related
 
