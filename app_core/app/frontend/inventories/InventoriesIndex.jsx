@@ -31,8 +31,8 @@ export function InventoriesIndex({ fetcherUrl }) {
         <div>
           <h1 className="page-title">Inventories</h1>
           <p className="page-sub">
-            <strong>{totalCount}</strong> public CS2 inventories tracked &middot; browse what the
-            FLOAT community is holding
+            <strong>{totalCount}</strong> public CS2 inventories tracked &middot; browse what players
+            are holding
           </p>
         </div>
       </div>
