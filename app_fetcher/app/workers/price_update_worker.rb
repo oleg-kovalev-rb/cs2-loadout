@@ -15,6 +15,7 @@ class PriceUpdateWorker
     response = client.fetch_item_price(item.market_hash_name)
 
     unless response.success?
+      item.update!(price_unavailable: true) if response.not_found?
       Rails.logger.warn("[PriceUpdateWorker] Failed for #{item.market_hash_name}: #{response.error}")
       return
     end

@@ -81,6 +81,7 @@ RSpec.describe PriceUpdateWorker do
         aggregate_failures do
           expect(item.price_logs.count).to eq(0)
           expect(item.current_price_cents).to eq(3845)
+          expect(item.price_unavailable).to be(true)
           expect(prices_stream_entries).to be_empty
           expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
           expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
@@ -108,10 +109,36 @@ RSpec.describe PriceUpdateWorker do
         aggregate_failures do
           expect(item.price_logs.count).to eq(0)
           expect(item.current_price_cents).to eq(3845)
+          expect(item.price_unavailable).to be(false)
           expect(prices_stream_entries).to be_empty
           expect(count_queries(model: Item) { ItemPriceCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
           expect(count_queries(model: PriceLog) { PriceHistoryCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
           expect(count_queries(model: PriceLog) { ItemTrendCache.fetch_for([ item.market_hash_name ]) }).to eq(0)
+        end
+      end
+    end
+
+    context "when a previously price-unavailable item now returns a price" do
+      let(:item) { create(:item, :without_price, :price_unavailable) }
+      let(:item_id) { item.id }
+
+      before do
+        stub_request(:get, %r{steamcommunity\.com/market/priceoverview/})
+          .to_return(
+            status: 200,
+            body: { success: true, lowest_price: "$38.45", median_price: "$39.00", volume: "1,234" }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "clears the price_unavailable flag and records the price" do
+        perform
+
+        item.reload
+
+        aggregate_failures do
+          expect(item.price_unavailable).to be(false)
+          expect(item.current_price_cents).to eq(3845)
         end
       end
     end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_01_155638) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_16_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -30,6 +30,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_01_155638) do
     t.integer "change_24h_cents"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "price_unavailable", default: false, null: false
     t.index ["market_hash_name"], name: "index_items_on_market_hash_name", unique: true
     t.index ["metadata"], name: "index_items_on_metadata", using: :gin
   end
