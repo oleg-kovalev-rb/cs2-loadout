@@ -1,4 +1,4 @@
-const PER_PAGE_OPTIONS = [25, 50, 100]
+const PER_PAGE_OPTIONS = [20, 40, 100]
 
 export function CatalogPagination({
   page,

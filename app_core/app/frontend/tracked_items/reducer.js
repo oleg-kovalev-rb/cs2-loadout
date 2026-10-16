@@ -6,7 +6,7 @@ export const initialState = {
   sort: 'change_24h_desc',
   view: 'ticker', // 'ticker' | 'grid'
   page: 1,
-  perPage: 25,
+  perPage: 20,
   openDropdown: null, // 'filter' | 'sort' | null
 }
 

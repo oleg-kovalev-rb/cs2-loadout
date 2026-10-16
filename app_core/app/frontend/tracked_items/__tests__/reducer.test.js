@@ -10,7 +10,7 @@ describe('trackedItemsReducer', () => {
     expect(initialState.sort).toBe('change_24h_desc')
     expect(initialState.view).toBe('ticker')
     expect(initialState.page).toBe(1)
-    expect(initialState.perPage).toBe(25)
+    expect(initialState.perPage).toBe(20)
     expect(initialState.openDropdown).toBeNull()
   })
 
@@ -82,9 +82,9 @@ describe('trackedItemsReducer', () => {
   })
 
   test('PER_PAGE_CHANGED updates perPage and resets page to 1', () => {
-    const state = { ...initialState, page: 5, perPage: 25 }
-    const next = trackedItemsReducer(state, { type: 'PER_PAGE_CHANGED', perPage: 50 })
-    expect(next.perPage).toBe(50)
+    const state = { ...initialState, page: 5, perPage: 20 }
+    const next = trackedItemsReducer(state, { type: 'PER_PAGE_CHANGED', perPage: 40 })
+    expect(next.perPage).toBe(40)
     expect(next.page).toBe(1)
   })
 
