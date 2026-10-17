@@ -162,7 +162,13 @@ looking.**
   push-based consumer — currently unconsumed, deliberately), and
   invalidates **three** caches on success: `ItemPriceCache`,
   `PriceHistoryCache`, `ItemTrendCache`. Nothing invalidates on a failed
-  Steam call.
+  Steam call. `change_24h_cents` is measured against the most recent price
+  log **at least 24h old**; while an item has no such log yet (e.g. within
+  its first day of history), it falls back to the **oldest available** log,
+  so the change — and every list's trend direction/badge — is non-zero as
+  soon as a second log exists, matching what the item-detail chart derives
+  from the same series. Once ≥24h of history exists, the metric returns to a
+  true trailing-24h change.
 - `UserInventorySyncScheduler` (daily trigger, but gated so it only acts
   roughly weekly per user): finds `user_inventories` rows older than 7
   days, enqueues `UserInventorySyncWorker` → the same

@@ -10,12 +10,13 @@ class PriceUpdateService
     def call(item, price_data)
       price_log = PriceLogBuilder.build(item.id, price_data)
 
-      price_24h_ago = item.price_logs
-                          .where("created_at <= ?", 24.hours.ago)
-                          .order(created_at: :desc)
-                          .first
+      baseline = item.price_logs
+                     .where("created_at <= ?", 24.hours.ago)
+                     .order(created_at: :desc)
+                     .first
+      baseline ||= item.price_logs.order(created_at: :asc).first
 
-      change_24h_cents = price_24h_ago.nil? ? 0 : (price_log.lowest_price_cents - price_24h_ago.lowest_price_cents).to_i
+      change_24h_cents = baseline.nil? ? 0 : (price_log.lowest_price_cents - baseline.lowest_price_cents).to_i
 
       Item.transaction do
         price_log.save!
