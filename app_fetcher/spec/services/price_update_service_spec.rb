@@ -36,6 +36,33 @@ RSpec.describe PriceUpdateService do
       end
     end
 
+    context "with a single prior price log younger than 24h" do
+      let(:item) { create(:item, current_price_cents: 3000) }
+
+      before { create(:price_log, item:, lowest_price_cents: 3000, created_at: 3.hours.ago) }
+
+      it "computes change_24h_cents against that log" do
+        described_class.call(item, price_data)
+
+        expect(item.change_24h_cents).to eq(845)
+      end
+    end
+
+    context "with multiple prior price logs all younger than 24h" do
+      let(:item) { create(:item, current_price_cents: 3500) }
+
+      before do
+        create(:price_log, item:, lowest_price_cents: 3000, created_at: 3.hours.ago)
+        create(:price_log, item:, lowest_price_cents: 3500, created_at: 1.hour.ago)
+      end
+
+      it "uses the oldest log as the baseline, not the most recent one" do
+        described_class.call(item, price_data)
+
+        expect(item.change_24h_cents).to eq(845)
+      end
+    end
+
     context "with a price log older than 24h" do
       let(:item) { create(:item, current_price_cents: 3000) }
 

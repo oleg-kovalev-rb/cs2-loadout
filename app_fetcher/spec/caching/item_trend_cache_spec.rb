@@ -56,6 +56,18 @@ RSpec.describe ItemTrendCache do
       end
     end
 
+    it "returns both points for two recent logs only hours apart" do
+      create(:price_log, item: item, lowest_price_cents: 1000, volume: 1, created_at: 2.hours.ago)
+      create(:price_log, item: item, lowest_price_cents: 1200, volume: 2, created_at: 1.hour.ago)
+
+      points = described_class.fetch_for([ item.market_hash_name ])[item.market_hash_name]
+
+      aggregate_failures do
+        expect(points.size).to eq(2)
+        expect(points.map { |p| p[:price_cents] }).to eq([ 1000, 1200 ])
+      end
+    end
+
     it "excludes logs older than the 7-day window" do
       create(:price_log, item: item, lowest_price_cents: 999, created_at: 10.days.ago)
       create(:price_log, item: item, lowest_price_cents: 1234, created_at: 1.day.ago)

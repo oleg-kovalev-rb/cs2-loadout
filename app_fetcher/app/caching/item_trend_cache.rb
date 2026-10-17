@@ -61,15 +61,23 @@ class ItemTrendCache
     def downsample(logs)
       return [] if logs.empty?
 
-      start = TREND_WINDOW.ago
-      window_seconds = TREND_WINDOW.to_i
+      first = logs.fetch(0)
+      last = logs.fetch(-1)
+      first_at = first.created_at
+      last_at = last.created_at
+      span_seconds = (last_at - first_at).to_i
+
       cursor = T.let(0, Integer)
       latest = T.let(nil, T.nilable(PriceLog))
       last_emitted_id = T.let(nil, T.nilable(Integer))
       points = T.let([], T::Array[TrendPoint])
 
       TREND_POINTS.times do |i|
-        target = start + (window_seconds * i / (TREND_POINTS - 1)).seconds
+        target = if i == TREND_POINTS - 1
+          last_at
+        else
+          first_at + (span_seconds * i / (TREND_POINTS - 1)).seconds
+        end
 
         while cursor < logs.size && logs.fetch(cursor).created_at <= target
           latest = logs.fetch(cursor)
