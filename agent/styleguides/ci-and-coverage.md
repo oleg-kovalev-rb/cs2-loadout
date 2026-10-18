@@ -128,6 +128,13 @@ alone is a development-only variant (see Rules → MUST NOT).
   map to the repository (→ 0%). The `coverage` job rewrites each report's
   `<source>` to the app's repo-relative dir (`app_fetcher`,
   `app_core`, `app_core/app/frontend`) before uploading.
+- **The `coverage` job must check out the repo before uploading.** Codecov
+  matches a report's paths against the files present in the workspace; the
+  uploader assembles its file list from `.git`/the checkout. Without a
+  checkout the list is empty and every upload is rejected as an "unusable
+  report" (`state: error` in the Codecov API, 0% coverage), even though the
+  CLI reports success. `actions/checkout` also makes the CLI pick up
+  `codecov.yml` instead of warning `No config file could be found`.
 - `codecov.yml` marks the status **informational** so coverage never
   blocks a merge, and lists ignored paths.
 - `CODECOV_TOKEN` is set as a secret (required to authenticate the
