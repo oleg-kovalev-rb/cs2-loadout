@@ -14,10 +14,17 @@ function detailPayload(overrides = {}) {
       total_value_cents: 500000,
       change_cents: 12500,
       change_percent: 2.5,
+      change_basis_at: '2026-10-05T15:30:45Z',
+      change_partial: false,
+      change_available: true,
+      complete: true,
+      priced_items_count: 127,
+      pricable_items_count: 127,
+      oldest_price_at: '2026-10-12T15:30:45Z',
       range: '7d',
       history: [
-        { at: '2026-10-05T15:30:45Z', total_value_cents: 487500 },
-        { at: '2026-10-12T15:30:45Z', total_value_cents: 500000 },
+        { at: '2026-10-05T15:30:45Z', total_value_cents: 487500, complete: true },
+        { at: '2026-10-12T15:30:45Z', total_value_cents: 500000, complete: true },
       ],
     },
     items_count: 127,
@@ -34,6 +41,7 @@ function detailPayload(overrides = {}) {
         rarity: 'Covert',
       },
       current_price_cents: 250000,
+      price_updated_at: '2026-10-12T15:30:45Z',
     },
     rarity_breakdown: [{ tier: 'gold', count: 1, percent: 0.8 }],
     top_items: {
@@ -53,6 +61,7 @@ function detailPayload(overrides = {}) {
           current_price_cents: 4218,
           change_24h_cents: 130,
           change_24h_percent: 3.18,
+          price_updated_at: '2026-10-12T15:30:45Z',
           trend_7d: [{ at: '2026-10-11T00:00:00Z', price_cents: 4088 }],
         },
       ],
@@ -90,9 +99,21 @@ describe('useInventoryDetail', () => {
 
     const { data } = result.current
     expect(data.steamId).toBe('76561198000000001')
+    expect(data.portfolio).toMatchObject({
+      totalValueCents: 500000,
+      changeCents: 12500,
+      changePercent: 2.5,
+      complete: true,
+      pricedItemsCount: 127,
+      pricableItemsCount: 127,
+      changePartial: false,
+      changeAvailable: true,
+      changeBasisAt: new Date('2026-10-05T15:30:45Z').getTime(),
+      oldestPriceAt: new Date('2026-10-12T15:30:45Z').getTime(),
+    })
     expect(data.portfolio.history).toEqual([
-      { at: new Date('2026-10-05T15:30:45Z').getTime(), value: 487500 },
-      { at: new Date('2026-10-12T15:30:45Z').getTime(), value: 500000 },
+      { at: new Date('2026-10-05T15:30:45Z').getTime(), value: 487500, complete: true },
+      { at: new Date('2026-10-12T15:30:45Z').getTime(), value: 500000, complete: true },
     ])
     expect(data.priciestItem).toEqual({
       marketHashName: '★ Karambit | Crimson Web',
@@ -104,6 +125,7 @@ describe('useInventoryDetail', () => {
       currentPriceCents: 250000,
       change24hCents: 0,
       change24hPercent: 0,
+      priceUpdatedAt: new Date('2026-10-12T15:30:45Z').getTime(),
       trendPoints: [],
     })
     expect(data.topItems.entries[0]).toEqual({
@@ -116,6 +138,7 @@ describe('useInventoryDetail', () => {
       currentPriceCents: 4218,
       change24hCents: 130,
       change24hPercent: 3.18,
+      priceUpdatedAt: new Date('2026-10-12T15:30:45Z').getTime(),
       trendPoints: [{ at: new Date('2026-10-11T00:00:00Z').getTime(), priceCents: 4088 }],
     })
   })

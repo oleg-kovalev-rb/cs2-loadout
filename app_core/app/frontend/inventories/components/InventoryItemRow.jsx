@@ -1,6 +1,7 @@
 import { Sparkline } from '../../shared/components/Sparkline'
 import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
+import { isPriceStale, priceAgeLabel } from '../../shared/utils/priceFreshness'
 
 // Read-only — unlike dashboard's ItemRow, there's no selection/drill-down
 // here (no second user's items to switch into "item mode" for), so this
@@ -12,6 +13,7 @@ export function InventoryItemRow({ item }) {
   const showDelta = hasPrice && direction !== 'flat'
   const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
+  const stale = isPriceStale(item.priceUpdatedAt)
 
   return (
     <li>
@@ -32,7 +34,12 @@ export function InventoryItemRow({ item }) {
         </span>
         <Sparkline values={sparkValues} variant={direction} />
         <span className="mover-figures">
-          <span className="mover-price tabular">{fmtPrice(item.currentPriceCents)}</span>
+          <span
+            className={`mover-price tabular${stale ? ' is-stale' : ''}`}
+            title={stale ? `Price updated ${priceAgeLabel(item.priceUpdatedAt)}` : undefined}
+          >
+            {fmtPrice(item.currentPriceCents)}
+          </span>
           {showDelta && (
             <span className={`mover-delta tabular ${direction}`}>
               {arrow} {Math.abs(pct).toFixed(1)}%

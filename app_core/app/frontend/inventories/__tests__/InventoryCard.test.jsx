@@ -7,7 +7,13 @@ const baseInventory = {
   totalValueCents: 500000,
   change24hCents: 12500,
   change24hPercent: 2.5,
+  changeBasisAt: new Date('2026-10-17T00:00:00Z').getTime(),
+  changePartial: false,
+  changeAvailable: true,
   itemsCount: 127,
+  pricedItemsCount: 127,
+  pricableItemsCount: 127,
+  complete: true,
   rarityMixPercent: {
     gold: 0.8,
     covert: 5.5,
@@ -77,5 +83,37 @@ describe('InventoryCard', () => {
     render(<InventoryCard inventory={baseInventory} rank={1} />)
 
     expect(screen.getByRole('link')).toHaveAttribute('href', '/inventories/76561198000000001')
+  })
+
+  test('shows a partial badge and hides the delta for an incomplete valuation', () => {
+    const { container } = render(
+      <InventoryCard
+        inventory={{
+          ...baseInventory,
+          complete: false,
+          pricedItemsCount: 100,
+          pricableItemsCount: 127,
+          changePartial: true,
+        }}
+        rank={1}
+      />,
+    )
+
+    expect(screen.getByText('100/127 priced')).toBeInTheDocument()
+    expect(container.querySelector('.inv-delta')).not.toBeInTheDocument()
+  })
+
+  test('hides the delta when the change is unavailable', () => {
+    const { container } = render(
+      <InventoryCard inventory={{ ...baseInventory, changeAvailable: false }} rank={1} />,
+    )
+
+    expect(container.querySelector('.inv-delta')).not.toBeInTheDocument()
+  })
+
+  test('labels the delta with its comparison date', () => {
+    render(<InventoryCard inventory={baseInventory} rank={1} />)
+
+    expect(screen.getByText(/2\.5%/)).toHaveAttribute('title', 'Change since 2026-10-17')
   })
 })

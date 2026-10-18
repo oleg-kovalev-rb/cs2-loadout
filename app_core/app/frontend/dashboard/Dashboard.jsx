@@ -5,7 +5,6 @@ import { useItemPrices } from './hooks/useItemPrices'
 import { useItemTrend } from './hooks/useItemTrend'
 import { usePortfolioHistory } from './hooks/usePortfolioHistory'
 import { useItemHistory } from './hooks/useItemHistory'
-import { isFullyPriced, pricedTotalCents } from './utils/valuation'
 import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
@@ -19,8 +18,15 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   // they only fire once the skeleton has resolved (and therefore
   // UserInventoryCache is guaranteed to have a row for this steam_id).
   const names = useMemo(() => (data ? data.items.map((item) => item.marketHashName) : []), [data])
+  // Non-marketable items never get a price, so they must not keep the price
+  // hook's coverage retry running.
+  const marketableNames = useMemo(
+    () =>
+      data ? data.items.filter((item) => item.marketable).map((item) => item.marketHashName) : [],
+    [data],
+  )
 
-  const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, names)
+  const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, marketableNames)
   const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
 
   const items = useMemo(() => {
@@ -32,18 +38,9 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
     }))
   }, [data, pricesByName, trendByName])
 
-  // Drives the portfolio hero's estimating state and re-fetches the value
-  // history once every marketable item has a price (the backend's first
-  // InventoryValueLog row is written only then).
-  const fullyPriced = useMemo(() => isFullyPriced(items), [items])
-  const estimatedValueCents = useMemo(() => pricedTotalCents(items), [items])
-
-  const portfolioHistory = usePortfolioHistory(
-    fetcherUrl,
-    bridgeToken,
-    state.portfolioRange,
-    fullyPriced ? 'ready' : 'estimating',
-  )
+  // The backend owns "current value + completeness"; this hook retries on its
+  // own bounded schedule while the valuation is still incomplete.
+  const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioRange)
   const itemHistory = useItemHistory(
     fetcherUrl,
     bridgeToken,
@@ -72,6 +69,8 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
     <main className="dashboard">
       <PortfolioTile
         portfolioSeries={portfolioHistory.series}
+        current={portfolioHistory.current}
+        change={portfolioHistory.change}
         itemHistorySeries={itemHistory.series}
         itemHistoryStatus={itemHistory.status}
         range={state.mode === 'item' ? state.itemRange : state.portfolioRange}
@@ -84,8 +83,6 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
           })
         }
         onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}
-        isEstimating={!fullyPriced}
-        estimatedValueCents={estimatedValueCents}
       />
 
       <ItemsTile

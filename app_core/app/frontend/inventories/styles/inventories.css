@@ -156,6 +156,14 @@
   color: var(--down);
   background: var(--down-soft);
 }
+.dash-root .inv-partial {
+  font-family: var(--font-mono);
+  font-size: 0.65625rem;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
 
 .dash-root .inv-mix {
   display: flex;

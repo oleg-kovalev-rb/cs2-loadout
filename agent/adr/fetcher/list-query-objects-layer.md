@@ -109,6 +109,21 @@ since the only failure mode (an invalid closed-enum param) is already
 raised, not returned, by `Appliers::SortApplier`. A `<Resource>CatalogQuery`
 has no knowledge of HTTP or caching — those stay the controller's job.
 
+**Shared concern queries** (flat, `app/queries/` root — e.g.
+`InventoryValuation`) are read-only calculations over already-persisted
+data whose result is consumed by more than one query object, an
+`Api::V1::` read action, or a cross-Scenario service. They are not
+endpoint queries: they return `T::Struct`s, never a response hash, and
+they own the SQL aggregate expressions shared by a single-resource path
+and a bulk/catalog path so those two cannot drift. A concern query may
+be called by `<Resource>CatalogQuery`/`<Resource>DetailQuery`, an
+`Api::V1::` controller action, and a cross-Scenario service; it never
+calls a controller, service, serializer, or response-payload cache, and
+it performs no writes. This is a third shape in the layer, not a
+generalization of the per-resource catalog/detail classes: the reuse
+axis is "the same read-only calculation", not "the same endpoint
+mechanics."
+
 **`app/serializers/`** classes (flat, e.g. `ItemCatalogSerializer`) are
 pure functions from an already-fetched data struct to a response hash.
 No database or cache access is permitted inside this layer — that is
@@ -289,6 +304,13 @@ single, consistent answer.
   never per allowed value.
 - `app/serializers/` (flat root): pure functions only — no
   `ActiveRecord`/`Rails.cache` calls permitted inside this layer.
+- Shared concern queries (`app/queries/<concern>.rb`, e.g.
+  `InventoryValuation`): return `T::Struct`s, never a response hash;
+  perform no writes and never call a controller, service, serializer, or
+  response-payload cache. They may be called from a resource query, an
+  `Api::V1::` read action, or a cross-Scenario service's read step, and
+  own the shared aggregate SQL for both the single-resource and
+  bulk/catalog paths.
 - The shared `Api::Public::UnsupportedParamError` raised by
   `Appliers::SortApplier` is an `Api::Public::` namespace-level concern,
   not owned by this layer — its location (`lib/api/public/`) and the

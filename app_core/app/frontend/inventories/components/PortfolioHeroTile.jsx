@@ -8,8 +8,16 @@ import { INVENTORY_DETAIL_RANGES } from '../chartConfig'
 export function PortfolioHeroTile({ portfolio, onRangeChange }) {
   const up = portfolio.changeCents >= 0
   // A single-point history (no change) must not read as a green "▲ $0.00";
-  // see react-dashboard.md's hero-delta rule.
-  const showDelta = portfolio.changeCents !== 0
+  // an incomplete valuation or partial/unavailable change is a lower bound
+  // and must not carry a delta either.
+  const showDelta =
+    portfolio.changeCents !== 0 && portfolio.changeAvailable !== false && !portfolio.changePartial
+  const showPartial = portfolio.complete === false
+  const showPartialHistory = portfolio.complete !== false && portfolio.changePartial === true
+  const partialLabel =
+    portfolio.pricedItemsCount != null && portfolio.pricableItemsCount != null
+      ? `${portfolio.pricedItemsCount}/${portfolio.pricableItemsCount} priced`
+      : 'Partial valuation'
 
   return (
     <section className="tile tile-hero">
@@ -24,6 +32,8 @@ export function PortfolioHeroTile({ portfolio, onRangeChange }) {
 
       <div className="hero-value-row">
         <span className="hero-value tabular">{fmtUSD(centsToUSD(portfolio.totalValueCents))}</span>
+        {showPartial && <span className="hero-partial tabular">{partialLabel}</span>}
+        {showPartialHistory && <span className="hero-partial">Partial history</span>}
         {showDelta && (
           <span className={`hero-delta tabular ${up ? 'is-up' : 'is-down'}`}>
             {up ? '▲' : '▼'} {fmtUSD(centsToUSD(Math.abs(portfolio.changeCents)))} ({up ? '+' : '-'}

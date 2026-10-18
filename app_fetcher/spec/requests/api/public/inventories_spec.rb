@@ -12,7 +12,9 @@ RSpec.describe "Api::Public::Inventories", type: :request do
 
     context "response shape" do
       let!(:inventory) { create(:user_inventory) }
-      let!(:item) { create(:item, current_price_cents: 1000, change_24h_cents: 50, metadata: { rarity: "Covert" }) }
+      let!(:item) do
+        create(:item, current_price_cents: 1000, change_24h_cents: 50, metadata: { marketable: true, rarity: "Covert" })
+      end
 
       before { create(:user_inventory_item, user_inventory: inventory, item: item) }
 
@@ -26,11 +28,43 @@ RSpec.describe "Api::Public::Inventories", type: :request do
           expect(json["meta"].keys).to contain_exactly("page", "per_page", "total_count", "total_pages")
           expect(inventory_json.keys).to contain_exactly(
             "steam_id", "total_value_cents", "change_24h_cents", "change_24h_percent",
-            "items_count", "rarity_mix_percent", "last_synced_at"
+            "items_count", "pricable_items_count", "priced_items_count", "complete",
+            "change_basis_at", "change_partial", "change_available",
+            "rarity_mix_percent", "last_synced_at"
           )
           expect(inventory_json["rarity_mix_percent"].keys).to contain_exactly(
             "gold", "covert", "classified", "restricted", "mil_spec", "industrial", "consumer"
           )
+        end
+      end
+
+      it "derives the 24h change from the previous log and reports a complete card" do
+        create(:inventory_value_log,
+          steam_id: inventory.steam_id, log_date: 1.day.ago.to_date, total_value_cents: 800,
+          items_count: 1, pricable_items_count: 1, priced_items_count: 1)
+
+        get "/api/public/inventories"
+
+        card = JSON.parse(response.body)["inventories"].find { |i| i["steam_id"] == inventory.steam_id }
+
+        aggregate_failures do
+          expect(card["change_24h_cents"]).to eq(200)
+          expect(card["change_available"]).to be(true)
+          expect(card["complete"]).to be(true)
+        end
+      end
+
+      it "marks the card partial when a marketable item has no price" do
+        create(:user_inventory_item, user_inventory: inventory, item: create(:item, :without_price))
+
+        get "/api/public/inventories"
+
+        card = JSON.parse(response.body)["inventories"].find { |i| i["steam_id"] == inventory.steam_id }
+
+        aggregate_failures do
+          expect(card["complete"]).to be(false)
+          expect(card["priced_items_count"]).to eq(1)
+          expect(card["pricable_items_count"]).to eq(2)
         end
       end
     end
@@ -220,6 +254,40 @@ RSpec.describe "Api::Public::Inventories", type: :request do
           "steam_id", "last_synced_at", "portfolio", "items_count", "avg_item_value_cents",
           "priciest_item", "rarity_breakdown", "top_items"
         )
+        expect(json["portfolio"].keys).to contain_exactly(
+          "total_value_cents", "change_cents", "change_percent", "change_basis_at",
+          "change_partial", "change_available", "complete", "priced_items_count",
+          "pricable_items_count", "oldest_price_at", "range", "history"
+        )
+      end
+
+      it "uses the live total and reports completeness even when a stored log differs" do
+        create(:inventory_value_log, steam_id: inventory.steam_id, log_date: Date.current, total_value_cents: 9999)
+
+        get "/api/public/inventories/#{inventory.steam_id}"
+
+        portfolio = JSON.parse(response.body)["portfolio"]
+
+        aggregate_failures do
+          expect(portfolio["total_value_cents"]).to eq(4218)
+          expect(portfolio["complete"]).to be(true)
+          expect(portfolio["priced_items_count"]).to eq(1)
+          expect(portfolio["pricable_items_count"]).to eq(1)
+        end
+      end
+
+      it "marks the portfolio partial when a marketable item has no price" do
+        create(:user_inventory_item, user_inventory: inventory, item: create(:item, :without_price))
+
+        get "/api/public/inventories/#{inventory.steam_id}"
+
+        portfolio = JSON.parse(response.body)["portfolio"]
+
+        aggregate_failures do
+          expect(portfolio["complete"]).to be(false)
+          expect(portfolio["priced_items_count"]).to eq(1)
+          expect(portfolio["pricable_items_count"]).to eq(2)
+        end
       end
 
       it "does not leak nickname/avatar_url/steam_level anywhere" do

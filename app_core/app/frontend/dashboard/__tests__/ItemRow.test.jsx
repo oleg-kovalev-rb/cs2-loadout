@@ -80,4 +80,23 @@ describe('ItemRow', () => {
 
     expect(container.querySelector('.mover-delta')).not.toBeInTheDocument()
   })
+
+  test('marks a stale price with its age but keeps the price and delta', () => {
+    const { container } = renderRow({
+      ...baseItem,
+      priceUpdatedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    })
+
+    const price = container.querySelector('.mover-price')
+
+    expect(price).toHaveClass('is-stale')
+    expect(price).toHaveAttribute('title', 'Price updated 2d ago')
+    expect(container.querySelector('.mover-delta')).toBeInTheDocument()
+  })
+
+  test('does not mark a fresh price as stale', () => {
+    const { container } = renderRow({ ...baseItem, priceUpdatedAt: Date.now() - 60 * 60 * 1000 })
+
+    expect(container.querySelector('.mover-price')).not.toHaveClass('is-stale')
+  })
 })

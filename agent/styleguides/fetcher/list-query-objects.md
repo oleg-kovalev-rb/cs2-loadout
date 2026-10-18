@@ -43,6 +43,13 @@ logic" (see that layer's own ADR). As of this writing, three
 single-endpoint feature should not pre-emptively adopt it as a header-ful
 shape.
 
+A shared read-only calculation used by more than one of those actions —
+or by a query object, an action, and a cross-Scenario service — also
+belongs here, as a concern query (`InventoryValuation`), not as a third
+per-resource catalog/detail class. The same test applies: a single
+caller with a one-off aggregate should stay inline or in that resource's
+own query object.
+
 ## Structure
 
 - **`app/queries/<resource>_catalog_query.rb`** (flat root, e.g.
@@ -61,6 +68,19 @@ shape.
   single embedded paginated/sorted sub-collection within that one
   resource (e.g. `InventoryDetailQuery`'s `top_items`), on top of
   whatever bespoke scalar aggregates the resource needs.
+- **`app/queries/<concern>.rb`** (flat root, e.g.
+  `InventoryValuation`) — a shared, read-only calculation over
+  already-persisted data whose result is consumed by more than one query
+  object, controller action, or cross-Scenario service, rather than
+  shaping one endpoint's response. Named for the concern, not as
+  `<Resource>CatalogQuery`/`<Resource>DetailQuery`, because it is not an
+  endpoint query. It returns `T::Struct`s (never a response hash) and
+  may own the SQL aggregate expressions shared by the single-resource
+  and bulk/catalog paths. It may be called by a
+  `<Resource>CatalogQuery`/`<Resource>DetailQuery`, an `Api::V1::`
+  controller action, and a cross-Scenario service; it never calls a
+  controller or a service, never writes, and never caches a response
+  payload.
 - **`app/queries/appliers/`** → `Appliers::` namespace (Zeitwerk:
   subfolder of an autoloaded `app/` root becomes a namespace, same rule
   already used by `app/parsers/steam/` → `Steam::`). Fully
@@ -169,18 +189,27 @@ shape.
 ## Dependencies
 
 One-directional: `<Resource>CatalogQuery` may depend on `Appliers::*`,
-`Options::*`, model scopes, and existing `app/caching/` *data* caches
+`Options::*`, model scopes, existing `app/caching/` *data* caches
 (e.g. `ItemTrendCache` — bulk read-through caches for already-known
-lookups, per `caching.md`), but never on a response-payload cache like
-`ItemCatalogCache` or anything HTTP-related. `<Resource>CatalogSerializer`
-depends on nothing but its input struct. `Appliers::*` depend on nothing
-resource-specific — not even indirectly, by referencing a concrete
-`Options::*` class by name inside an `Appliers::*` file. `Options::*`
-depend only on the model scopes they call from `#apply`. The identical
-dependency rules apply to `<Resource>DetailQuery`/
-`<Resource>DetailSerializer` — the shape of what each class may depend on
-doesn't change between the list and detail cases, only how many of the
-resource it answers for.
+lookups, per `caching.md`), and shared read-only concern queries in this
+same layer (e.g. `InventoryValuation`), but never on a response-payload
+cache like `ItemCatalogCache` or anything HTTP-related.
+`<Resource>CatalogSerializer` depends on nothing but its input struct.
+`Appliers::*` depend on nothing resource-specific — not even indirectly,
+by referencing a concrete `Options::*` class by name inside an
+`Appliers::*` file. `Options::*` depend only on the model scopes they
+call from `#apply`. The identical dependency rules apply to
+`<Resource>DetailQuery`/`<Resource>DetailSerializer` — the shape of what
+each class may depend on doesn't change between the list and detail
+cases, only how many of the resource it answers for.
+
+A concern query (`InventoryValuation`) may depend on `Appliers::*`/
+`Options::*`, model scopes, and existing `app/caching/` data caches, and
+may be called by the resource queries above, an `Api::V1::` read action,
+or a cross-Scenario service. It must not depend on a serializer,
+controller, response-payload cache, or service, and it performs no
+writes. A concern query doesn't call another concern query just to
+re-shape its result — compose the structs at the call site instead.
 
 ## Rules
 
@@ -204,6 +233,10 @@ resource it answers for.
   or build a `Result`-shaped failure value.
 - `<Resource>DetailSerializer` must perform zero I/O, same rule as
   `<Resource>CatalogSerializer`.
+- A shared concern query (`InventoryValuation`) must return `T::Struct`
+  values, never a response hash; response shaping stays in the matching
+  serializer. It must perform no writes and must not call a
+  response-payload cache.
 
 ### SHOULD
 
@@ -263,6 +296,11 @@ Api::Public::<X>Controller#index
     ↓ stale?/render  — controller's job
 ```
 
+A concern query is a read-only sub-step, not an endpoint: a
+`<Resource>CatalogQuery`/`<Resource>DetailQuery` or an `Api::V1::` read
+action may call it (and a cross-Scenario service may call it for its own
+read step), but it never renders, caches a payload, or writes.
+
 The detail shape follows the same sequence, just keyed by an identifier
 instead of a page of filters, and with one failure branch the list shape
 doesn't have:
@@ -310,6 +348,12 @@ Specific to this layer:
   raising `ActiveRecord::RecordNotFound`.
 - `<Resource>DetailSerializer` specs follow the same zero-I/O,
   unsaved-instance rule as `<Resource>CatalogSerializer`.
+- A shared concern query (`InventoryValuation`) is a unit spec under
+  `spec/queries/`, hitting the database for real (like the resource
+  queries) and never referring to a response-payload cache. Cover the
+  single-resource and bulk paths from the same examples where the shared
+  aggregate is what guarantees they cannot drift; assert the returned
+  structs, not raw rows.
 
 ## Canonical Implementations
 
@@ -327,6 +371,10 @@ implementation yet — `InventoryDetailQuery`/`InventoryDetailSerializer`
 and `InventoryCatalogQuery` (`agent/plans/public-inventory-endpoints.md`)
 will be their first examples. Update this section once that plan is
 implemented.
+
+A shared concern query has no implementation yet — `InventoryValuation`
+(`agent/plans/inventory-valuation-consistency.md`) will be its first.
+Update this section once that plan is implemented.
 
 ## Related ADR
 

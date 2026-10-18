@@ -8,7 +8,13 @@ function mapInventory(raw) {
     totalValueCents: raw.total_value_cents,
     change24hCents: raw.change_24h_cents,
     change24hPercent: raw.change_24h_percent,
+    changeBasisAt: raw.change_basis_at ? new Date(raw.change_basis_at).getTime() : null,
+    changePartial: raw.change_partial ?? false,
+    changeAvailable: raw.change_available ?? true,
     itemsCount: raw.items_count,
+    pricedItemsCount: raw.priced_items_count ?? null,
+    pricableItemsCount: raw.pricable_items_count ?? null,
+    complete: raw.complete ?? true,
     rarityMixPercent: raw.rarity_mix_percent,
     lastSyncedAt: raw.last_synced_at,
   }

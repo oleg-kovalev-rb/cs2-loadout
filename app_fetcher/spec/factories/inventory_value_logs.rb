@@ -3,5 +3,17 @@ FactoryBot.define do
     sequence(:steam_id) { |n| "7656119800000#{n}" }
     log_date { Date.current }
     total_value_cents { 3845 }
+
+    trait :complete do
+      items_count { 2 }
+      pricable_items_count { 2 }
+      priced_items_count { 2 }
+    end
+
+    trait :partial do
+      items_count { 2 }
+      pricable_items_count { 2 }
+      priced_items_count { 1 }
+    end
   end
 end

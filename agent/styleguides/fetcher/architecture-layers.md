@@ -114,11 +114,14 @@ Models (app/models/, write)
   `app/queries/options/` → `Options::` for resource-agnostic
   filter/sort/pagination mechanics) and **Serializers**
   (`app/serializers/`, flat, pure response-shaping functions): Scenario
-  1 only, for `Api::Public::` (and, in principle, `Api::V1::`) list
-  endpoints whose filter/sort/pagination/serialization mechanics are
-  shared across more than one controller — a different reuse axis from
-  Services above (cross-controller within one Scenario, not
-  cross-Scenario). See
+  1 for `Api::Public::` (and, in principle, `Api::V1::`) list endpoints
+  whose filter/sort/pagination/serialization mechanics are shared across
+  more than one controller — a different reuse axis from Services above
+  (cross-controller within one Scenario, not cross-Scenario). A shared
+  read-only concern query (e.g. `InventoryValuation`) also lives here
+  when its result is consumed by more than one query object, an
+  `Api::V1::` read action, or a cross-Scenario service; it returns
+  structs, not response hashes, and is not an endpoint query. See
   `agent/styleguides/fetcher/list-query-objects.md` and
   `agent/adr/fetcher/list-query-objects-layer.md` for the full
   structure, interface, and rules — not restated here.
@@ -144,19 +147,26 @@ One-directional, per `rails-layering.md`. Concretely for this app:
 - Controllers (Scenario 1) may depend on models and `Steam::Client`
   (both synchronous) and workers (async enqueue via `.perform_async`,
   never a call) — and, under the carve-out below, a parser directly
-  (synchronous).
+  (synchronous). An `Api::V1::` read action may also call a read-only
+  query object for its payload (in addition to the named self-seed
+  service exception).
 - Services may depend on `Steam::Client`, the Caching layer
-  (`ItemPriceCache`/`PriceHistoryCache`), parsers, and models — the
-  same dependency set a worker already has. May also be called
+  (`ItemPriceCache`/`PriceHistoryCache`), parsers, models, and read-only
+  query objects in `app/queries/` for their read step — the same
+  dependency set a worker already has, plus the query layer. Calling a
+  query does not transfer write ownership. May also be called
   synchronously from a controller (Scenario 1) for the specific named
   call sites in `cross-scenario-service-layer.md`.
-- Query objects (`<Resource>CatalogQuery`) may depend on `Appliers::*`,
-  `Options::*`, model scopes, and bulk/single-key read-through caching
+- Query objects (`<Resource>CatalogQuery`, `<Resource>DetailQuery`, and
+  shared concern queries such as `InventoryValuation`) may depend on
+  `Appliers::*`, `Options::*`, model scopes, other read-only concern
+  queries in the same layer, and bulk/single-key read-through caching
   classes (e.g. `ItemTrendCache`) — never on a response-payload TTL
-  cache (e.g. `ItemCatalogCache`) or anything HTTP-related, which stay
-  the controller's job. `Appliers::*` depend on nothing resource-specific.
-  Serializers depend only on the data already fetched by a query object.
-  See `list-query-objects.md` for the full dependency rules.
+  cache (e.g. `ItemCatalogCache`), a serializer, a service, a
+  controller, or anything HTTP-related, which stay the caller's job.
+  `Appliers::*` depend on nothing resource-specific. Serializers depend
+  only on the data already fetched by a query object. See
+  `list-query-objects.md` for the full dependency rules.
 
 ## Rules
 

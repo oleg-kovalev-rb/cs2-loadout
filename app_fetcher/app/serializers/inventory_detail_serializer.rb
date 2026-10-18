@@ -28,8 +28,17 @@ class InventoryDetailSerializer
         total_value_cents: page.total_value_cents,
         change_cents: page.change_cents,
         change_percent: page.change_percent,
+        change_basis_at: page.change_basis_at,
+        change_partial: page.change_partial,
+        change_available: page.change_available,
+        complete: page.complete,
+        priced_items_count: page.priced_items_count,
+        pricable_items_count: page.pricable_items_count,
+        oldest_price_at: page.oldest_price_at&.iso8601,
         range: page.range.serialize,
-        history: page.history.map { |point| { at: point.at, total_value_cents: point.total_value_cents } }
+        history: page.history.map do |point|
+          { at: point.at, total_value_cents: point.total_value_cents, complete: point.complete }
+        end
       }
     end
 
@@ -40,7 +49,8 @@ class InventoryDetailSerializer
       {
         market_hash_name: item.market_hash_name,
         metadata: metadata_json(item),
-        current_price_cents: item.current_price_cents
+        current_price_cents: item.current_price_cents,
+        price_updated_at: item.price_updated_at&.iso8601
       }
     end
 
@@ -82,6 +92,7 @@ class InventoryDetailSerializer
         current_price_cents: current,
         change_24h_cents: change,
         change_24h_percent: percent,
+        price_updated_at: item.price_updated_at&.iso8601,
         trend_7d: (trends[item.market_hash_name] || []).map { |point| { at: point[:at], price_cents: point[:price_cents] } }
       }
     end

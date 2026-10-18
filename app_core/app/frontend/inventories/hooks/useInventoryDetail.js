@@ -15,6 +15,7 @@ function mapItemSummary(item) {
     currentPriceCents: item.current_price_cents,
     change24hCents: item.change_24h_cents ?? 0,
     change24hPercent: item.change_24h_percent ?? 0,
+    priceUpdatedAt: item.price_updated_at ? new Date(item.price_updated_at).getTime() : null,
     trendPoints: (item.trend_7d || []).map((point) => ({
       at: new Date(point.at).getTime(),
       priceCents: point.price_cents,
@@ -30,10 +31,22 @@ function mapDetail(raw) {
       totalValueCents: raw.portfolio.total_value_cents,
       changeCents: raw.portfolio.change_cents,
       changePercent: raw.portfolio.change_percent,
+      changeBasisAt: raw.portfolio.change_basis_at
+        ? new Date(raw.portfolio.change_basis_at).getTime()
+        : null,
+      changePartial: raw.portfolio.change_partial ?? false,
+      changeAvailable: raw.portfolio.change_available ?? true,
+      complete: raw.portfolio.complete ?? true,
+      pricedItemsCount: raw.portfolio.priced_items_count ?? null,
+      pricableItemsCount: raw.portfolio.pricable_items_count ?? null,
+      oldestPriceAt: raw.portfolio.oldest_price_at
+        ? new Date(raw.portfolio.oldest_price_at).getTime()
+        : null,
       range: raw.portfolio.range,
       history: raw.portfolio.history.map((point) => ({
         at: new Date(point.at).getTime(),
         value: point.total_value_cents,
+        complete: point.complete ?? true,
       })),
     },
     itemsCount: raw.items_count,

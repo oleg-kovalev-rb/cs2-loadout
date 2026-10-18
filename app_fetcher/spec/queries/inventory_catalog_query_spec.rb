@@ -2,18 +2,25 @@ require "rails_helper"
 
 RSpec.describe InventoryCatalogQuery do
   describe ".call" do
-    it "aggregates total_value_cents/items_count/change_24h_cents across an inventory's items" do
+    it "aggregates total/items/completeness and derives the 24h change from the baseline log" do
       inventory = create(:user_inventory)
       create(:user_inventory_item, user_inventory: inventory, item: create(:item, current_price_cents: 1000, change_24h_cents: 100))
       create(:user_inventory_item, user_inventory: inventory, item: create(:item, current_price_cents: 500, change_24h_cents: -50))
+      create(:inventory_value_log,
+        steam_id: inventory.steam_id, log_date: 1.day.ago.to_date, total_value_cents: 1200,
+        items_count: 2, pricable_items_count: 2, priced_items_count: 2)
 
       summary = described_class.call(ActionController::Parameters.new).inventories.first
 
       aggregate_failures do
         expect(summary.steam_id).to eq(inventory.steam_id)
         expect(summary.items_count).to eq(2)
-        expect(summary.total_value_cents).to eq(1500)
-        expect(summary.change_24h_cents).to eq(50)
+        expect(summary.pricable_items_count).to eq(2)
+        expect(summary.priced_items_count).to eq(2)
+        expect(summary.change_24h_cents).to eq(300)
+        expect(summary.change_available).to be(true)
+        expect(summary.change_partial).to be(false)
+        expect(summary.change_basis_at).to eq(1.day.ago.to_date.iso8601)
       end
     end
 
@@ -27,8 +34,51 @@ RSpec.describe InventoryCatalogQuery do
         expect(summary).not_to be_nil
         expect(summary.items_count).to eq(0)
         expect(summary.total_value_cents).to eq(0)
+        expect(summary.pricable_items_count).to eq(0)
+        expect(summary.priced_items_count).to eq(0)
         expect(summary.change_24h_cents).to eq(0)
+        expect(summary.change_available).to be(false)
         expect(summary.rarity_counts).to eq({})
+      end
+    end
+
+    it "marks the inventory partial when a pricable item has no price" do
+      inventory = create(:user_inventory)
+      create(:user_inventory_item, user_inventory: inventory, item: create(:item, current_price_cents: 1000))
+      create(:user_inventory_item, user_inventory: inventory, item: create(:item, :without_price))
+
+      summary = described_class.call(ActionController::Parameters.new).inventories.first
+
+      aggregate_failures do
+        expect(summary.pricable_items_count).to eq(2)
+        expect(summary.priced_items_count).to eq(1)
+        expect(summary.change_partial).to be(true)
+      end
+    end
+
+    it "marks the change partial when the baseline log is incomplete" do
+      inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 1000) ])
+      create(:inventory_value_log,
+        steam_id: inventory.steam_id, log_date: 1.day.ago.to_date, total_value_cents: 900,
+        items_count: 2, pricable_items_count: 2, priced_items_count: 1)
+
+      summary = described_class.call(ActionController::Parameters.new).inventories.first
+
+      expect(summary.change_partial).to be(true)
+    end
+
+    it "makes the change unavailable when the only baseline is older than two days" do
+      inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 1000) ])
+      create(:inventory_value_log,
+        steam_id: inventory.steam_id, log_date: 3.days.ago.to_date, total_value_cents: 900,
+        items_count: 1, pricable_items_count: 1, priced_items_count: 1)
+
+      summary = described_class.call(ActionController::Parameters.new).inventories.first
+
+      aggregate_failures do
+        expect(summary.change_available).to be(false)
+        expect(summary.change_24h_cents).to eq(0)
+        expect(summary.change_basis_at).to eq(3.days.ago.to_date.iso8601)
       end
     end
 

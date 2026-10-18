@@ -213,18 +213,47 @@ Context.
   portfolio delta below uses — the card delta is a 24h change (same
   meaning as an item row's), while the hero delta is a range-over-range
   value difference. Canonical: `inventories/components/InventoryCard.jsx`.
-- **A hero/portfolio delta is rendered only when there is an actual
-  change.** The chart-hero delta (`PortfolioTile`'s and
+- **A stale item price keeps its last price and last computed delta, with
+  a freshness marker.** When `price_updated_at` is older than the shared
+  24-hour threshold, the row (`dashboard/components/ItemRow.jsx`,
+  `inventories/components/InventoryItemRow.jsx`) still renders the last
+  price and its last computed 24h delta, but adds an `is-stale` class and
+  a `title`/caption with the last update time. It must never substitute
+  `0`, hide the number, or recompute the delta on read — a stale price is
+  not a missing one. The threshold and the human age label live in
+  `shared/utils/priceFreshness.js`, shared by both islands' item rows.
+  Canonical: `dashboard/components/ItemRow.jsx`,
+  `inventories/components/InventoryItemRow.jsx`.
+- **A hero/portfolio delta is rendered only when there is an actual,
+  complete change.** The chart-hero delta (`PortfolioTile`'s and
   `PortfolioHeroTile`'s `.hero-delta`) must be omitted — not drawn as a
   green `▲ $0.00 (+0.00%)` — whenever the change is exactly `0`: most
   visibly a single-point series, where `last - first === 0`, but equally a
   series whose endpoints are equal. Gate it on `delta !== 0`
-  (`PortfolioTile`) / `changeCents !== 0` (`PortfolioHeroTile`). Unlike the
-  item-row rule above this is a per-component one-line render guard, not a
-  shared helper — it isn't a cross-island derivation. Positive and
-  negative changes render exactly as before. Canonical:
+  (`PortfolioTile`) / `changeCents !== 0` (`PortfolioHeroTile`). It must
+  also be omitted when the valuation is incomplete
+  (`portfolio.complete === false`), the backend marks the change partial
+  (`change.partial === true`), or no baseline exists
+  (`change.available === false`) — a partial value is a lower bound and
+  must not carry a delta badge. The value itself still renders, with the
+  partial badge/Estimating caption described below. Unlike the item-row
+  rule above this is a per-component render guard, not a shared
+  helper — it isn't a cross-island derivation. Positive and negative
+  complete changes render exactly as before. Canonical:
   `dashboard/components/PortfolioTile.jsx`,
   `inventories/components/PortfolioHeroTile.jsx`.
+- **A partial valuation is marked, not hidden or silently presented as
+  complete.** When the backend reports `complete === false`, the hero
+  (`PortfolioTile`/`PortfolioHeroTile`) and the catalog card
+  (`InventoryCard`) show a small partial badge next to the value, using
+  the backend's `priced_items_count` / `pricable_items_count` (for
+  example `38/40 priced`) — never a locally derived completeness rule.
+  The item count and average may still render; the badge is the honesty
+  marker for the lower-bound value. The chart may still plot partial
+  history points, but the delta is suppressed per the rule above.
+  Canonical: `dashboard/components/PortfolioTile.jsx`,
+  `inventories/components/PortfolioHeroTile.jsx`,
+  `inventories/components/InventoryCard.jsx`.
 - **A paginated list keeps a stable `PAGE_SIZE` height with decorative
   placeholder rows.** When the current page holds fewer than `PAGE_SIZE`
   items, render the missing slots as empty `<li>`s that reuse the row's
@@ -643,6 +672,9 @@ patterns.
 - `app_core/app/frontend/shared/utils/trend.js` — the shared `up`/`down`/
   `flat` trend-direction helper every island's item row derives through
   (see Component Conventions)
+- `app_core/app/frontend/shared/utils/priceFreshness.js` — the shared
+  24-hour stale-price predicate/age label used by both islands' item
+  rows (see Component Conventions)
 - `app_core/app/frontend/dashboard/components/PortfolioTile.jsx`,
   `app_core/app/frontend/inventories/components/PortfolioHeroTile.jsx` —
   the hero-delta zero-hiding guard (see Component Conventions)

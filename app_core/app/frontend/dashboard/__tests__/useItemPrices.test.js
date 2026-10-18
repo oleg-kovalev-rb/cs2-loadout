@@ -30,6 +30,7 @@ describe('useItemPrices', () => {
           current_price_cents: 3845,
           change_24h_cents: 120,
           change_24h_percent: 3.22,
+          price_updated_at: '2026-10-18T09:00:00Z',
         },
       }),
     )
@@ -49,6 +50,7 @@ describe('useItemPrices', () => {
       currentPriceCents: 3845,
       changeCents: 120,
       change24hPercent: 3.22,
+      priceUpdatedAt: new Date('2026-10-18T09:00:00Z').getTime(),
     })
   })
 

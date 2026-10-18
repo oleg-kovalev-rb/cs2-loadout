@@ -64,7 +64,9 @@ one call site. When in doubt, it is not a service.
 Owns: the whole fetch → resolve → act → persist sequence it exists for,
 including its external calls and its persistence. Does not own: response
 rendering (controller), Steam-response parsing (parser/DTO), or Steam HTTP
-mechanics (client).
+mechanics (client). When its read step is a shared aggregate, it
+delegates to the query layer (`InventoryValuation`) instead of
+re-implementing the SQL; the service remains the only writer.
 
 A service is responsible for **deciding whether its own preconditions are
 met** — a condition both Scenarios would otherwise have to re-check
@@ -73,9 +75,14 @@ duplicated at each call site.
 
 ## Dependencies
 
-May depend on `Steam::Client`, the `app/caching/` classes, parsers, and
-models — the same dependency set a worker already has. Must not be called
-*from* a model, and must not reach up into controllers.
+May depend on `Steam::Client`, the `app/caching/` classes, parsers,
+models, and read-only query objects under `app/queries/` for its read
+step (e.g. `InventoryValueRecordingService` calling
+`InventoryValuation`) — the same dependency set a worker already has,
+plus the query layer. A query-object dependency does not transfer write
+ownership: the service still owns the sequence and persistence, and the
+query only reads/computes. Must not be called *from* a model, a query
+object, or a serializer, and must not reach up into controllers.
 
 ## Rules
 

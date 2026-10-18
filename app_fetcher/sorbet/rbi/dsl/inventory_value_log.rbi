@@ -697,6 +697,51 @@ class InventoryValueLog
     sig { void }
     def id_will_change!; end
 
+    sig { returns(T.nilable(::Integer)) }
+    def items_count; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def items_count=(value); end
+
+    sig { returns(T::Boolean) }
+    def items_count?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def items_count_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def items_count_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def items_count_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def items_count_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def items_count_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def items_count_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def items_count_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def items_count_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def items_count_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def items_count_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def items_count_was; end
+
+    sig { void }
+    def items_count_will_change!; end
+
     sig { returns(::Date) }
     def log_date; end
 
@@ -742,6 +787,96 @@ class InventoryValueLog
     sig { void }
     def log_date_will_change!; end
 
+    sig { returns(T.nilable(::Integer)) }
+    def pricable_items_count; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def pricable_items_count=(value); end
+
+    sig { returns(T::Boolean) }
+    def pricable_items_count?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def pricable_items_count_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def pricable_items_count_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def pricable_items_count_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def pricable_items_count_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def pricable_items_count_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def pricable_items_count_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def pricable_items_count_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def pricable_items_count_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def pricable_items_count_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def pricable_items_count_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def pricable_items_count_was; end
+
+    sig { void }
+    def pricable_items_count_will_change!; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def priced_items_count; end
+
+    sig { params(value: T.nilable(::Integer)).returns(T.nilable(::Integer)) }
+    def priced_items_count=(value); end
+
+    sig { returns(T::Boolean) }
+    def priced_items_count?; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def priced_items_count_before_last_save; end
+
+    sig { returns(T.untyped) }
+    def priced_items_count_before_type_cast; end
+
+    sig { returns(T::Boolean) }
+    def priced_items_count_came_from_user?; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def priced_items_count_change; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def priced_items_count_change_to_be_saved; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def priced_items_count_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def priced_items_count_in_database; end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def priced_items_count_previous_change; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def priced_items_count_previously_changed?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable(::Integer)) }
+    def priced_items_count_previously_was; end
+
+    sig { returns(T.nilable(::Integer)) }
+    def priced_items_count_was; end
+
+    sig { void }
+    def priced_items_count_will_change!; end
+
     sig { void }
     def restore_created_at!; end
 
@@ -752,7 +887,16 @@ class InventoryValueLog
     def restore_id_value!; end
 
     sig { void }
+    def restore_items_count!; end
+
+    sig { void }
     def restore_log_date!; end
+
+    sig { void }
+    def restore_pricable_items_count!; end
+
+    sig { void }
+    def restore_priced_items_count!; end
 
     sig { void }
     def restore_steam_id!; end
@@ -781,11 +925,29 @@ class InventoryValueLog
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_id_value?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_items_count; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
     sig { returns(T.nilable([::Date, ::Date])) }
     def saved_change_to_log_date; end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def saved_change_to_log_date?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_pricable_items_count; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_pricable_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { returns(T.nilable([T.nilable(::Integer), T.nilable(::Integer)])) }
+    def saved_change_to_priced_items_count; end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def saved_change_to_priced_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { returns(T.nilable([::String, ::String])) }
     def saved_change_to_steam_id; end
@@ -950,7 +1112,16 @@ class InventoryValueLog
     def will_save_change_to_id_value?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_log_date?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_pricable_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
+
+    sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
+    def will_save_change_to_priced_items_count?(from: T.unsafe(nil), to: T.unsafe(nil)); end
 
     sig { params(from: T.untyped, to: T.untyped).returns(T::Boolean) }
     def will_save_change_to_steam_id?(from: T.unsafe(nil), to: T.unsafe(nil)); end

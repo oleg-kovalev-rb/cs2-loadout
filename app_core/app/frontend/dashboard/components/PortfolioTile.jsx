@@ -5,6 +5,8 @@ import { PORTFOLIO_RANGES, ITEM_RANGES } from '../chartConfig'
 
 export function PortfolioTile({
   portfolioSeries,
+  current,
+  change,
   itemHistorySeries,
   itemHistoryStatus,
   range,
@@ -12,8 +14,6 @@ export function PortfolioTile({
   selectedItem,
   onRangeChange,
   onBack,
-  isEstimating = false,
-  estimatedValueCents = 0,
 }) {
   const isItemMode = mode === 'item' && Boolean(selectedItem)
   const ranges = isItemMode ? ITEM_RANGES : PORTFOLIO_RANGES
@@ -23,18 +23,29 @@ export function PortfolioTile({
     !isItemMode || (selectedItem.currentPriceCents != null && selectedItem.currentPriceCents !== 0)
 
   const hasData = values.length > 0 && !isLoadingItemHistory
-  const isEstimatingPortfolio = !isItemMode && !hasData && isEstimating
-  const showEstimate = isEstimatingPortfolio && estimatedValueCents > 0
-  const last = hasData
+  const isEstimatingPortfolio = !isItemMode && !current?.complete
+  const hasPricedItems = (current?.pricedItemsCount ?? 0) > 0
+  const showEstimate = isEstimatingPortfolio && hasPricedItems
+  const showPartialHistory = !isItemMode && !isEstimatingPortfolio && Boolean(change?.partial)
+
+  const itemLast = hasData
     ? values[values.length - 1].value
     : isItemMode
       ? (selectedItem.currentPriceCents ?? 0)
       : 0
-  const first = hasData ? values[0].value : last
-  const delta = last - first
-  const pct = first ? (delta / first) * 100 : 0
+  const itemFirst = hasData ? values[0].value : itemLast
+  const itemDelta = itemLast - itemFirst
+  const itemPct = itemFirst ? (itemDelta / itemFirst) * 100 : 0
+
+  const portfolioLast = current?.totalValueCents ?? (hasData ? values[values.length - 1].value : 0)
+  const last = isItemMode ? itemLast : portfolioLast
+  const delta = isItemMode ? itemDelta : (change?.cents ?? 0)
+  const pct = isItemMode ? itemPct : (change?.percent ?? 0)
   const up = delta >= 0
-  const showDelta = isTradable && hasData && delta !== 0
+
+  const showDelta = isItemMode
+    ? isTradable && hasData && delta !== 0
+    : !isEstimatingPortfolio && Boolean(change?.available) && !change?.partial && delta !== 0
 
   return (
     <section className={`tile tile-hero${isItemMode ? ' is-item-mode' : ''}`}>
@@ -66,16 +77,24 @@ export function PortfolioTile({
         {isEstimatingPortfolio ? (
           <>
             {showEstimate ? (
-              <span className="hero-value tabular">{fmtUSD(centsToUSD(estimatedValueCents))}</span>
+              <span className="hero-value tabular">{fmtUSD(centsToUSD(portfolioLast))}</span>
             ) : (
               <span className="hero-value-skeleton" aria-hidden="true" />
             )}
             <span className="hero-estimating">Estimating…</span>
+            {current && (
+              <span className="hero-partial tabular">
+                {current.pricedItemsCount}/{current.pricableItemsCount} priced
+              </span>
+            )}
           </>
         ) : (
-          <span className="hero-value tabular">
-            {isItemMode ? fmtPrice(last) : fmtUSD(centsToUSD(last))}
-          </span>
+          <>
+            <span className="hero-value tabular">
+              {isItemMode ? fmtPrice(last) : fmtUSD(centsToUSD(last))}
+            </span>
+            {showPartialHistory && <span className="hero-partial">Partial history</span>}
+          </>
         )}
         {showDelta && (
           <span className={`hero-delta tabular ${up ? 'is-up' : 'is-down'}`}>
