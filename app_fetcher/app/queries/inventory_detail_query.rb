@@ -9,6 +9,8 @@ class InventoryDetailQuery
     const :at, String
     const :total_value_cents, Integer
     const :complete, T::Boolean
+    const :priced_items_count, T.nilable(Integer)
+    const :pricable_items_count, T.nilable(Integer)
   end
 
   class Page < T::Struct
@@ -72,7 +74,13 @@ class InventoryDetailQuery
         change_partial: series.change_partial,
         change_available: series.change_available,
         history: series.points.map do |point|
-          HistoryPoint.new(at: point.at, total_value_cents: point.total_value_cents, complete: point.complete)
+          HistoryPoint.new(
+            at: point.at,
+            total_value_cents: point.total_value_cents,
+            complete: point.complete,
+            priced_items_count: point.priced_items_count,
+            pricable_items_count: point.pricable_items_count
+          )
         end,
         items_count: items_count,
         pricable_items_count: valuation.pricable_items_count,

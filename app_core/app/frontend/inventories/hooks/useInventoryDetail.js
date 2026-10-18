@@ -47,6 +47,8 @@ function mapDetail(raw) {
         at: new Date(point.at).getTime(),
         value: point.total_value_cents,
         complete: point.complete ?? true,
+        pricedItemsCount: point.priced_items_count ?? null,
+        pricableItemsCount: point.pricable_items_count ?? null,
       })),
     },
     itemsCount: raw.items_count,

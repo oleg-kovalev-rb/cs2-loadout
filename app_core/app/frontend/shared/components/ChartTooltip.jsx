@@ -1,4 +1,5 @@
 import { fmtUSD, centsToUSD, fmtDateTime } from '../utils/format'
+import { partialPointLabel } from '../utils/chartPoints'
 
 export function ChartTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
@@ -9,6 +10,9 @@ export function ChartTooltip({ active, payload }) {
     <div className="chart-tooltip tabular">
       <div className="chart-tooltip-price">{fmtUSD(centsToUSD(value))}</div>
       <div className="chart-tooltip-at">{fmtDateTime(point.at)}</div>
+      {point.complete === false && (
+        <div className="chart-tooltip-partial">{partialPointLabel(point)}</div>
+      )}
     </div>
   )
 }

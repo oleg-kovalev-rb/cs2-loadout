@@ -17,8 +17,20 @@ function payload(overrides = {}) {
       oldest_price_at: '2026-10-18T09:00:00Z',
     },
     history: [
-      { at: '2026-09-01T00:00:00Z', total_value_cents: 145000, complete: true },
-      { at: '2026-10-18T12:00:00Z', total_value_cents: 150000, complete: true },
+      {
+        at: '2026-09-01T00:00:00Z',
+        total_value_cents: 145000,
+        complete: true,
+        priced_items_count: 10,
+        pricable_items_count: 10,
+      },
+      {
+        at: '2026-10-18T12:00:00Z',
+        total_value_cents: 150000,
+        complete: true,
+        priced_items_count: 10,
+        pricable_items_count: 10,
+      },
     ],
     change: {
       cents: 5000,
@@ -62,8 +74,20 @@ describe('usePortfolioHistory', () => {
       oldestPriceAt: new Date('2026-10-18T09:00:00Z').getTime(),
     })
     expect(result.current.series).toEqual([
-      { at: new Date('2026-09-01T00:00:00Z').getTime(), value: 145000, complete: true },
-      { at: new Date('2026-10-18T12:00:00Z').getTime(), value: 150000, complete: true },
+      {
+        at: new Date('2026-09-01T00:00:00Z').getTime(),
+        value: 145000,
+        complete: true,
+        pricedItemsCount: 10,
+        pricableItemsCount: 10,
+      },
+      {
+        at: new Date('2026-10-18T12:00:00Z').getTime(),
+        value: 150000,
+        complete: true,
+        pricedItemsCount: 10,
+        pricableItemsCount: 10,
+      },
     ])
     expect(result.current.change).toEqual({
       cents: 5000,

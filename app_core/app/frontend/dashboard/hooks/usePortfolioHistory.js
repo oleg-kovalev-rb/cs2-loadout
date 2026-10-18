@@ -6,6 +6,8 @@ function mapPoint(point) {
     at: new Date(point.at).getTime(),
     value: point.total_value_cents,
     complete: point.complete,
+    pricedItemsCount: point.priced_items_count,
+    pricableItemsCount: point.pricable_items_count,
   }
 }
 

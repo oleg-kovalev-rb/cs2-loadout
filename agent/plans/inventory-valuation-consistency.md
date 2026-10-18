@@ -952,8 +952,13 @@ Deleted:
 - `ItemRow` and `InventoryItemRow` mark prices older than 24h with
   `is-stale` and a `Price updated <age>` title, while keeping the last
   price and delta.
-- Added `shared/utils/priceFreshness.js` and
-  `shared/utils/retrySchedule.js`; removed the now-duplicated
+- `HeroChart` draws hollow dashed dots only for incomplete points, adds a
+  `Partial estimate` legend when any point is partial, and
+  `ChartTooltip` labels a partial point as
+  `Partial estimate · n/m priced`. Detail history points now carry the
+  counts needed for that label.
+- Added `shared/utils/priceFreshness.js`, `shared/utils/retrySchedule.js`,
+  and `shared/utils/chartPoints.js`; removed the now-duplicated
   `dashboard/utils/valuation.js` and its test.
 - Bumped the cache key versions for `ItemPriceCache`,
   `UserInventoryCache`, `InventoryCatalogCache`, and
@@ -997,7 +1002,7 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
 - `app_fetcher`: 435 examples, 0 failures.
 - `app_fetcher` `srb tc`: no errors.
 - `app_fetcher` RuboCop: 152 files inspected, no offenses.
-- `app_core` Vitest: 43 files, 269 tests, all passing.
+- `app_core` Vitest: 46 files, 278 tests, all passing.
 - `app_core` RSpec: 50 examples, 0 failures.
 - Prettier: clean. ESLint: 0 errors; one pre-existing
   `react-hooks/exhaustive-deps` warning in
@@ -1007,8 +1012,11 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
   (`2234` for the complete inventory, `1234` for the partial one), with
   `complete`/`change_partial`/counts and the baseline-derived change
   (`234`) matching across surfaces.
-- A full browser/Steam-login check was not performed (same environment
-  limitation noted in prior plans).
+- Public detail browser check with the seeded partial inventory: the hero
+  showed `$12.34` + `1/2 priced`, the chart showed hollow points at both
+  partial timestamps and the `Partial estimate` legend.
+- A full dashboard/Steam-login browser check was not performed (same
+  environment limitation noted in prior plans).
 
 ## Deviations
 
@@ -1037,8 +1045,23 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
 - The 2-minute response caches can still make catalog/detail/V1 values
   disagree briefly after a price update; this is bounded TTL drift, not
   a different valuation definition.
-- Complex/partial chart styling is unchanged; only the delta and badge
-  behavior marks a partial valuation.
+## Follow-up: partial chart points
+
+- `HeroChart` now preserves `complete`/counts on its chart data, renders a
+  hollow dashed dot only for incomplete points, and shows a
+  `Partial estimate` legend when the series contains one.
+- `ChartTooltip` shows `Partial estimate · n/m priced` for an incomplete
+  point.
+- `InventoryDetailQuery`/serializer history points now carry
+  `priced_items_count`/`pricable_items_count`, matching the V1 history.
+- Added `shared/utils/chartPoints.js`, `chartPoints.test.js`,
+  `ChartTooltip.test.jsx`, and `HeroChart.test.jsx`; updated the history
+  mapping tests and the detail serializer spec.
+- Re-ran: `app_fetcher` 435 examples / 0 failures, `srb tc` clean,
+  RuboCop clean; `app_core` 46 files / 278 tests passing, Prettier clean,
+  ESLint 0 errors (same pre-existing warning).
+- Browser check on the seeded public detail page confirmed the hollow
+  points + legend render correctly.
 
 ## Follow-up: `price_unavailable` price coverage
 

@@ -23,8 +23,20 @@ function detailPayload(overrides = {}) {
       oldest_price_at: '2026-10-12T15:30:45Z',
       range: '7d',
       history: [
-        { at: '2026-10-05T15:30:45Z', total_value_cents: 487500, complete: true },
-        { at: '2026-10-12T15:30:45Z', total_value_cents: 500000, complete: true },
+        {
+          at: '2026-10-05T15:30:45Z',
+          total_value_cents: 487500,
+          complete: true,
+          priced_items_count: 127,
+          pricable_items_count: 127,
+        },
+        {
+          at: '2026-10-12T15:30:45Z',
+          total_value_cents: 500000,
+          complete: true,
+          priced_items_count: 127,
+          pricable_items_count: 127,
+        },
       ],
     },
     items_count: 127,
@@ -112,8 +124,20 @@ describe('useInventoryDetail', () => {
       oldestPriceAt: new Date('2026-10-12T15:30:45Z').getTime(),
     })
     expect(data.portfolio.history).toEqual([
-      { at: new Date('2026-10-05T15:30:45Z').getTime(), value: 487500, complete: true },
-      { at: new Date('2026-10-12T15:30:45Z').getTime(), value: 500000, complete: true },
+      {
+        at: new Date('2026-10-05T15:30:45Z').getTime(),
+        value: 487500,
+        complete: true,
+        pricedItemsCount: 127,
+        pricableItemsCount: 127,
+      },
+      {
+        at: new Date('2026-10-12T15:30:45Z').getTime(),
+        value: 500000,
+        complete: true,
+        pricedItemsCount: 127,
+        pricableItemsCount: 127,
+      },
     ])
     expect(data.priciestItem).toEqual({
       marketHashName: '★ Karambit | Crimson Web',

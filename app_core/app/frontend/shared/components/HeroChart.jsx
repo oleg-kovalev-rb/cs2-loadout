@@ -9,14 +9,57 @@ import {
 } from 'recharts'
 import { ChartTooltip } from './ChartTooltip'
 import { fmtUSD, centsToUSD } from '../utils/format'
+import { hasPartialPoints } from '../utils/chartPoints'
 import { generateAxisLabels, Y_AXIS_TICK_COUNT, RANGE_MS } from '../chartConfig'
+
+function PartialDot({ cx, cy, payload, index }) {
+  if (payload.complete !== false) return <g key={index} />
+
+  return (
+    <circle
+      key={index}
+      cx={cx}
+      cy={cy}
+      r={3.5}
+      fill="var(--surface)"
+      stroke="var(--text-muted)"
+      strokeWidth={1.4}
+      strokeDasharray="2 2"
+    />
+  )
+}
+
+function PartialActiveDot({ cx, cy, payload }) {
+  if (payload.complete === false) {
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={5}
+        fill="var(--surface)"
+        stroke="var(--text-muted)"
+        strokeWidth={1.5}
+        strokeDasharray="2 2"
+      />
+    )
+  }
+
+  return <circle cx={cx} cy={cy} r={4} fill="var(--accent)" stroke="var(--bg)" strokeWidth={2} />
+}
 
 export function HeroChart({ values, range }) {
   const now = Date.now()
   // 'all' has no fixed span — bound the domain to the actual data instead
   // of a known duration, since RANGE_MS has no entry for it.
   const domain = range === 'all' ? ['dataMin', 'dataMax'] : [now - RANGE_MS[range], now]
-  const data = values.map(({ at, value }) => ({ at, cents: value }))
+  const data = values.map(({ at, value, complete, pricedItemsCount, pricableItemsCount }) => ({
+    at,
+    cents: value,
+    complete,
+    pricedItemsCount,
+    pricableItemsCount,
+  }))
+  const hasPartial = hasPartialPoints(data)
   const xLabels = generateAxisLabels(range)
 
   return (
@@ -53,8 +96,8 @@ export function HeroChart({ values, range }) {
                 stroke="var(--accent)"
                 strokeWidth={2}
                 fill="url(#heroAreaFill)"
-                dot={false}
-                activeDot={{ r: 4, fill: 'var(--accent)', stroke: 'var(--bg)', strokeWidth: 2 }}
+                dot={PartialDot}
+                activeDot={PartialActiveDot}
                 isAnimationActive={false}
               />
             </AreaChart>
@@ -69,6 +112,12 @@ export function HeroChart({ values, range }) {
           ))}
         </div>
       </div>
+      {hasPartial && (
+        <div className="chart-note">
+          <span className="chart-note-dot" aria-hidden="true" />
+          Partial estimate
+        </div>
+      )}
     </>
   )
 }
