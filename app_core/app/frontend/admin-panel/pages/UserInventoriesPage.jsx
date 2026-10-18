@@ -34,9 +34,9 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
   )
   const [detailsBySteamId, setDetailsBySteamId] = useState({})
 
-  if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
+  if (status === 'loading' && !data) return <div className="page-placeholder">Loading…</div>
   if (status === 'error' && !data)
-    return <div className="page-placeholder">Не удалось загрузить UserInventory</div>
+    return <div className="page-placeholder">Couldn&rsquo;t load UserInventory</div>
 
   const userInventories = data?.user_inventories ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -86,10 +86,10 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
       </div>
       <div className="resource">
         <div className="resource-head">
-          <h2>Все записи</h2>
+          <h2>All records</h2>
           <div className="resource-head-right">
             <span className="sel-count">
-              {state.selectedIds.size > 0 ? `Выбрано: ${state.selectedIds.size}` : ''}
+              {state.selectedIds.size > 0 ? `Selected: ${state.selectedIds.size}` : ''}
             </span>
             <button
               type="button"
@@ -97,7 +97,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
               disabled={state.selectedIds.size === 0}
               onClick={handleBulkWarmCache}
             >
-              Пересоздать кэш
+              Warm cache
             </button>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                   <input
                     type="checkbox"
                     className="select-all"
-                    aria-label="Выбрать все"
+                    aria-label="Select all"
                     checked={allSelected}
                     onChange={(event) =>
                       dispatch({
@@ -123,9 +123,9 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                 </th>
                 <th />
                 <th>Steam ID</th>
-                <th>Предметов</th>
-                <th>Стоимость</th>
-                <th>Синхр.</th>
+                <th>Items</th>
+                <th>Value</th>
+                <th>Synced</th>
                 <th className="col-actions" />
               </tr>
             </thead>
@@ -140,7 +140,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                         <input
                           type="checkbox"
                           className="row-check"
-                          aria-label={`Выбрать ${inv.steam_id}`}
+                          aria-label={`Select ${inv.steam_id}`}
                           checked={state.selectedIds.has(inv.steam_id)}
                           onChange={() => dispatch({ type: 'ROW_TOGGLED', steamId: inv.steam_id })}
                         />
@@ -149,7 +149,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                         <button
                           type="button"
                           className="icon-btn expand"
-                          aria-label={`Показать предметы ${inv.steam_id}`}
+                          aria-label={`Show items for ${inv.steam_id}`}
                           aria-expanded={isExpanded}
                           onClick={() => handleExpandToggle(inv.steam_id)}
                         >
@@ -165,8 +165,8 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                           <button
                             type="button"
                             className="icon-btn"
-                            title="Подтянуть инвентарь сейчас"
-                            aria-label="Подтянуть инвентарь сейчас"
+                            title="Sync inventory now"
+                            aria-label="Sync inventory now"
                             onClick={() => handleSync(inv.steam_id)}
                           >
                             ⟲
@@ -174,7 +174,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                           <button
                             type="button"
                             className="icon-btn danger"
-                            aria-label={`Удалить ${inv.steam_id}`}
+                            aria-label={`Delete ${inv.steam_id}`}
                             onClick={() => handleDelete(inv.steam_id)}
                           >
                             ✕
@@ -187,13 +187,13 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                         <td colSpan={7}>
                           <div className="nested-wrap open">
                             {!detail || detail.status === 'loading' ? (
-                              <p className="text-muted">Загрузка…</p>
+                              <p className="text-muted">Loading…</p>
                             ) : (
                               <table>
                                 <thead>
                                   <tr>
-                                    <th>Предмет</th>
-                                    <th>Добавлен</th>
+                                    <th>Item</th>
+                                    <th>Added</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -208,7 +208,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                                   {detail.items.length > VISIBLE_ITEMS && (
                                     <tr>
                                       <td className="text-muted">
-                                        … ещё {detail.items.length - VISIBLE_ITEMS}
+                                        …and {detail.items.length - VISIBLE_ITEMS} more
                                       </td>
                                       <td />
                                     </tr>

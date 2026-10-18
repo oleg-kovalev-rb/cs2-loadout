@@ -98,14 +98,14 @@ describe('UserInventoriesPage', () => {
     render(<UserInventoriesPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('76561198012345678')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: /Показать предметы 76561198012345678/ }))
+    await user.click(screen.getByRole('button', { name: /Show items for 76561198012345678/ }))
 
     await waitFor(() =>
       expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
     )
     expect(screen.getByText('M4A4 | Howl (Minimal Wear)')).toBeInTheDocument()
     expect(screen.queryByText('AWP | Dragon Lore (Factory New)')).not.toBeInTheDocument()
-    expect(screen.getByText('… ещё 1')).toBeInTheDocument()
+    expect(screen.getByText('…and 1 more')).toBeInTheDocument()
   })
 
   test('selecting rows enables the bulk cache button, which fires immediately with no submenu', async () => {
@@ -125,7 +125,7 @@ describe('UserInventoriesPage', () => {
       .find((el) => el.className.includes('row-check'))
     await user.click(rowCheckbox)
 
-    const cacheButton = screen.getByRole('button', { name: 'Пересоздать кэш' })
+    const cacheButton = screen.getByRole('button', { name: 'Warm cache' })
     expect(cacheButton).toBeEnabled()
     await user.click(cacheButton)
 
@@ -147,7 +147,7 @@ describe('UserInventoriesPage', () => {
     render(<UserInventoriesPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('76561198012345678')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Подтянуть инвентарь сейчас' }))
+    await user.click(screen.getByRole('button', { name: 'Sync inventory now' }))
 
     await waitFor(() =>
       expect(
@@ -171,7 +171,7 @@ describe('UserInventoriesPage', () => {
     render(<UserInventoriesPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('76561198012345678')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Удалить 76561198012345678' }))
+    await user.click(screen.getByRole('button', { name: 'Delete 76561198012345678' }))
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const deleteCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'DELETE')

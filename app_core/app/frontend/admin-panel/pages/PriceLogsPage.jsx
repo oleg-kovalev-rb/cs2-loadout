@@ -12,9 +12,9 @@ export function PriceLogsPage({ fetcherUrl, bridgeToken }) {
     perPage: state.perPage,
   })
 
-  if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
+  if (status === 'loading' && !data) return <div className="page-placeholder">Loading…</div>
   if (status === 'error' && !data)
-    return <div className="page-placeholder">Не удалось загрузить PriceLog</div>
+    return <div className="page-placeholder">Couldn&rsquo;t load PriceLog</div>
 
   const priceLogs = data?.price_logs ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -36,7 +36,7 @@ export function PriceLogsPage({ fetcherUrl, bridgeToken }) {
       </div>
       <div className="resource">
         <div className="resource-head">
-          <h2>Все записи</h2>
+          <h2>All records</h2>
         </div>
 
         <div className="table-wrap">
@@ -47,7 +47,7 @@ export function PriceLogsPage({ fetcherUrl, bridgeToken }) {
                 <th>Lowest</th>
                 <th>Median</th>
                 <th>Volume</th>
-                <th>Записано</th>
+                <th>Recorded</th>
                 <th className="col-actions" />
               </tr>
             </thead>
@@ -64,7 +64,7 @@ export function PriceLogsPage({ fetcherUrl, bridgeToken }) {
                       <button
                         type="button"
                         className="icon-btn danger"
-                        aria-label={`Удалить запись ${log.id}`}
+                        aria-label={`Delete record ${log.id}`}
                         onClick={() => handleDelete(log)}
                       >
                         ✕

@@ -113,8 +113,8 @@ describe('ItemsPage', () => {
       .filter((el) => el.className.includes('row-check'))
     await user.click(rowCheckboxes[0])
 
-    expect(screen.getByText('Выбрано: 1')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Пересоздать кэш' })).toBeEnabled()
+    expect(screen.getByText('Selected: 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Warm cache' })).toBeEnabled()
   })
 
   test('creating an item posts market_hash_name and refetches the list', async () => {
@@ -141,9 +141,9 @@ describe('ItemsPage', () => {
       expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
     )
 
-    await user.click(screen.getByRole('button', { name: '+ Новый Item' }))
+    await user.click(screen.getByRole('button', { name: '+ New Item' }))
     await user.type(screen.getByPlaceholderText(/AK-47/), 'AWP | Asiimov (Field-Tested)')
-    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const postCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'POST')
@@ -167,7 +167,7 @@ describe('ItemsPage', () => {
     )
 
     await user.click(screen.getByRole('button', { name: '⋯' }))
-    await user.click(screen.getByText('Удалить'))
+    await user.click(screen.getByText('Delete'))
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const deleteCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'DELETE')
@@ -188,7 +188,7 @@ describe('ItemsPage', () => {
     )
 
     await user.click(screen.getByRole('button', { name: '⋯' }))
-    await user.click(screen.getByText('Обновить цену сейчас'))
+    await user.click(screen.getByText('Refresh price now'))
 
     await waitFor(() =>
       expect(
@@ -212,7 +212,7 @@ describe('ItemsPage', () => {
       expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
     )
 
-    await user.click(screen.getByRole('button', { name: 'Пересоздать кэш каталога' }))
+    await user.click(screen.getByRole('button', { name: 'Warm catalog cache' }))
 
     await waitFor(() =>
       expect(
@@ -240,7 +240,7 @@ describe('ItemsPage', () => {
       .getAllByRole('checkbox')
       .find((el) => el.className.includes('row-check'))
     await user.click(rowCheckbox)
-    await user.click(screen.getByRole('button', { name: 'Пересоздать кэш' }))
+    await user.click(screen.getByRole('button', { name: 'Warm cache' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url.endsWith('/bulk_warm_cache'))
