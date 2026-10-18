@@ -132,3 +132,12 @@ a change's scope just because an unrelated file is flagged here.
   portfolio-first-snapshot-race (the change's own new/changed frontend
   files were run through `prettier --write` and pass); not reformatted to
   keep that change's diff focused.
+- `app_core/app/frontend/entrypoints/admin-panel.jsx` — doesn't import
+  `shared/styles/tokens.css` before its own island stylesheet, unlike
+  every other island entrypoint. See
+  `agent/styleguides/core/react-dashboard.md`'s Styling section.
+- `app_core/app/frontend/admin-panel/styles/admin-panel.css` — duplicates
+  the shared `@font-face`/design-token block locally instead of relying on
+  `shared/styles/tokens.css`, per the same Styling rule. The shared token
+  block is currently scoped to `.dash-root`, so compliance needs a scoping
+  decision; logged during the admin layout fix rather than folded into it.
