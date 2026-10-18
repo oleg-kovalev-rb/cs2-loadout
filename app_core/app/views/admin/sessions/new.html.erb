@@ -10,7 +10,7 @@
 
     <%= form_with url: admin_session_path, method: :post, local: true, class: "admin-login-form" do |form| %>
       <label for="email">Email</label>
-      <%= form.text_field :email, id: "email", autocomplete: "username" %>
+      <%= form.text_field :email, id: "email", autocomplete: "username", value: params[:email] %>
 
       <label for="password">Password</label>
       <%= form.password_field :password, id: "password", autocomplete: "current-password" %>

@@ -89,12 +89,14 @@ RSpec.describe "Admin sessions", type: :request do
       end
     end
 
-    it "re-renders the login form with an error on bad credentials" do
+    it "re-renders the login form with an error on bad credentials, keeping the email" do
       post admin_session_path, params: { email: "admin@example.com", password: "wrong password" }
 
       aggregate_failures do
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Invalid email or password")
+        expect(response.body).to include('value="admin@example.com"')
+        expect(response.body).not_to include("wrong password")
         expect(session[:admin_user_id]).to be_nil
       end
     end

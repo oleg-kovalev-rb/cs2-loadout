@@ -9,6 +9,11 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
+body {
+  margin: 0;
+  background: #0c111b;
+}
+
 .admin-login {
   min-height: 100vh;
   display: flex;

@@ -134,6 +134,12 @@ body {
   background: var(--bg);
 }
 
+.admin-shell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 .sidenav {
   width: 216px;
   flex-shrink: 0;
