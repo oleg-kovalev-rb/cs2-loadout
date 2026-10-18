@@ -98,6 +98,15 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      # Codecov matches the report's paths against the files in the
+      # workspace, so the checkout has to be present — without it there is no
+      # .git and no source tree, the uploader sends an empty file list, and
+      # every report is discarded as "unusable" (0% coverage). The checkout
+      # must come first: it cleans the workspace.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Download coverage reports
         uses: actions/download-artifact@v7
         with:
