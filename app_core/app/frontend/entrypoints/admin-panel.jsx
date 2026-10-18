@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import '../shared/styles/tokens.css'
 import '../admin-panel/styles/admin-panel.css'
 import { AdminPanel } from '../admin-panel/AdminPanel'
 
