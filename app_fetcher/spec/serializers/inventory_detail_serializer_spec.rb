@@ -20,7 +20,8 @@ RSpec.describe InventoryDetailSerializer do
         oldest_price_at: Time.utc(2024, 1, 2, 12, 0, 0),
         history: [
           InventoryDetailQuery::HistoryPoint.new(
-            at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true
+            at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true,
+            priced_items_count: 2, pricable_items_count: 2
           )
         ]
       )
@@ -32,7 +33,12 @@ RSpec.describe InventoryDetailSerializer do
         change_basis_at: "2024-01-01T00:00:00Z", change_partial: false, change_available: true,
         complete: true, priced_items_count: 2, pricable_items_count: 2,
         oldest_price_at: "2024-01-02T12:00:00Z", range: "30d",
-        history: [ { at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true } ]
+        history: [
+          {
+            at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true,
+            priced_items_count: 2, pricable_items_count: 2
+          }
+        ]
       )
     end
 

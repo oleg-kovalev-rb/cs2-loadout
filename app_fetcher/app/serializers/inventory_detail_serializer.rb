@@ -37,7 +37,13 @@ class InventoryDetailSerializer
         oldest_price_at: page.oldest_price_at&.iso8601,
         range: page.range.serialize,
         history: page.history.map do |point|
-          { at: point.at, total_value_cents: point.total_value_cents, complete: point.complete }
+          {
+            at: point.at,
+            total_value_cents: point.total_value_cents,
+            complete: point.complete,
+            priced_items_count: point.priced_items_count,
+            pricable_items_count: point.pricable_items_count
+          }
         end
       }
     end

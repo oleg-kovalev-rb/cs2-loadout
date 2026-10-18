@@ -487,6 +487,28 @@ html {
   font-size: 0.625rem;
   margin-top: 1px;
 }
+.dash-root .chart-tooltip-partial {
+  color: var(--text-muted);
+  font-size: 0.625rem;
+  margin-top: 3px;
+}
+.dash-root .chart-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 54px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-faint);
+}
+.dash-root .chart-note-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1px dashed var(--text-muted);
+  border-radius: 50%;
+}
 
 .dash-root .chart-xaxis-row {
   display: flex;
