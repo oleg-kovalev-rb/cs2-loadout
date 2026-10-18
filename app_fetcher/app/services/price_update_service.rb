@@ -20,7 +20,12 @@ class PriceUpdateService
 
       Item.transaction do
         price_log.save!
-        item.update!(current_price_cents: price_log.lowest_price_cents, change_24h_cents: change_24h_cents, price_unavailable: false)
+        item.update!(
+          current_price_cents: price_log.lowest_price_cents,
+          change_24h_cents: change_24h_cents,
+          price_unavailable: false,
+          price_updated_at: Time.current
+        )
       end
 
       ServiceResult[Item].new(status: ServiceResult::Status::Ok, data: item, error: nil)

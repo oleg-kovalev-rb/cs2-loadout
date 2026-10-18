@@ -35,19 +35,6 @@ a change's scope just because an unrelated file is flagged here.
 
 ## `app_fetcher`
 
-- `app_fetcher/app/schedulers/inventory_value_scheduler.rb` —
-  `sidekiq_options` has no `retry:`, unlike both workers
-  (`PriceUpdateWorker: retry: 5`, `InventoryValueUpdateWorker: retry: 3`), so
-  it silently falls back to Sidekiq's default of 25 retries over ~3
-  weeks. Not confirmed by a tool the way the two entries above are (this
-  is a Sidekiq runtime default, not a static check) — judgment call based
-  on the other two jobs always setting it explicitly. New schedulers
-  (e.g. `UserInventorySyncScheduler`) set an explicit `retry:` per this
-  reading; `price_scheduler.rb` was fixed the same way
-  (`retry: 3`, matching `UserInventorySyncScheduler`'s precedent) when the
-  "Skip fetching non-marketable items" change touched it anyway —
-  `inventory_value_scheduler.rb` wasn't touched by that change and still
-  needs it. See `agent/styleguides/fetcher/background-jobs.md`.
 - `app_fetcher/app/models/item.rb` had a latent runtime bug in
   `#stattrak` (`super.nil? ? false : super`): calling it on an item
   loaded via a relation query (not a freshly-`.create!`d instance) with

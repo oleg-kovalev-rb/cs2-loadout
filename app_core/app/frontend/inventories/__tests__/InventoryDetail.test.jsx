@@ -15,10 +15,17 @@ function detailPayload(overrides = {}) {
       total_value_cents: 500000,
       change_cents: 12500,
       change_percent: 2.5,
+      change_basis_at: '2026-10-05T15:30:45Z',
+      change_partial: false,
+      change_available: true,
+      complete: true,
+      priced_items_count: 127,
+      pricable_items_count: 127,
+      oldest_price_at: '2026-10-12T15:30:45Z',
       range: '7d',
       history: [
-        { at: '2026-10-05T15:30:45Z', total_value_cents: 487500 },
-        { at: '2026-10-12T15:30:45Z', total_value_cents: 500000 },
+        { at: '2026-10-05T15:30:45Z', total_value_cents: 487500, complete: true },
+        { at: '2026-10-12T15:30:45Z', total_value_cents: 500000, complete: true },
       ],
     },
     items_count: 127,
@@ -91,6 +98,49 @@ describe('InventoryDetail', () => {
     expect(screen.getByText('127')).toBeInTheDocument() // items_count
     expect(screen.getByText(/Crimson Web/)).toBeInTheDocument() // priciest item note
     expect(container.querySelector('.hero-delta')).toHaveClass('is-up')
+  })
+
+  test('an incomplete valuation shows the partial badge and no delta', async () => {
+    const payload = detailPayload({
+      portfolio: {
+        ...detailPayload().portfolio,
+        complete: false,
+        priced_items_count: 100,
+        pricable_items_count: 127,
+        change_partial: true,
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(payload)),
+    )
+
+    const { container } = render(
+      <InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />,
+    )
+
+    await waitFor(() => expect(screen.getByText('100/127 priced')).toBeInTheDocument())
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
+  })
+
+  test('a partial-history change on a complete valuation hides the delta', async () => {
+    const payload = detailPayload({
+      portfolio: {
+        ...detailPayload().portfolio,
+        change_partial: true,
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementationOnce(() => jsonResponse(payload)),
+    )
+
+    const { container } = render(
+      <InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />,
+    )
+
+    await waitFor(() => expect(screen.getByText('Partial history')).toBeInTheDocument())
+    expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
   })
 
   test('a zero change renders the total value with no delta badge', async () => {

@@ -120,6 +120,16 @@ general "only a worker persists" rule, `ItemsListUpdateWorker`'s own
 unrelated batch-backfill role, and the three-Scenario map all still
 hold for every other ingestion path in this app.
 
+**Read-only query collaboration.** A service may use a read-only
+concern query under `app/queries/` for its read step — for example,
+`InventoryValueRecordingService` calling `InventoryValuation` to obtain
+the snapshot it persists. This adds a dependency, not a second writer:
+the query returns structs and performs no writes, and the service
+remains the owner of the sequence and its persistence. The qualifying
+criterion for this layer is unchanged — a shared *write* sequence needed
+identically by two or more Scenarios — and a query object never becomes
+a service merely because more than one caller reads through it.
+
 ## Alternatives Considered
 
 ### Alternative: a pure resolver, with persistence duplicated per caller
@@ -246,6 +256,10 @@ layer on its own.
 - May also be called from a worker (Scenario 3) with the identical call
   shape — no special casing needed there, since workers could already
   persist.
+- May depend on a read-only concern query under `app/queries/` for its
+  read step, but that dependency never transfers write ownership: the
+  query returns structs, performs no writes, and the service remains the
+  only writer in the sequence.
 - Reserve this layer for a sequence genuinely needed, unmodified, by two
   or more Scenarios — not a default home for any non-trivial logic a
   controller or worker happens to need.

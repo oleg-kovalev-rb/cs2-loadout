@@ -180,13 +180,13 @@ RSpec.describe "Api::Admin::Items", type: :request do
     let!(:item) { create(:item) }
 
     it "populates the item's price caches" do
-      expect(Rails.cache.exist?([ "item_price", 1, item.market_hash_name ])).to eq(false)
+      expect(Rails.cache.exist?([ "item_price", ItemPriceCache::CACHE_KEY_VERSION, item.market_hash_name ])).to eq(false)
 
       post "/api/admin/items/#{item.id}/warm_cache", headers: headers
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(Rails.cache.exist?([ "item_price", 1, item.market_hash_name ])).to eq(true)
+        expect(Rails.cache.exist?([ "item_price", ItemPriceCache::CACHE_KEY_VERSION, item.market_hash_name ])).to eq(true)
       end
     end
   end
@@ -212,8 +212,8 @@ RSpec.describe "Api::Admin::Items", type: :request do
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(Rails.cache.exist?([ "item_price", 1, item_a.market_hash_name ])).to eq(true)
-        expect(Rails.cache.exist?([ "item_price", 1, item_b.market_hash_name ])).to eq(true)
+        expect(Rails.cache.exist?([ "item_price", ItemPriceCache::CACHE_KEY_VERSION, item_a.market_hash_name ])).to eq(true)
+        expect(Rails.cache.exist?([ "item_price", ItemPriceCache::CACHE_KEY_VERSION, item_b.market_hash_name ])).to eq(true)
         expect(Rails.cache.exist?([ "item_trend", 1, item_a.market_hash_name ])).to eq(true)
         expect(Rails.cache.exist?([ "price_history", 1, item_a.market_hash_name ])).to eq(true)
         expect(response.parsed_body["warmed_item_ids"]).to match_array([ item_a.id, item_b.id ])

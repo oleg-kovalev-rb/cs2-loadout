@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
-
-// Deliberately matches PriceUpdateWorker's warmup dedup TTL (90s) — the
-// system's own estimate of how long a warmed-up price should take.
-const RETRY_SCHEDULE_MS = [3000, 6000, 12000, 24000, 45000]
+import { RETRY_SCHEDULE_MS } from '../../shared/utils/retrySchedule'
 
 function mapPrice(raw) {
   return {
     currentPriceCents: raw.current_price_cents,
     changeCents: raw.change_24h_cents,
     change24hPercent: raw.change_24h_percent,
+    priceUpdatedAt: raw.price_updated_at ? new Date(raw.price_updated_at).getTime() : null,
   }
 }
 

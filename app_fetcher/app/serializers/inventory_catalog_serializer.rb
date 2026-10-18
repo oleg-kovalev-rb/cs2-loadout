@@ -23,9 +23,9 @@ class InventoryCatalogSerializer
 
     sig { params(summary: InventoryCatalogQuery::InventorySummary).returns(T::Hash[Symbol, T.untyped]) }
     def inventory_json(summary)
-      change = summary.change_24h_cents
+      change = summary.change_available ? summary.change_24h_cents : 0
       base = summary.total_value_cents - change
-      percent = base.zero? ? 0.0 : (change.to_f / base * 100).round(2)
+      percent = summary.change_available && !base.zero? ? (change.to_f / base * 100).round(2) : 0.0
 
       {
         steam_id: summary.steam_id,
@@ -33,6 +33,12 @@ class InventoryCatalogSerializer
         change_24h_cents: change,
         change_24h_percent: percent,
         items_count: summary.items_count,
+        pricable_items_count: summary.pricable_items_count,
+        priced_items_count: summary.priced_items_count,
+        complete: summary.priced_items_count >= summary.pricable_items_count,
+        change_basis_at: summary.change_basis_at,
+        change_partial: summary.change_partial,
+        change_available: summary.change_available,
         rarity_mix_percent: rarity_mix_percent(summary.rarity_counts),
         last_synced_at: summary.last_synced_at
       }

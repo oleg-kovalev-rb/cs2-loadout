@@ -178,13 +178,13 @@ RSpec.describe "Api::Admin::UserInventories", type: :request do
     let!(:user_inventory) { create(:user_inventory) }
 
     it "populates the inventory cache" do
-      expect(Rails.cache.exist?([ "user_inventory", 1, user_inventory.steam_id ])).to eq(false)
+      expect(Rails.cache.exist?([ "user_inventory", UserInventoryCache::CACHE_KEY_VERSION, user_inventory.steam_id ])).to eq(false)
 
       post "/api/admin/user_inventories/#{user_inventory.steam_id}/warm_cache", headers: headers
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(Rails.cache.exist?([ "user_inventory", 1, user_inventory.steam_id ])).to eq(true)
+        expect(Rails.cache.exist?([ "user_inventory", UserInventoryCache::CACHE_KEY_VERSION, user_inventory.steam_id ])).to eq(true)
       end
     end
   end
@@ -210,8 +210,8 @@ RSpec.describe "Api::Admin::UserInventories", type: :request do
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(Rails.cache.exist?([ "user_inventory", 1, inventory_a.steam_id ])).to eq(true)
-        expect(Rails.cache.exist?([ "user_inventory", 1, inventory_b.steam_id ])).to eq(true)
+        expect(Rails.cache.exist?([ "user_inventory", UserInventoryCache::CACHE_KEY_VERSION, inventory_a.steam_id ])).to eq(true)
+        expect(Rails.cache.exist?([ "user_inventory", UserInventoryCache::CACHE_KEY_VERSION, inventory_b.steam_id ])).to eq(true)
         expect(response.parsed_body["warmed_steam_ids"]).to match_array([ inventory_a.steam_id, inventory_b.steam_id ])
       end
     end

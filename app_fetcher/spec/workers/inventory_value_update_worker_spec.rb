@@ -20,7 +20,7 @@ RSpec.describe InventoryValueUpdateWorker do
       end
     end
 
-    context "with an unpriced marketable item in the inventory" do
+    context "bootstrap with an unpriced marketable item in the inventory" do
       let(:unpriced_item) { create(:item, :without_price) }
       let!(:user_inventory) { create(:user_inventory, steam_id: steam_id, items: [ unpriced_item ]) }
 
@@ -28,6 +28,27 @@ RSpec.describe InventoryValueUpdateWorker do
         perform
 
         expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
+      end
+    end
+
+    context "steady state with an existing log and an unpriced marketable item" do
+      let(:priced_item) { create(:item, current_price_cents: 3845) }
+      let(:unpriced_item) { create(:item, :without_price) }
+      let!(:user_inventory) { create(:user_inventory, steam_id: steam_id, items: [ priced_item, unpriced_item ]) }
+
+      before { create(:inventory_value_log, steam_id: steam_id, log_date: 1.day.ago.to_date) }
+
+      it "writes a partial log entry" do
+        perform
+
+        log = InventoryValueLog.find_by(steam_id: steam_id, log_date: Date.current)
+
+        aggregate_failures do
+          expect(log.total_value_cents).to eq(3845)
+          expect(log.pricable_items_count).to eq(2)
+          expect(log.priced_items_count).to eq(1)
+          expect(log.complete?).to be(false)
+        end
       end
     end
 

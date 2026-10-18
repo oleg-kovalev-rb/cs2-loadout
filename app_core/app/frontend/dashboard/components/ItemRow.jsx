@@ -1,6 +1,7 @@
 import { Sparkline } from '../../shared/components/Sparkline'
 import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
+import { isPriceStale, priceAgeLabel } from '../../shared/utils/priceFreshness'
 import { changePct } from '../utils/filters'
 
 export function ItemRow({ item, isSelected, onSelect }) {
@@ -11,6 +12,7 @@ export function ItemRow({ item, isSelected, onSelect }) {
   const showDelta = isTradable && hasPrice && direction !== 'flat'
   const arrow = direction === 'up' ? '▲' : '▼'
   const sparkValues = item.trendPoints.map((point) => point.priceCents)
+  const stale = isPriceStale(item.priceUpdatedAt)
 
   return (
     <li>
@@ -35,7 +37,12 @@ export function ItemRow({ item, isSelected, onSelect }) {
         </span>
         <Sparkline values={sparkValues} variant={direction} />
         <span className="mover-figures">
-          <span className="mover-price tabular">{fmtPrice(item.currentPriceCents)}</span>
+          <span
+            className={`mover-price tabular${stale ? ' is-stale' : ''}`}
+            title={stale ? `Price updated ${priceAgeLabel(item.priceUpdatedAt)}` : undefined}
+          >
+            {fmtPrice(item.currentPriceCents)}
+          </span>
           {showDelta && (
             <span className={`mover-delta tabular ${direction}`}>
               {arrow} {Math.abs(pct).toFixed(1)}%

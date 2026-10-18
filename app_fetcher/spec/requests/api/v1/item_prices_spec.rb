@@ -38,6 +38,7 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
         expect(json[priced_item.market_hash_name]["current_price_cents"]).to eq(15_050)
         expect(json[priced_item.market_hash_name]["change_24h_cents"]).to eq(520)
         expect(json[priced_item.market_hash_name]["change_24h_percent"]).to eq(3.58)
+        expect(json[priced_item.market_hash_name]["price_updated_at"]).to eq(priced_item.price_updated_at.iso8601)
       end
     end
   end

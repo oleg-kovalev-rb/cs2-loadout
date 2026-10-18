@@ -4,16 +4,14 @@ class InventoryCatalogQuery
   extend T::Sig
 
   DEFAULT_PER_PAGE = T.let(24, Integer)
+  BASELINE_MAX_AGE_DAYS = T.let(2, Integer)
 
   AGGREGATE_COLUMNS = T.let(
     [
       "user_inventories.id",
       "user_inventories.steam_id",
-      "user_inventories.updated_at",
-      "COUNT(items.id) AS items_count",
-      "COALESCE(SUM(items.current_price_cents), 0) AS total_value_cents",
-      "COALESCE(SUM(items.change_24h_cents), 0) AS change_24h_cents"
-    ].freeze,
+      "user_inventories.updated_at"
+    ] + InventoryValuation::AGGREGATE_COLUMNS,
     T::Array[String]
   )
 
@@ -21,7 +19,13 @@ class InventoryCatalogQuery
     const :steam_id, String
     const :items_count, Integer
     const :total_value_cents, Integer
+    const :pricable_items_count, Integer
+    const :priced_items_count, Integer
+    const :oldest_price_at, T.nilable(Time)
     const :change_24h_cents, Integer
+    const :change_basis_at, T.nilable(String)
+    const :change_partial, T::Boolean
+    const :change_available, T::Boolean
     const :last_synced_at, String
     const :rarity_counts, T::Hash[RarityTier, Integer]
   end
@@ -49,9 +53,16 @@ class InventoryCatalogQuery
       rows = scope.limit(pagination.per_page).offset(pagination.offset)
                   .pluck(*AGGREGATE_COLUMNS.map { |column| Arel.sql(column) })
       rarity_counts_by_id = rarity_counts_for(rows.map { |row| row[0] })
+      baselines = InventoryValuation.baseline_for(
+        T.cast(rows.map { |row| row[1] }, T::Array[String]),
+        Date.current - 1
+      )
 
       Page.new(
-        inventories: rows.map { |row| build_summary(row, rarity_counts_by_id[row[0]] || {}) },
+        inventories: rows.map do |row|
+          steam_id = T.cast(row[1], String)
+          build_summary(row, rarity_counts_by_id[row[0]] || {}, baselines[steam_id])
+        end,
         pagination: pagination,
         total_count: UserInventory.count
       )
@@ -59,18 +70,48 @@ class InventoryCatalogQuery
 
     private
 
-    sig { params(row: T::Array[T.untyped], rarity_counts: T::Hash[RarityTier, Integer]).returns(InventorySummary) }
-    def build_summary(row, rarity_counts)
-      _id, steam_id, updated_at, items_count, total_value_cents, change_24h_cents = row
+    sig do
+      params(
+        row: T::Array[T.untyped],
+        rarity_counts: T::Hash[RarityTier, Integer],
+        baseline: T.nilable(InventoryValueLog)
+      ).returns(InventorySummary)
+    end
+    def build_summary(row, rarity_counts, baseline)
+      _id, steam_id, updated_at, *aggregate_values = row
+      valuation = InventoryValuation.snapshot_from_row(aggregate_values)
+      change, change_available, change_partial = change_for(valuation, baseline)
 
       InventorySummary.new(
-        steam_id: steam_id,
-        items_count: items_count,
-        total_value_cents: total_value_cents,
-        change_24h_cents: change_24h_cents,
-        last_synced_at: updated_at.iso8601,
+        steam_id: T.cast(steam_id, String),
+        items_count: valuation.items_count,
+        total_value_cents: valuation.total_value_cents,
+        pricable_items_count: valuation.pricable_items_count,
+        priced_items_count: valuation.priced_items_count,
+        oldest_price_at: valuation.oldest_price_at,
+        change_24h_cents: change,
+        change_basis_at: baseline&.log_date&.iso8601,
+        change_partial: change_partial,
+        change_available: change_available,
+        last_synced_at: T.cast(updated_at, ActiveSupport::TimeWithZone).iso8601,
         rarity_counts: rarity_counts
       )
+    end
+
+    sig do
+      params(
+        valuation: InventoryValuation::Snapshot,
+        baseline: T.nilable(InventoryValueLog)
+      ).returns([ Integer, T::Boolean, T::Boolean ])
+    end
+    def change_for(valuation, baseline)
+      return [ 0, false, !valuation.complete? ] if baseline.nil?
+
+      change_partial = !valuation.complete? || !baseline.complete?
+      available = baseline.log_date >= Date.current - BASELINE_MAX_AGE_DAYS
+      return [ 0, false, change_partial ] unless available
+
+      [ valuation.total_value_cents - baseline.total_value_cents, true, change_partial ]
     end
 
     sig { params(user_inventory_ids: T::Array[Integer]).returns(T::Hash[Integer, T::Hash[RarityTier, Integer]]) }

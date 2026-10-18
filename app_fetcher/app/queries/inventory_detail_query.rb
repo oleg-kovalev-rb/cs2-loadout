@@ -8,6 +8,7 @@ class InventoryDetailQuery
   class HistoryPoint < T::Struct
     const :at, String
     const :total_value_cents, Integer
+    const :complete, T::Boolean
   end
 
   class Page < T::Struct
@@ -17,8 +18,15 @@ class InventoryDetailQuery
     const :total_value_cents, Integer
     const :change_cents, Integer
     const :change_percent, Float
+    const :change_basis_at, T.nilable(String)
+    const :change_partial, T::Boolean
+    const :change_available, T::Boolean
     const :history, T::Array[HistoryPoint]
     const :items_count, Integer
+    const :pricable_items_count, Integer
+    const :priced_items_count, Integer
+    const :complete, T::Boolean
+    const :oldest_price_at, T.nilable(Time)
     const :avg_item_value_cents, Integer
     const :priciest_item, T.nilable(Item)
     const :rarity_counts, T::Hash[RarityTier, Integer]
@@ -46,13 +54,10 @@ class InventoryDetailQuery
         params[:items_page], params[:items_per_page], default_per_page: DEFAULT_TOP_ITEMS_PER_PAGE
       )
 
-      items_count = user_inventory.items.count
-      logs = InventoryValueLog.where(steam_id: steam_id).order(:log_date).to_a
-      total_value_cents = logs.last&.total_value_cents || user_inventory.items.sum(:current_price_cents).to_i
-
-      since = range.duration&.ago&.to_date
-      logs_in_range = since ? logs.select { |log| log.log_date >= since } : logs
-      change_cents, change_percent = change_for(logs_in_range)
+      valuation = InventoryValuation.current(user_inventory)
+      series = InventoryValuation.series(steam_id, range, current: valuation)
+      items_count = valuation.items_count
+      total_value_cents = valuation.total_value_cents
 
       top_items = top_items_pagination.apply(items_sort_option.apply(user_inventory.items)).to_a
 
@@ -61,10 +66,19 @@ class InventoryDetailQuery
         last_synced_at: user_inventory.updated_at.iso8601,
         range: range,
         total_value_cents: total_value_cents,
-        change_cents: change_cents,
-        change_percent: change_percent,
-        history: logs_in_range.map { |log| HistoryPoint.new(at: log.created_at.iso8601, total_value_cents: log.total_value_cents) },
+        change_cents: series.change_cents,
+        change_percent: series.change_percent,
+        change_basis_at: series.change_basis_at,
+        change_partial: series.change_partial,
+        change_available: series.change_available,
+        history: series.points.map do |point|
+          HistoryPoint.new(at: point.at, total_value_cents: point.total_value_cents, complete: point.complete)
+        end,
         items_count: items_count,
+        pricable_items_count: valuation.pricable_items_count,
+        priced_items_count: valuation.priced_items_count,
+        complete: valuation.complete?,
+        oldest_price_at: valuation.oldest_price_at,
         avg_item_value_cents: items_count.zero? ? 0 : total_value_cents / items_count,
         priciest_item: user_inventory.items.where.not(current_price_cents: nil).order(current_price_cents: :desc).first,
         rarity_counts: rarity_counts_for(user_inventory),
@@ -76,17 +90,6 @@ class InventoryDetailQuery
     end
 
     private
-
-    sig { params(logs_in_range: T::Array[InventoryValueLog]).returns([ Integer, Float ]) }
-    def change_for(logs_in_range)
-      return [ 0, 0.0 ] if logs_in_range.size < 2
-
-      base = T.must(logs_in_range.first).total_value_cents
-      change = T.must(logs_in_range.last).total_value_cents - base
-      percent = base.zero? ? 0.0 : (change.to_f / base * 100).round(2).to_f
-
-      [ change, percent ]
-    end
 
     sig { params(user_inventory: UserInventory).returns(T::Hash[RarityTier, Integer]) }
     def rarity_counts_for(user_inventory)

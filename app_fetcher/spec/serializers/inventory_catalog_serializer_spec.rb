@@ -21,12 +21,14 @@ RSpec.describe InventoryCatalogSerializer do
 
       expect(inventory_json.keys).to contain_exactly(
         :steam_id, :total_value_cents, :change_24h_cents, :change_24h_percent,
-        :items_count, :rarity_mix_percent, :last_synced_at
+        :items_count, :pricable_items_count, :priced_items_count, :complete,
+        :change_basis_at, :change_partial, :change_available,
+        :rarity_mix_percent, :last_synced_at
       )
     end
 
     it "computes change_24h_percent from total_value_cents and change_24h_cents" do
-      page = page_with(build_summary(total_value_cents: 1500, change_24h_cents: 500))
+      page = page_with(build_summary(total_value_cents: 1500, change_24h_cents: 500, change_available: true))
 
       inventory_json = described_class.call(page)[:inventories].first
 
@@ -34,11 +36,35 @@ RSpec.describe InventoryCatalogSerializer do
     end
 
     it "defaults change_24h_percent to 0.0 when the base value is zero" do
-      page = page_with(build_summary(total_value_cents: 0, change_24h_cents: 0))
+      page = page_with(build_summary(total_value_cents: 0, change_24h_cents: 0, change_available: true))
 
       inventory_json = described_class.call(page)[:inventories].first
 
       expect(inventory_json[:change_24h_percent]).to eq(0.0)
+    end
+
+    it "defaults change_24h_percent to 0.0 when the change is unavailable" do
+      page = page_with(build_summary(total_value_cents: 1500, change_24h_cents: 500, change_available: false))
+
+      inventory_json = described_class.call(page)[:inventories].first
+
+      expect(inventory_json[:change_24h_percent]).to eq(0.0)
+    end
+
+    it "derives complete from the priced/pricable counts" do
+      page = page_with(build_summary(pricable_items_count: 2, priced_items_count: 2))
+
+      inventory_json = described_class.call(page)[:inventories].first
+
+      expect(inventory_json[:complete]).to be(true)
+    end
+
+    it "reports an incomplete card when a pricable item is unpriced" do
+      page = page_with(build_summary(pricable_items_count: 2, priced_items_count: 1))
+
+      inventory_json = described_class.call(page)[:inventories].first
+
+      expect(inventory_json[:complete]).to be(false)
     end
 
     it "computes rarity_mix_percent against the classified item count, not items_count" do
@@ -69,10 +95,15 @@ RSpec.describe InventoryCatalogSerializer do
   end
 
   def build_summary(steam_id: "76561198000000001", items_count: 0, total_value_cents: 0,
-                     change_24h_cents: 0, last_synced_at: "2024-01-01T00:00:00Z", rarity_counts: {})
+                     pricable_items_count: 0, priced_items_count: 0, change_24h_cents: 0,
+                     change_basis_at: nil, change_partial: false, change_available: false,
+                     oldest_price_at: nil, last_synced_at: "2024-01-01T00:00:00Z", rarity_counts: {})
     InventoryCatalogQuery::InventorySummary.new(
       steam_id: steam_id, items_count: items_count, total_value_cents: total_value_cents,
-      change_24h_cents: change_24h_cents, last_synced_at: last_synced_at, rarity_counts: rarity_counts
+      pricable_items_count: pricable_items_count, priced_items_count: priced_items_count,
+      oldest_price_at: oldest_price_at, change_24h_cents: change_24h_cents,
+      change_basis_at: change_basis_at, change_partial: change_partial,
+      change_available: change_available, last_synced_at: last_synced_at, rarity_counts: rarity_counts
     )
   end
 

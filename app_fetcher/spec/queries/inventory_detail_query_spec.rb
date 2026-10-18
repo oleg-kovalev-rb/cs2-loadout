@@ -56,17 +56,18 @@ RSpec.describe InventoryDetailQuery do
     end
 
     describe "total_value_cents" do
-      it "reads the latest InventoryValueLog row when one exists" do
+      it "uses the live sum even when a stored log has a different value" do
         user_inventory = create(:user_inventory)
-        create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 2.days.ago.to_date, total_value_cents: 3000)
+        create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 1200))
+        create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 800))
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: Date.current, total_value_cents: 5000)
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        expect(page.total_value_cents).to eq(5000)
+        expect(page.total_value_cents).to eq(2000)
       end
 
-      it "falls back to a live sum of current item prices when no InventoryValueLog rows exist" do
+      it "uses the live sum when no InventoryValueLog rows exist" do
         user_inventory = create(:user_inventory)
         create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 1200))
         create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 800))
@@ -75,25 +76,55 @@ RSpec.describe InventoryDetailQuery do
 
         expect(page.total_value_cents).to eq(2000)
       end
+    end
 
-      it "does not run the live Item-sum fallback query when an InventoryValueLog row already exists" do
-        with_log = create(:user_inventory)
-        create(:user_inventory_item, user_inventory: with_log, item: create(:item, current_price_cents: 1000))
-        create(:inventory_value_log, steam_id: with_log.steam_id, total_value_cents: 5000)
+    describe "completeness" do
+      it "is complete when every pricable item has a price" do
+        user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 1000) ])
 
-        without_log = create(:user_inventory)
-        create(:user_inventory_item, user_inventory: without_log, item: create(:item, current_price_cents: 1000))
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        queries_with_log = count_queries(model: Item) { described_class.call(with_log.steam_id, ActionController::Parameters.new) }
-        queries_without_log = count_queries(model: Item) { described_class.call(without_log.steam_id, ActionController::Parameters.new) }
+        aggregate_failures do
+          expect(page.complete).to be(true)
+          expect(page.pricable_items_count).to eq(1)
+          expect(page.priced_items_count).to eq(1)
+        end
+      end
 
-        expect(queries_without_log).to eq(queries_with_log + 1)
+      it "is partial and reports counts when a marketable item has no price" do
+        user_inventory = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 1000))
+        create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, :without_price))
+
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
+
+        aggregate_failures do
+          expect(page.complete).to be(false)
+          expect(page.pricable_items_count).to eq(2)
+          expect(page.priced_items_count).to eq(1)
+        end
+      end
+
+      it "does not let non-marketable or unavailable items block completeness" do
+        user_inventory = create(:user_inventory, items: [
+          create(:item, current_price_cents: 1000),
+          create(:item, :without_price, :non_marketable),
+          create(:item, :without_price, :price_unavailable)
+        ])
+
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
+
+        aggregate_failures do
+          expect(page.complete).to be(true)
+          expect(page.pricable_items_count).to eq(1)
+          expect(page.priced_items_count).to eq(1)
+        end
       end
     end
 
     describe "range / history / change_cents / change_percent" do
-      it "defaults to 7d, excluding a log older than 7 days" do
-        user_inventory = create(:user_inventory)
+      it "defaults to 7d and keeps only the live point when the stored rows are outside the window" do
+        user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 2000) ])
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date, total_value_cents: 1000)
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: Date.current, total_value_cents: 2000)
 
@@ -105,11 +136,12 @@ RSpec.describe InventoryDetailQuery do
           expect(page.history.first.total_value_cents).to eq(2000)
           expect(page.change_cents).to eq(0)
           expect(page.change_percent).to eq(0.0)
+          expect(page.change_available).to be(false)
         end
       end
 
       it "range=all includes every logged row, computing change across the full history" do
-        user_inventory = create(:user_inventory)
+        user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 1500) ])
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date, total_value_cents: 1000)
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: Date.current, total_value_cents: 1500)
 
@@ -119,19 +151,35 @@ RSpec.describe InventoryDetailQuery do
           expect(page.history.size).to eq(2)
           expect(page.change_cents).to eq(500)
           expect(page.change_percent).to be_within(0.01).of(50.0)
+          expect(page.change_available).to be(true)
         end
       end
 
-      it "returns empty history and zero change when no log rows fall within the window, even if rows exist outside it" do
+      it "still returns the live point and zero change when no log rows fall within the window" do
         user_inventory = create(:user_inventory)
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 60.days.ago.to_date, total_value_cents: 1000)
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "7d"))
 
         aggregate_failures do
-          expect(page.history).to eq([])
+          expect(page.history.size).to eq(1)
+          expect(page.history.first.total_value_cents).to eq(0)
           expect(page.change_cents).to eq(0)
           expect(page.change_percent).to eq(0.0)
+          expect(page.change_available).to be(false)
+        end
+      end
+
+      it "marks the change partial when the baseline row is incomplete" do
+        user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 200) ])
+        create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 2.days.ago.to_date,
+                                      total_value_cents: 100, **partial_counts)
+
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
+
+        aggregate_failures do
+          expect(page.change_cents).to eq(100)
+          expect(page.change_partial).to be(true)
         end
       end
 
@@ -201,5 +249,9 @@ RSpec.describe InventoryDetailQuery do
         expect(page.trends[item.market_hash_name]).not_to be_nil
       end
     end
+  end
+
+  def partial_counts
+    { items_count: 2, pricable_items_count: 2, priced_items_count: 1 }
   end
 end

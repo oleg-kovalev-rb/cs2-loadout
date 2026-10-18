@@ -3,7 +3,7 @@
 class UserInventoryCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(1, Integer)
+  CACHE_KEY_VERSION = T.let(2, Integer)
   SAFETY_NET_TTL = T.let(15.minutes, ActiveSupport::Duration)
 
   class << self

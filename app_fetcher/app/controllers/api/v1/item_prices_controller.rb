@@ -29,7 +29,8 @@ module Api
           hash[name] = {
             current_price_cents: current_price_cents,
             change_24h_cents: change,
-            change_24h_percent: percent
+            change_24h_percent: percent,
+            price_updated_at: item.price_updated_at&.iso8601
           }
         end
 

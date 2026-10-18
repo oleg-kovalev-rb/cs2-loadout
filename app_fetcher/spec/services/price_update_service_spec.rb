@@ -22,6 +22,7 @@ RSpec.describe PriceUpdateService do
           expect(item.price_logs.last.lowest_price_cents).to eq(3845)
           expect(item.current_price_cents).to eq(3845)
           expect(item.change_24h_cents).to eq(0)
+          expect(item.price_updated_at).to be_within(1.second).of(Time.current)
         end
       end
 

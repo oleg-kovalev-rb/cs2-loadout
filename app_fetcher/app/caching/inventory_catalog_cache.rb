@@ -5,7 +5,7 @@ require "digest"
 class InventoryCatalogCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(1, Integer)
+  CACHE_KEY_VERSION = T.let(2, Integer)
   TTL = T.let(2.minutes, ActiveSupport::Duration)
 
   class << self

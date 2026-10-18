@@ -11,6 +11,16 @@ export function InventoryCard({ inventory, rank, profile }) {
   const direction = trendDirection(inventory.change24hPercent)
   const name = profile?.nickname || inventory.steamId
   const initial = name.charAt(0).toUpperCase()
+  const showDelta =
+    direction !== 'flat' && inventory.changeAvailable !== false && !inventory.changePartial
+  const showPartial = inventory.complete === false
+  const partialLabel =
+    inventory.pricedItemsCount != null && inventory.pricableItemsCount != null
+      ? `${inventory.pricedItemsCount}/${inventory.pricableItemsCount} priced`
+      : 'Partial'
+  const changeTitle = inventory.changeBasisAt
+    ? `Change since ${new Date(inventory.changeBasisAt).toISOString().slice(0, 10)}`
+    : undefined
 
   return (
     <a className="inv-card" href={`/inventories/${inventory.steamId}`}>
@@ -29,8 +39,12 @@ export function InventoryCard({ inventory, rank, profile }) {
       </div>
       <div className="inv-value-row">
         <span className="inv-value tabular">{fmtUSD(centsToUSD(inventory.totalValueCents))}</span>
-        {direction !== 'flat' && (
-          <span className={`inv-delta tabular ${direction === 'up' ? 'is-up' : 'is-down'}`}>
+        {showPartial && <span className="inv-partial tabular">{partialLabel}</span>}
+        {showDelta && (
+          <span
+            className={`inv-delta tabular ${direction === 'up' ? 'is-up' : 'is-down'}`}
+            title={changeTitle}
+          >
             {direction === 'up' ? '▲' : '▼'} {Math.abs(inventory.change24hPercent).toFixed(1)}%
           </span>
         )}
