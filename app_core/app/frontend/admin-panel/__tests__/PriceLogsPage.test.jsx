@@ -56,7 +56,7 @@ describe('PriceLogsPage', () => {
     render(<PriceLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Удалить запись 1' }))
+    await user.click(screen.getByRole('button', { name: 'Delete record 1' }))
 
     await waitFor(() => expect(listCallCount).toBe(2))
     const deleteCall = fetchMock.mock.calls.find(([, options]) => options?.method === 'DELETE')
@@ -69,7 +69,7 @@ describe('PriceLogsPage', () => {
     render(<PriceLogsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
 
-    expect(screen.queryByRole('button', { name: /Новый/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /New/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 })

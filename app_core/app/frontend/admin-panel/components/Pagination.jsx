@@ -13,7 +13,7 @@ export function Pagination({
 
   return (
     <div className="pagination">
-      <span>{totalCount === 0 ? 'Нет записей' : `Показано ${start}–${end} из ${totalCount}`}</span>
+      <span>{totalCount === 0 ? 'No records' : `Showing ${start}–${end} of ${totalCount}`}</span>
 
       {totalPages > 1 && (
         <div className="pg-controls">
@@ -53,7 +53,7 @@ export function Pagination({
       )}
 
       <div className="pg-size">
-        на странице
+        per page
         <select value={perPage} onChange={(event) => onPerPageChange(Number(event.target.value))}>
           <option value={25}>25</option>
           <option value={50}>50</option>

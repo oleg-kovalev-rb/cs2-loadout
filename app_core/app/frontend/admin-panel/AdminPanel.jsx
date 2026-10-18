@@ -6,14 +6,14 @@ import { InventoryValueLogsPage } from './pages/InventoryValueLogsPage'
 
 const NAV_GROUPS = [
   {
-    label: 'Каталог и цены',
+    label: 'Catalog & Prices',
     items: [
       { key: 'item', label: 'Item' },
       { key: 'price-log', label: 'PriceLog' },
     ],
   },
   {
-    label: 'Инвентари',
+    label: 'Inventories',
     items: [
       { key: 'user-inventory', label: 'UserInventory' },
       { key: 'inventory-value-log', label: 'InventoryValueLog' },

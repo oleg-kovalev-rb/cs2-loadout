@@ -34,9 +34,9 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
     }
   }, [])
 
-  if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
+  if (status === 'loading' && !data) return <div className="page-placeholder">Loading…</div>
   if (status === 'error' && !data)
-    return <div className="page-placeholder">Не удалось загрузить Item</div>
+    return <div className="page-placeholder">Couldn&rsquo;t load Item</div>
 
   const items = data?.items ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -86,19 +86,19 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
       </div>
       <div className="resource">
         <div className="resource-head">
-          <h2>Все записи</h2>
+          <h2>All records</h2>
           <div className="resource-head-right">
             <button
               type="button"
               className="btn ghost-cache"
-              title="ItemCatalogCache — кэш списков/фильтров каталога, не привязан к конкретным Item"
+              title="ItemCatalogCache — catalog list/filter cache, not tied to specific Items"
               onClick={handleWarmCatalogCache}
             >
-              Пересоздать кэш каталога
+              Warm catalog cache
             </button>
             <span className="toolbar-divider" />
             <span className="sel-count">
-              {state.selectedIds.size > 0 ? `Выбрано: ${state.selectedIds.size}` : ''}
+              {state.selectedIds.size > 0 ? `Selected: ${state.selectedIds.size}` : ''}
             </span>
             <button
               type="button"
@@ -106,14 +106,14 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
               disabled={state.selectedIds.size === 0}
               onClick={handleBulkWarmCache}
             >
-              Пересоздать кэш
+              Warm cache
             </button>
             <button
               type="button"
               className="btn primary"
               onClick={() => dispatch({ type: 'CREATE_PANEL_TOGGLED' })}
             >
-              + Новый Item
+              + New Item
             </button>
           </div>
         </div>
@@ -123,7 +123,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
             <form onSubmit={handleCreateSubmit}>
               <div className="form-grid">
                 <div className="field" style={{ gridColumn: '1/-1' }}>
-                  <label htmlFor="item-create-name">Название предмета</label>
+                  <label htmlFor="item-create-name">Item name</label>
                   <input
                     id="item-create-name"
                     type="text"
@@ -135,8 +135,8 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
               </div>
               {createError && <p className="admin-login-error">{createError}</p>}
               <p className="form-hint">
-                Остальные данные (категория, состояние, цена, иконка) подтянутся из Steam
-                автоматически.
+                The remaining data (category, condition, price, icon) will be fetched from Steam
+                automatically.
               </p>
               <div className="form-actions">
                 <button
@@ -144,10 +144,10 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                   className="btn"
                   onClick={() => dispatch({ type: 'CREATE_PANEL_CLOSED' })}
                 >
-                  Отмена
+                  Cancel
                 </button>
                 <button type="submit" className="btn primary">
-                  Добавить
+                  Add
                 </button>
               </div>
             </form>
@@ -162,7 +162,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                   <input
                     type="checkbox"
                     className="select-all"
-                    aria-label="Выбрать все"
+                    aria-label="Select all"
                     checked={allSelected}
                     onChange={(event) =>
                       dispatch({ type: 'ALL_TOGGLED', checked: event.target.checked, ids: allIds })
@@ -170,9 +170,9 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                   />
                 </th>
                 <th>market_hash_name</th>
-                <th>Категория</th>
-                <th>Цена</th>
-                <th>24ч</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>24h</th>
                 <th className="col-actions" />
               </tr>
             </thead>
@@ -186,7 +186,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                       <input
                         type="checkbox"
                         className="row-check"
-                        aria-label={`Выбрать ${item.market_hash_name}`}
+                        aria-label={`Select ${item.market_hash_name}`}
                         checked={state.selectedIds.has(item.id)}
                         onChange={() => dispatch({ type: 'ROW_TOGGLED', id: item.id })}
                       />
@@ -208,7 +208,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                         <button
                           type="button"
                           className="icon-btn"
-                          aria-label={`Редактировать ${item.market_hash_name}`}
+                          aria-label={`Edit ${item.market_hash_name}`}
                         >
                           ✎
                         </button>
@@ -224,7 +224,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                             <div className="action-menu open">
                               <button type="button" onClick={() => handleRefreshPrice(item.id)}>
                                 <span className="menu-icon">⟲</span>
-                                Обновить цену сейчас
+                                Refresh price now
                               </button>
                               <div className="divider" />
                               <button
@@ -233,7 +233,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                                 onClick={() => handleDelete(item.id)}
                               >
                                 <span className="menu-icon">✕</span>
-                                Удалить
+                                Delete
                               </button>
                             </div>
                           )}

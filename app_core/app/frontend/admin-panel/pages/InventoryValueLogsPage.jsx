@@ -17,9 +17,9 @@ export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
     },
   )
 
-  if (status === 'loading' && !data) return <div className="page-placeholder">Загрузка…</div>
+  if (status === 'loading' && !data) return <div className="page-placeholder">Loading…</div>
   if (status === 'error' && !data)
-    return <div className="page-placeholder">Не удалось загрузить InventoryValueLog</div>
+    return <div className="page-placeholder">Couldn&rsquo;t load InventoryValueLog</div>
 
   const logs = data?.inventory_value_logs ?? []
   const meta = data?.meta ?? { total_count: 0, total_pages: 0 }
@@ -41,7 +41,7 @@ export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
       </div>
       <div className="resource">
         <div className="resource-head">
-          <h2>Все записи</h2>
+          <h2>All records</h2>
         </div>
 
         <div className="table-wrap">
@@ -49,8 +49,8 @@ export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
             <thead>
               <tr>
                 <th>Steam ID</th>
-                <th>Дата</th>
-                <th>Стоимость</th>
+                <th>Date</th>
+                <th>Value</th>
                 <th className="col-actions" />
               </tr>
             </thead>
@@ -65,7 +65,7 @@ export function InventoryValueLogsPage({ fetcherUrl, bridgeToken }) {
                       <button
                         type="button"
                         className="icon-btn danger"
-                        aria-label={`Удалить запись ${log.id}`}
+                        aria-label={`Delete record ${log.id}`}
                         onClick={() => handleDelete(log)}
                       >
                         ✕

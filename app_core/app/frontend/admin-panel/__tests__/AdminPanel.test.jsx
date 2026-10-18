@@ -17,8 +17,8 @@ describe('AdminPanel', () => {
     stubNeverResolvingFetch()
     render(<AdminPanel fetcherUrl="https://fetcher.test" bridgeToken="token" />)
 
-    expect(screen.getByText('Каталог и цены')).toBeInTheDocument()
-    expect(screen.getByText('Инвентари')).toBeInTheDocument()
+    expect(screen.getByText('Catalog & Prices')).toBeInTheDocument()
+    expect(screen.getByText('Inventories')).toBeInTheDocument()
 
     const itemLink = screen.getByRole('link', { name: 'Item' })
     expect(itemLink).toHaveClass('is-active')
