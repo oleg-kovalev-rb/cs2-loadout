@@ -61,11 +61,13 @@ html {
   font-size: clamp(16px, calc(16px + (100vw - 1280px) * 0.00625), 20px);
 }
 
-.dash-root {
+:root {
   --bg: #0c111b;
   --surface: #141a28;
   --surface-raised: #1c2334;
+  --surface-sunken: #0f1420;
   --border: #262f44;
+  --border-soft: #1d2537;
   --text: #edf0f7;
   --text-muted: #8791ab;
   --text-faint: #57607a;
@@ -83,7 +85,9 @@ html {
   --radius-lg: 14px;
   --radius-md: 10px;
   --radius-sm: 6px;
+}
 
+.dash-root {
   position: relative;
   min-height: 100%;
   padding: 24px 32px 40px;
