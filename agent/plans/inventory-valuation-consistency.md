@@ -994,10 +994,10 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
 
 ## Verification
 
-- `app_fetcher`: 434 examples, 0 failures.
+- `app_fetcher`: 435 examples, 0 failures.
 - `app_fetcher` `srb tc`: no errors.
 - `app_fetcher` RuboCop: 152 files inspected, no offenses.
-- `app_core` Vitest: 42 files, 265 tests, all passing.
+- `app_core` Vitest: 43 files, 269 tests, all passing.
 - `app_core` RSpec: 50 examples, 0 failures.
 - Prettier: clean. ESLint: 0 errors; one pre-existing
   `react-hooks/exhaustive-deps` warning in
@@ -1037,8 +1037,20 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
 - The 2-minute response caches can still make catalog/detail/V1 values
   disagree briefly after a price update; this is bounded TTL drift, not
   a different valuation definition.
-- `useItemPrices` still retries for a marketable `price_unavailable`
-  item because the frontend does not receive that flag; it stops after
-  the bounded schedule and no longer gates the hero.
 - Complex/partial chart styling is unchanged; only the delta and badge
   behavior marks a partial valuation.
+
+## Follow-up: `price_unavailable` price coverage
+
+- `GET /api/v1/inventories/me` now includes `price_unavailable` per item.
+- `useDashboardData` maps it to `priceUnavailable`.
+- `Dashboard.jsx` passes `priceableNames(items)` (marketable **and** not
+  price-unavailable) to `useItemPrices`, so an unavailable item no longer
+  keeps the bounded retry running. It still appears in `dynamics` when it
+  has a last known price, so its row keeps that price.
+- Added `dashboard/utils/priceCoverage.js` +
+  `priceCoverage.test.js`; updated `useDashboardData` and the
+  `app_fetcher` inventories request spec.
+- Re-ran: `app_fetcher` 435 examples / 0 failures, `srb tc` clean,
+  RuboCop clean; `app_core` 43 files / 269 tests passing, Prettier clean,
+  ESLint 0 errors (same pre-existing warning).

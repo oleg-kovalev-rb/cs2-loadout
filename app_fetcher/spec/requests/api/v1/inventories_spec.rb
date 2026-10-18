@@ -54,11 +54,24 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
       expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made
     end
 
-    it "does not include price fields in the response" do
+    it "does not include price values, but exposes the price_unavailable flag" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
 
       item_json = JSON.parse(response.body)["items"].first
-      expect(item_json.keys).to contain_exactly("market_hash_name", "metadata")
+
+      aggregate_failures do
+        expect(item_json.keys).to contain_exactly("market_hash_name", "price_unavailable", "metadata")
+        expect(item_json["price_unavailable"]).to be(false)
+      end
+    end
+
+    it "exposes a true price_unavailable flag for an unavailable item" do
+      items(:redline).update!(price_unavailable: true)
+      UserInventoryCache.invalidate(steam_id)
+
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      expect(JSON.parse(response.body)["items"].first["price_unavailable"]).to be(true)
     end
 
     it "persists the user's inventory to the DB before responding" do
@@ -250,7 +263,7 @@ RSpec.describe "POST /api/v1/inventories/refresh", type: :request do
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
         expect(json["items_count"]).to eq(1)
-        expect(json["items"].first.keys).to contain_exactly("market_hash_name", "metadata")
+        expect(json["items"].first.keys).to contain_exactly("market_hash_name", "price_unavailable", "metadata")
         expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made.once
         expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(new_item)
       end

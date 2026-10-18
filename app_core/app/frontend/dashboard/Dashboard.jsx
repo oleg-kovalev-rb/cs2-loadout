@@ -5,6 +5,7 @@ import { useItemPrices } from './hooks/useItemPrices'
 import { useItemTrend } from './hooks/useItemTrend'
 import { usePortfolioHistory } from './hooks/usePortfolioHistory'
 import { useItemHistory } from './hooks/useItemHistory'
+import { priceableNames } from './utils/priceCoverage'
 import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
@@ -18,15 +19,11 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   // they only fire once the skeleton has resolved (and therefore
   // UserInventoryCache is guaranteed to have a row for this steam_id).
   const names = useMemo(() => (data ? data.items.map((item) => item.marketHashName) : []), [data])
-  // Non-marketable items never get a price, so they must not keep the price
-  // hook's coverage retry running.
-  const marketableNames = useMemo(
-    () =>
-      data ? data.items.filter((item) => item.marketable).map((item) => item.marketHashName) : [],
-    [data],
-  )
+  // Non-marketable and price-unavailable items never get a current price, so
+  // they must not keep the price hook's coverage retry running.
+  const coverageNames = useMemo(() => priceableNames(data?.items), [data])
 
-  const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, marketableNames)
+  const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, coverageNames)
   const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
 
   const items = useMemo(() => {

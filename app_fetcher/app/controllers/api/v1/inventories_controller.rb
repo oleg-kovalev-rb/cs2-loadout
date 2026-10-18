@@ -47,6 +47,7 @@ module Api
           items_count: items.size,
           items: items.as_json(only: [
             :market_hash_name,
+            :price_unavailable,
             :metadata
           ])
         }, status: :ok
