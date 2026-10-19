@@ -78,7 +78,7 @@ under `Api::V1::`.
 - Every `index` action paginates via `Appliers::Pagination`
   (`app_fetcher/app/queries/appliers/pagination.rb`) called directly,
   **not** the full `list-query-objects.md` stack
-  (`<Resource>CatalogQuery`/`<Resource>CatalogSerializer`/`Options::*`
+  (`<Resource>ListQuery`/`<Resource>ListSerializer`/`Options::*`
   sort-filter enums) — that layer is for endpoints that also need shared
   sort/filter/response-cache mechanics (see its own "When to Use"), none
   of which any `Api::Admin::` index needs today. Pair it with an explicit
@@ -93,7 +93,7 @@ under `Api::V1::`.
   admin index does the same two-step (compute pagination, then apply it
   to a scope), so the application itself is shared too, not just the
   computation. The one documented exception:
-  `InventoryCatalogQuery` (`app/queries/inventory_catalog_query.rb`)
+  `InventoryListQuery` (`app/queries/inventory_list_query.rb`)
   keeps the manual chain because Sorbet's `pluck` signature checks a
   splat's size statically, and routing through `apply`'s precisely
   `ActiveRecord::Relation`-typed return makes that check apply to its
@@ -214,7 +214,7 @@ This rule extends unchanged to the bulk/catalog actions: `bulk_warm_cache`
 (Items) calling all three `fetch_for` variants for the requested batch
 is still one logical collaborator (populate this batch's caches), not
 three; `warm_catalog_cache` calling
-`ItemCatalogQuery.call`/`ItemCatalogSerializer.call`/`ItemCatalogCache.write`
+`ItemListQuery.call`/`ItemListSerializer.call`/`ItemListCache.write`
 is one logical collaborator too (populate the default catalog view), the
 same shape `Api::Public::ItemsController#index` already uses for the read
 path.
@@ -232,7 +232,7 @@ only ever read-through-warm (`.fetch_for`/`.fetch`/`.write`), never
 `.invalidate`, so none of them introduce a new caller `caching.md`'s
 "only the writer named in Dependencies calls `.invalidate`" rule would
 otherwise restrict; `warm_catalog_cache` may additionally call
-`ItemCatalogQuery.call`/`ItemCatalogSerializer.call` (the same read path
+`ItemListQuery.call`/`ItemListSerializer.call` (the same read path
 `Api::Public::ItemsController#index` uses on a cache miss) to produce the
 payload it writes. An index action that renders a field sourced from elsewhere than the
 resource's own columns always batches that lookup across the whole page
@@ -283,7 +283,7 @@ guards against.
   because a resource with both a paginated list and a single-record shape
   can't fit both under one bare `.call`),
   matching the house convention the public-API serializers already use
-  (`ItemCatalogSerializer`, `InventoryCatalogSerializer`,
+  (`ItemListSerializer`, `InventoryListSerializer`,
   `InventoryDetailSerializer`) — not private `*_json` methods inlined in
   the controller. **Always reference it fully qualified,
   `::Admin::<Resource>Serializer`** (leading `::`), never a bare
@@ -485,7 +485,7 @@ this section only adds what's specific to this namespace.
   `show`-only `items`.
 - `app_fetcher/app/queries/appliers/pagination.rb`'s `#apply` — every
   admin `index` action's `scope.limit(...).offset(...)` collapsed to
-  `pagination.apply(scope)`; also used by the public `*CatalogQuery`/
+  `pagination.apply(scope)`; also used by the public `*ListQuery`/
   `InventoryDetailQuery` classes (`list-query-objects.md`'s own layer),
   since it's the same `Appliers::Pagination` instance either way.
 

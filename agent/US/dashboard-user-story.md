@@ -201,7 +201,7 @@ looking.**
 | `GET /api/v1/item_prices/dynamics` | bridge token | none | `UserInventoryCache.fetch` → `ItemPriceCache.fetch_for`; `pending_count` from `Item.awaiting_price` | `{prices: {name: {current_price_cents, change_24h_cents, change_24h_percent}}, pending_count: N}` |
 | `GET /api/v1/item_prices/trend` | bridge token | none | `UserInventoryCache.fetch` → `ItemTrendCache.fetch_for` | `{name: [{at, price_cents, volume}]}` (≤5 pts, 7d) |
 | `GET /api/v1/item_prices/:market_hash_name/history` | bridge token | `period` (`24h`\|`7d`\|`30d`\|`1y`\|`all`, default `30d`) | `PriceHistoryCache` (explicit `30d`) or `ItemPriceHistoryQuery` over `PriceLog` | `[{at, price_cents, volume}]`; unknown item → `404 {message: "Not found"}` |
-| `GET /api/v1/inventory_values` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `all`) | `InventoryValueLog` + live `InventoryValuation` (read-only) | `{current, history: [{at, total_value_cents, ...}], change}` |
+| `GET /api/v1/inventory_values` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `all`) | `InventoryValueLog` + live `InventoryValueQuery` (read-only) | `{current, history: [{at, total_value_cents, ...}], change}` |
 
 ## Data & Caching Map
 

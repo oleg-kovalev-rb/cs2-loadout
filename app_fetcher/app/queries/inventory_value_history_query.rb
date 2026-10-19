@@ -8,16 +8,16 @@ class InventoryValueHistoryQuery
 
     sig do
       params(steam_id: String, params: ActionController::Parameters)
-        .returns(InventoryValuation::Page)
+        .returns(InventoryValueQuery::InventoryValue)
     end
     def call(steam_id, params)
       range = Options::DateRange::Param.new(
-        allowed_ranges: InventoryValuation::SUPPORTED_RANGES,
+        allowed_ranges: InventoryValueQuery::SUPPORTED_RANGES,
         default: Options::DateRange::AllTime,
         error_class: Api::V1::UnsupportedParamError
       ).parse(params[:period])
 
-      InventoryValuation.page(steam_id, range)
+      InventoryValueQuery.call(steam_id, range)
     end
   end
 end

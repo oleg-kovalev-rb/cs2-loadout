@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ItemCatalogQuery do
+RSpec.describe ItemListQuery do
   describe ".call" do
     it "returns only marketable items, defaulted sort" do
       gaining = create(:item, current_price_cents: 1000, change_24h_cents: 100)
@@ -36,7 +36,7 @@ RSpec.describe ItemCatalogQuery do
       expect(page.pagination.per_page).to eq(1)
     end
 
-    it "computes total_count/price_stats scoped to the current filters" do
+    it "computes total_count/price_change_stats scoped to the current filters" do
       create(:item, change_24h_cents: 50, metadata: { marketable: true, category: "Rifles" })
       create(:item, change_24h_cents: -50, metadata: { marketable: true, category: "Rifles" })
       create(:item, change_24h_cents: 50, metadata: { marketable: true, category: "Knives" })
@@ -44,8 +44,8 @@ RSpec.describe ItemCatalogQuery do
       page = described_class.call(ActionController::Parameters.new(category: [ "Rifles" ]))
 
       expect(page.total_count).to eq(2)
-      expect(page.price_stats.gaining_count).to eq(1)
-      expect(page.price_stats.losing_count).to eq(1)
+      expect(page.price_change_stats.gaining_count).to eq(1)
+      expect(page.price_change_stats.losing_count).to eq(1)
     end
 
     it "fetches trend data for the returned page's items" do
@@ -62,7 +62,7 @@ RSpec.describe ItemCatalogQuery do
 
       page = described_class.call(ActionController::Parameters.new)
 
-      expect(page.last_synced_at).to eq(Item.marketable.maximum(:updated_at).iso8601)
+      expect(page.last_synced_at&.iso8601).to eq(Item.marketable.maximum(:updated_at).iso8601)
     end
 
     it "propagates Api::Public::UnsupportedParamError for an invalid sort, without rescuing it" do

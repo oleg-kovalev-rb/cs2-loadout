@@ -13,12 +13,12 @@ RSpec.describe InventoryDetailQuery do
       page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
       aggregate_failures do
-        expect(page.items_count).to eq(0)
+        expect(page.value.snapshot.items_count).to eq(0)
         expect(page.avg_item_value_cents).to eq(0)
         expect(page.priciest_item).to be_nil
         expect(page.rarity_counts).to eq({})
-        expect(page.top_items).to eq([])
-        expect(page.total_value_cents).to eq(0)
+        expect(page.items.entries).to eq([])
+        expect(page.value.snapshot.total_value_cents).to eq(0)
       end
     end
 
@@ -90,7 +90,7 @@ RSpec.describe InventoryDetailQuery do
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        expect(page.total_value_cents).to eq(2000)
+        expect(page.value.snapshot.total_value_cents).to eq(2000)
       end
 
       it "uses the live sum when no InventoryValueLog rows exist" do
@@ -100,7 +100,7 @@ RSpec.describe InventoryDetailQuery do
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        expect(page.total_value_cents).to eq(2000)
+        expect(page.value.snapshot.total_value_cents).to eq(2000)
       end
     end
 
@@ -111,9 +111,9 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.complete).to be(true)
-          expect(page.pricable_items_count).to eq(1)
-          expect(page.priced_items_count).to eq(1)
+          expect(page.value.snapshot.complete?).to be(true)
+          expect(page.value.snapshot.pricable_items_count).to eq(1)
+          expect(page.value.snapshot.priced_items_count).to eq(1)
         end
       end
 
@@ -125,9 +125,9 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.complete).to be(false)
-          expect(page.pricable_items_count).to eq(2)
-          expect(page.priced_items_count).to eq(1)
+          expect(page.value.snapshot.complete?).to be(false)
+          expect(page.value.snapshot.pricable_items_count).to eq(2)
+          expect(page.value.snapshot.priced_items_count).to eq(1)
         end
       end
 
@@ -141,9 +141,9 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.complete).to be(true)
-          expect(page.pricable_items_count).to eq(1)
-          expect(page.priced_items_count).to eq(1)
+          expect(page.value.snapshot.complete?).to be(true)
+          expect(page.value.snapshot.pricable_items_count).to eq(1)
+          expect(page.value.snapshot.priced_items_count).to eq(1)
         end
       end
     end
@@ -158,11 +158,11 @@ RSpec.describe InventoryDetailQuery do
 
         aggregate_failures do
           expect(page.range).to eq(Options::DateRange::Last7Days)
-          expect(page.history.size).to eq(1)
-          expect(page.history.first.total_value_cents).to eq(2000)
-          expect(page.change_cents).to eq(0)
-          expect(page.change_percent).to eq(0.0)
-          expect(page.change_available).to be(false)
+          expect(page.value.history.points.size).to eq(1)
+          expect(page.value.history.points.first.total_value_cents).to eq(2000)
+          expect(page.value.history.delta.cents).to eq(0)
+          expect(page.value.history.delta.percent).to eq(0.0)
+          expect(page.value.history.delta.available).to be(false)
         end
       end
 
@@ -174,10 +174,10 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "all"))
 
         aggregate_failures do
-          expect(page.history.size).to eq(2)
-          expect(page.change_cents).to eq(500)
-          expect(page.change_percent).to be_within(0.01).of(50.0)
-          expect(page.change_available).to be(true)
+          expect(page.value.history.points.size).to eq(2)
+          expect(page.value.history.delta.cents).to eq(500)
+          expect(page.value.history.delta.percent).to be_within(0.01).of(50.0)
+          expect(page.value.history.delta.available).to be(true)
         end
       end
 
@@ -188,11 +188,11 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "7d"))
 
         aggregate_failures do
-          expect(page.history.size).to eq(1)
-          expect(page.history.first.total_value_cents).to eq(0)
-          expect(page.change_cents).to eq(0)
-          expect(page.change_percent).to eq(0.0)
-          expect(page.change_available).to be(false)
+          expect(page.value.history.points.size).to eq(1)
+          expect(page.value.history.points.first.total_value_cents).to eq(0)
+          expect(page.value.history.delta.cents).to eq(0)
+          expect(page.value.history.delta.percent).to eq(0.0)
+          expect(page.value.history.delta.available).to be(false)
         end
       end
 
@@ -204,8 +204,8 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.change_cents).to eq(100)
-          expect(page.change_partial).to be(true)
+          expect(page.value.history.delta.cents).to eq(100)
+          expect(page.value.history.delta.partial).to be(true)
         end
       end
 
@@ -231,8 +231,8 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "7d"))
 
         aggregate_failures do
-          expect(page.total_value_cents).to eq(2000)
-          expect(page.history.size).to eq(1)
+          expect(page.value.snapshot.total_value_cents).to eq(2000)
+          expect(page.value.history.points.size).to eq(1)
         end
       end
     end
@@ -247,7 +247,7 @@ RSpec.describe InventoryDetailQuery do
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        expect(page.top_items).to eq([ expensive, cheap ])
+        expect(page.items.entries).to eq([ expensive, cheap ])
       end
 
       it "applies sort=name_asc" do
@@ -259,7 +259,7 @@ RSpec.describe InventoryDetailQuery do
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(sort: "name_asc"))
 
-        expect(page.top_items).to eq([ alpha, bravo ])
+        expect(page.items.entries).to eq([ alpha, bravo ])
       end
 
       it "raises Api::Public::UnsupportedParamError for an unrecognized sort value" do
@@ -278,9 +278,9 @@ RSpec.describe InventoryDetailQuery do
         )
 
         aggregate_failures do
-          expect(default_page.top_items_pagination.page).to eq(1)
-          expect(default_page.top_items_pagination.per_page).to eq(12)
-          expect(clamped_page.top_items_pagination.per_page).to eq(100)
+          expect(default_page.items.pagination.page).to eq(1)
+          expect(default_page.items.pagination.per_page).to eq(12)
+          expect(clamped_page.items.pagination.per_page).to eq(100)
         end
       end
 
@@ -292,7 +292,7 @@ RSpec.describe InventoryDetailQuery do
 
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-        expect(page.trends[item.market_hash_name]).not_to be_nil
+        expect(page.items.trends[item.market_hash_name]).not_to be_nil
       end
     end
   end

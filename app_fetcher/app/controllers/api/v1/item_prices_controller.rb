@@ -27,9 +27,7 @@ module Api
         points = if params[:period] == ::Options::DateRange::Last30Days.serialize
           PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]
         else
-          ItemPriceHistoryQuery.call(item, params).points.map do |point|
-            { at: point.at, price_cents: point.price_cents, volume: point.volume }
-          end
+          ItemPriceHistorySerializer.call(ItemPriceHistoryQuery.call(item, params))
         end
 
         render json: points, status: :ok

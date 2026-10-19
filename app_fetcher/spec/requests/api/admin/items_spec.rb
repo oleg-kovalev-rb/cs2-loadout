@@ -228,13 +228,13 @@ RSpec.describe "Api::Admin::Items", type: :request do
     end
 
     it "warms the default unfiltered catalog cache entry" do
-      expect(ItemCatalogCache.read(ActionController::Parameters.new)).to be_nil
+      expect(ItemListCache.read(ActionController::Parameters.new)).to be_nil
 
       post "/api/admin/items/warm_catalog_cache", headers: headers
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(ItemCatalogCache.read(ActionController::Parameters.new)).to be_present
+        expect(ItemListCache.read(ActionController::Parameters.new)).to be_present
       end
     end
   end

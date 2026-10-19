@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe InventoryCatalogQuery do
+RSpec.describe InventoryListQuery do
   describe ".call" do
     it "aggregates total/items/completeness and derives the 24h change from the baseline log" do
       inventory = create(:user_inventory)
@@ -14,13 +14,13 @@ RSpec.describe InventoryCatalogQuery do
 
       aggregate_failures do
         expect(summary.steam_id).to eq(inventory.steam_id)
-        expect(summary.items_count).to eq(2)
-        expect(summary.pricable_items_count).to eq(2)
-        expect(summary.priced_items_count).to eq(2)
-        expect(summary.change_24h_cents).to eq(300)
-        expect(summary.change_available).to be(true)
-        expect(summary.change_partial).to be(false)
-        expect(summary.change_basis_at).to eq(1.day.ago.to_date.iso8601)
+        expect(summary.snapshot.items_count).to eq(2)
+        expect(summary.snapshot.pricable_items_count).to eq(2)
+        expect(summary.snapshot.priced_items_count).to eq(2)
+        expect(summary.delta.cents).to eq(300)
+        expect(summary.delta.available).to be(true)
+        expect(summary.delta.partial).to be(false)
+        expect(summary.delta.basis_at&.to_date&.iso8601).to eq(1.day.ago.to_date.iso8601)
       end
     end
 
@@ -32,12 +32,12 @@ RSpec.describe InventoryCatalogQuery do
 
       aggregate_failures do
         expect(summary).not_to be_nil
-        expect(summary.items_count).to eq(0)
-        expect(summary.total_value_cents).to eq(0)
-        expect(summary.pricable_items_count).to eq(0)
-        expect(summary.priced_items_count).to eq(0)
-        expect(summary.change_24h_cents).to eq(0)
-        expect(summary.change_available).to be(false)
+        expect(summary.snapshot.items_count).to eq(0)
+        expect(summary.snapshot.total_value_cents).to eq(0)
+        expect(summary.snapshot.pricable_items_count).to eq(0)
+        expect(summary.snapshot.priced_items_count).to eq(0)
+        expect(summary.delta.cents).to eq(0)
+        expect(summary.delta.available).to be(false)
         expect(summary.rarity_counts).to eq({})
       end
     end
@@ -50,9 +50,9 @@ RSpec.describe InventoryCatalogQuery do
       summary = described_class.call(ActionController::Parameters.new).inventories.first
 
       aggregate_failures do
-        expect(summary.pricable_items_count).to eq(2)
-        expect(summary.priced_items_count).to eq(1)
-        expect(summary.change_partial).to be(true)
+        expect(summary.snapshot.pricable_items_count).to eq(2)
+        expect(summary.snapshot.priced_items_count).to eq(1)
+        expect(summary.delta.partial).to be(true)
       end
     end
 
@@ -64,7 +64,7 @@ RSpec.describe InventoryCatalogQuery do
 
       summary = described_class.call(ActionController::Parameters.new).inventories.first
 
-      expect(summary.change_partial).to be(true)
+      expect(summary.delta.partial).to be(true)
     end
 
     it "makes the change unavailable when the only baseline is older than two days" do
@@ -76,9 +76,9 @@ RSpec.describe InventoryCatalogQuery do
       summary = described_class.call(ActionController::Parameters.new).inventories.first
 
       aggregate_failures do
-        expect(summary.change_available).to be(false)
-        expect(summary.change_24h_cents).to eq(0)
-        expect(summary.change_basis_at).to eq(3.days.ago.to_date.iso8601)
+        expect(summary.delta.available).to be(false)
+        expect(summary.delta.cents).to eq(0)
+        expect(summary.delta.basis_at&.to_date&.iso8601).to eq(3.days.ago.to_date.iso8601)
       end
     end
 
@@ -112,7 +112,7 @@ RSpec.describe InventoryCatalogQuery do
 
       summary = described_class.call(ActionController::Parameters.new).inventories.first
 
-      expect(summary.last_synced_at).to eq(inventory.updated_at.iso8601)
+      expect(summary.last_synced_at.iso8601).to eq(inventory.updated_at.iso8601)
     end
 
     describe "sort" do

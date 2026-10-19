@@ -1,28 +1,30 @@
 # typed: strict
 
-class ItemCatalogQuery
+class ItemListQuery
   extend T::Sig
 
-  class PriceStats < T::Struct
+  DEFAULT_PER_PAGE = T.let(25, Integer)
+
+  class PriceChangeStats < T::Struct
     const :gaining_count, Integer
     const :losing_count, Integer
   end
 
-  class Page < T::Struct
+  class ItemCatalog < T::Struct
     const :items, T::Array[Item]
     const :pagination, Appliers::Pagination
     const :total_count, Integer
-    const :price_stats, PriceStats
+    const :price_change_stats, PriceChangeStats
     const :trends, T::Hash[String, T::Array[ItemTrendCache::TrendPoint]]
-    const :last_synced_at, T.nilable(String)
+    const :last_synced_at, T.nilable(Time)
   end
 
   class << self
     extend T::Sig
 
-    sig { params(params: ActionController::Parameters).returns(Page) }
+    sig { params(params: ActionController::Parameters).returns(ItemCatalog) }
     def call(params)
-      pagination = Appliers::Pagination.new(params[:page], params[:per_page])
+      pagination = Appliers::Pagination.new(params[:page], params[:per_page], default_per_page: DEFAULT_PER_PAGE)
 
       scope = Appliers::FilterApplier.call(Item.marketable, params, enum_class: Options::ItemFilterOption)
 
@@ -38,13 +40,13 @@ class ItemCatalogQuery
 
       page_items = pagination.apply(scope).to_a
 
-      Page.new(
+      ItemCatalog.new(
         items: page_items,
         pagination: pagination,
         total_count: total_count,
-        price_stats: PriceStats.new(gaining_count: gaining_count, losing_count: losing_count),
+        price_change_stats: PriceChangeStats.new(gaining_count: gaining_count, losing_count: losing_count),
         trends: ItemTrendCache.fetch_for(page_items.map(&:market_hash_name)),
-        last_synced_at: Item.marketable.maximum(:updated_at)&.iso8601
+        last_synced_at: Item.marketable.maximum(:updated_at)&.to_time&.utc
       )
     end
   end

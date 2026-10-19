@@ -7,12 +7,12 @@ module Api
 
       sig { void }
       def index
-        payload = InventoryCatalogCache.read(params)
+        payload = InventoryListCache.read(params)
 
         if payload.nil?
-          page = InventoryCatalogQuery.call(params)
-          payload = InventoryCatalogSerializer.call(page)
-          InventoryCatalogCache.write(params, payload)
+          summaries = InventoryListQuery.call(params)
+          payload = InventoryListSerializer.call(summaries)
+          InventoryListCache.write(params, payload)
         end
 
         render json: payload, status: :ok if stale?(etag: payload, public: true)
@@ -24,8 +24,8 @@ module Api
         payload = InventoryDetailCache.read(steam_id, params)
 
         if payload.nil?
-          page = InventoryDetailQuery.call(steam_id, params)
-          payload = InventoryDetailSerializer.call(page)
+          details = InventoryDetailQuery.call(steam_id, params)
+          payload = InventoryDetailSerializer.call(details)
           InventoryDetailCache.write(steam_id, params, payload)
         end
 

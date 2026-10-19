@@ -1,16 +1,16 @@
 require "rails_helper"
 
-RSpec.describe ItemCatalogSerializer do
+RSpec.describe ItemListSerializer do
   describe ".call" do
     it "builds the meta hash from the page's pagination and counts" do
       item = Item.new(market_hash_name: "AK-47 | Redline (Field-Tested)", metadata: {})
-      page = ItemCatalogQuery::Page.new(
+      page = ItemListQuery::ItemCatalog.new(
         items: [ item ],
         pagination: Appliers::Pagination.new("2", "10"),
         total_count: 25,
-        price_stats: ItemCatalogQuery::PriceStats.new(gaining_count: 3, losing_count: 1),
+        price_change_stats: ItemListQuery::PriceChangeStats.new(gaining_count: 3, losing_count: 1),
         trends: {},
-        last_synced_at: "2024-01-02T00:00:00Z"
+        last_synced_at: Time.utc(2024, 1, 2)
       )
 
       result = described_class.call(page)
@@ -32,9 +32,9 @@ RSpec.describe ItemCatalogSerializer do
           icon_url: "https://example.com/icon.png", rarity: "Classified"
         }
       )
-      page = ItemCatalogQuery::Page.new(
+      page = ItemListQuery::ItemCatalog.new(
         items: [ item ], pagination: Appliers::Pagination.new(nil, nil), total_count: 1,
-        price_stats: ItemCatalogQuery::PriceStats.new(gaining_count: 1, losing_count: 0),
+        price_change_stats: ItemListQuery::PriceChangeStats.new(gaining_count: 1, losing_count: 0),
         trends: {}, last_synced_at: nil
       )
 
@@ -50,9 +50,9 @@ RSpec.describe ItemCatalogSerializer do
 
     it "reshapes trend_7d to at/price_cents only, dropping volume" do
       item = Item.new(market_hash_name: "AK-47 | Redline (Field-Tested)", metadata: {})
-      page = ItemCatalogQuery::Page.new(
+      page = ItemListQuery::ItemCatalog.new(
         items: [ item ], pagination: Appliers::Pagination.new(nil, nil), total_count: 1,
-        price_stats: ItemCatalogQuery::PriceStats.new(gaining_count: 0, losing_count: 0),
+        price_change_stats: ItemListQuery::PriceChangeStats.new(gaining_count: 0, losing_count: 0),
         trends: { item.market_hash_name => [ { at: "2024-01-01T00:00:00Z", price_cents: 4000, volume: 12 } ] },
         last_synced_at: nil
       )
@@ -64,9 +64,9 @@ RSpec.describe ItemCatalogSerializer do
 
     it "defaults change_24h_percent to 0.0 and current_price_cents to nil when there is no price" do
       item = Item.new(market_hash_name: "x", current_price_cents: nil, change_24h_cents: nil, metadata: {})
-      page = ItemCatalogQuery::Page.new(
+      page = ItemListQuery::ItemCatalog.new(
         items: [ item ], pagination: Appliers::Pagination.new(nil, nil), total_count: 1,
-        price_stats: ItemCatalogQuery::PriceStats.new(gaining_count: 0, losing_count: 0),
+        price_change_stats: ItemListQuery::PriceChangeStats.new(gaining_count: 0, losing_count: 0),
         trends: {}, last_synced_at: nil
       )
 

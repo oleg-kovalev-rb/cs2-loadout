@@ -340,6 +340,108 @@ points. They never read `PriceHistoryCache`; the controller keeps the
 explicit 30-day cache branch. `InventorySerializer` covers the simple
 `inventories/me` envelope.
 
+## Update (2026-10-20): ListQuery naming, content-named results, aggregate projection
+
+The original decision used `<Resource>CatalogQuery` and a generic `Page`
+result struct. After living with that shape across items, inventories list,
+inventory detail, and history, the names proved too transport-oriented:
+`Page`/`Listing`/`Detail` describe the container rather than the data, and
+`InventoryValuation`/`Change`/`Snapshot` hid which concern they belonged to.
+The inventory catalog also leaked its aggregate SQL by concatenating
+`InventoryValuation::AGGREGATE_COLUMNS` into a `pluck` and destructuring the
+row positionally.
+
+This update refines the decision without changing the layer boundary.
+
+### Decision
+
+- Collection endpoint queries are named `<Resource>ListQuery`
+  (`InventoryListQuery`, `ItemListQuery`), alongside
+  `<Resource>DetailQuery` and `<Resource>HistoryQuery`. Their result structs
+  are named by contents, never by transport shape:
+  - `InventoryListQuery::InventorySummaries`
+  - `InventoryDetailQuery::InventoryDetails` + `InventoryItems`
+  - `ItemListQuery::ItemCatalog`
+  - `ItemPriceHistoryQuery::ItemPriceHistory`
+  - `InventoryValueHistoryQuery` returns the shared `InventoryValue`.
+- The shared inventory-value concern is `InventoryValueQuery`, with typed
+  components `ValueSnapshot`, `ValueDelta`, `ValueHistory` (and nested
+  `Point`), and `InventoryValue`. The name matches the existing
+  `InventoryValueLog`/`total_value_cents`/`inventory_values` vocabulary.
+  Its primary entry point is `.call(steam_id, range)`; named helpers
+  (`snapshot_for`, `history`, `delta_for`, `with_aggregates`) remain
+  secondary for callers that need a narrower read.
+- A concern query that owns shared aggregate SQL exposes it only through
+  `with_aggregates(scope)` plus a named typed reader. SQL expressions,
+  aliases, and projection constants stay private; endpoint queries never
+  concatenate or positionally destructure them. `with_aggregates` must keep
+  aliases required by `Options::*SortOption` in the `SELECT` list.
+- The shared rarity-counting enrichment is `RarityBreakdownQuery`, whose
+  `.call(user_inventory_ids)` is used by both inventory list and detail
+  queries.
+- Shared response fragments/calculations are separate pure helpers
+  (`ItemMetadataSerializer`, `RarityBreakdownSerializer`,
+  `PriceChangePercent`), composed by endpoint serializers. They are not a
+  second query layer and perform no I/O.
+- Query result structs carry `Time`/`Date` values normalized to UTC;
+  serializers own `.iso8601` and preserve each endpoint's existing date-only
+  vs timestamp contract.
+- Cache classes follow the endpoint rename (`InventoryListCache`,
+  `ItemListCache`) and keep versioned keys; cache payload shapes and the
+  existing TTL/refetch behavior remain unchanged.
+
+### Alternatives Considered
+
+- **Keep `<Resource>CatalogQuery` and `Page` as-is.** Rejected: the names
+  force readers to learn each endpoint's shape instead of saying what the
+  object contains, and they made detail/history structures look paginated
+  when they are not.
+- **Expose aggregate columns as public concern constants.** Rejected: it
+  couples endpoint queries to concern SQL ordering and makes a column
+  addition a silent positional-mapping break. `with_aggregates(scope)` keeps
+  ownership in the concern.
+- **One generic `Result`/`Data` suffix for every query.** Rejected: it
+  removes the useful content distinction (`InventoryValue` vs
+  `InventorySummaries` vs `InventoryDetails`) and collides conceptually with
+  the `Result` success/error wrapper this ADR already rejected.
+- **Keep duplicated metadata/percent/rarity logic in each serializer.**
+  Rejected: the same math currently drifts across four serializers; shared
+  pure helpers keep one definition without adding I/O.
+
+### Consequences
+
+Positive:
+
+- Query names and result structs describe their contents at call sites.
+- Aggregate SQL ownership is explicit and positional row coupling disappears.
+- Inventory value, rarity, metadata, and change-percent logic have one
+  definition each.
+- JSON contracts stay unchanged; the refactor is internal.
+
+Negative / risks:
+
+- More named types (`ValueSnapshot`, `ValueDelta`, `ValueHistory`,
+  `InventoryValue`) and shared helpers to learn.
+- `Time`/`ActiveSupport::TimeWithZone` normalization must be tested carefully
+  to preserve exact `iso8601` output.
+- `with_aggregates` relies on aliases remaining in `SELECT` for sorting; that
+  constraint must stay documented and tested.
+- Cache class renames require new namespaces/version bumps; old TTL keys
+  simply expire.
+
+### Implementation Constraints
+
+- Query result structs must never use `Page`/`Listing`/`Detail`/`Change`/
+  `Snapshot`/`Valuation` as their name.
+- Endpoint queries must not reference concern aggregate constants directly.
+- Shared serializers/helpers must remain pure (no `ActiveRecord`, cache,
+  service, or worker calls).
+- Public/V1/admin JSON keys, error bodies, and statuses remain unchanged.
+- `PriceHistoryCache`/`ItemTrendCache` stay hash-based; the history query
+  serializer covers only the non-cache branch.
+- The concrete implementation plan is
+  `agent/plans/queries-serializers-polish.md`.
+
 ## Related
 
 - `agent/adr/fetcher/cross-scenario-service-layer.md` — the layer this

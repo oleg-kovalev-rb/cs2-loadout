@@ -304,7 +304,7 @@ RSpec.describe "GET /api/public/items", type: :request do
 
   context "when an unhandled error escapes the action" do
     it "renders the generic internal-error shape, independent of Api::V1::'s rescue_from" do
-      allow(ItemCatalogQuery).to receive(:call).and_raise(StandardError, "boom")
+      allow(ItemListQuery).to receive(:call).and_raise(StandardError, "boom")
 
       get "/api/public/items"
 

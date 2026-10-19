@@ -131,7 +131,7 @@ either for a list endpoint built on the query-objects layer (see
 the corresponding `app/serializers/` class. A simpler, single-lookup
 action may still assemble its own small response hash directly, same as
 today — this only changes once an action's response shape comes from
-that layer's `<Resource>CatalogQuery`/`<Resource>CatalogSerializer`
+that layer's `<Resource>ListQuery`/`<Resource>ListSerializer`
 pair.
 
 ## Dependencies
@@ -182,8 +182,8 @@ sign the endpoint belongs under `Api::V1::` instead.
 - For a list endpoint built on the query-objects layer
   (`agent/styleguides/fetcher/list-query-objects.md`), the expected
   shape is instead a fixed, explicit sequence, not one collaborator:
-  cache read (`<Resource>Cache.read`) → on miss, `<Resource>CatalogQuery.call`
-  → `<Resource>CatalogSerializer.call` → cache write
+  cache read (`<Resource>Cache.read`) → on miss, `<Resource>ListQuery.call`
+  → `<Resource>ListSerializer.call` → cache write
   (`<Resource>Cache.write`) → `stale?`/render. This is not a violation of
   the single-lookup rule above — it's a different, equally fixed shape
   for a different kind of action, chosen because caching and

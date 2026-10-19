@@ -2,10 +2,10 @@
 
 require "digest"
 
-class ItemCatalogCache
+class ItemListCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(1, Integer)
+  CACHE_KEY_VERSION = T.let(2, Integer)
   TTL = T.let(2.minutes, ActiveSupport::Duration)
 
   class << self
@@ -34,7 +34,7 @@ class ItemCatalogCache
         stattrak: params[:stattrak] == "true",
         sort: params[:sort].to_s
       }
-      [ "items_catalog", CACHE_KEY_VERSION, Digest::SHA256.hexdigest(normalized.to_json) ]
+      [ "items_list", CACHE_KEY_VERSION, Digest::SHA256.hexdigest(normalized.to_json) ]
     end
   end
 end

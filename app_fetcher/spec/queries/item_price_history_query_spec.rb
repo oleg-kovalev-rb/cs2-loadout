@@ -16,7 +16,7 @@ RSpec.describe ItemPriceHistoryQuery do
     aggregate_failures do
       expect(page.range).to eq(Options::DateRange::Last30Days)
       expect(page.points.map(&:price_cents)).to eq([ 2000, 1800 ])
-      expect(page.points.first.at).to eq(5.days.ago.iso8601)
+      expect(page.points.first.at.iso8601).to eq(5.days.ago.iso8601)
       expect(page.points.first.volume).to eq(3)
     end
   end
