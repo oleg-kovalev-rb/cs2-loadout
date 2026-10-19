@@ -56,10 +56,12 @@ Introduce a new layer, `app/services/`, for logic that must run
 identically from more than one Scenario — concretely, for logic needed
 by both a Scenario-1 controller action and a Scenario-3 worker with no
 behavioral difference between the two call sites. Classes here are
-flat, top-level (not domain-namespaced under `Steam::`), the same
-exception `background-jobs.md` already carves out for workers and
-schedulers that call `Steam::Client` without being Steam-domain parsing
-themselves (see Implementation Constraints). Calling `Steam::Client` is
+flat, top-level (not domain-namespaced under `Steam::`), like every
+other `app_fetcher` application-layer class — parsers, builders,
+workers, schedulers, and caching all stay flat even when they call
+`Steam::Client`; only the `lib/steam/` integration boundary
+(`Steam::Client`, `Steam::Response`) uses the namespace (see
+Implementation Constraints). Calling `Steam::Client` is
 a capability this layer *permits*, not a requirement for membership in
 it — the qualifying criterion is purely "needed identically by two or
 more Scenarios." Its first class is `UserInventorySyncService`
@@ -237,11 +239,10 @@ layer on its own.
 - Classes live flat under `app/services/`, top-level, named
   `<Noun>Service` — `UserInventorySyncService` at
   `app/services/user_inventory_sync_service.rb` — not namespaced under
-  `Steam::` even though it calls `Steam::Client`, mirroring how
-  `background-jobs.md` already keeps workers/schedulers top-level for
-  the same reason (they're categorically workers/schedulers/services
-  that happen to touch Steam, not Steam-domain parsing/building/client
-  code itself).
+  `Steam::` even though it calls `Steam::Client`, like every other
+  `app_fetcher` application-layer class (parsers, builders, workers,
+  schedulers, caching); only the `lib/steam/` integration boundary
+  (`Steam::Client`, `Steam::Response`) uses the namespace.
 - A class in this layer may call `Steam::Client` directly and persist
   models — the two things parsers and builders may not do.
 - Exposed as a class-method `self.call` (or `class << self; def call;

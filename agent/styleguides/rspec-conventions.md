@@ -33,8 +33,8 @@ exists.
 - **Unit spec** — one `RSpec.describe <Class>` per class. No `type:`
   metadata (type inference from file location is off in both apps'
   `rails_helper.rb`). File path mirrors the class's `app/`/`lib/` path
-  under `spec/` (`app/parsers/steam/item_parser.rb` →
-  `spec/parsers/steam/item_parser_spec.rb`;
+  under `spec/` (`app/parsers/item_parser.rb` →
+  `spec/parsers/item_parser_spec.rb`;
   `lib/steam/bridge_token.rb` → `spec/lib/steam/bridge_token_spec.rb`).
   This is the default level — reach for it unless the class *is* an HTTP
   entry point or a multi-step browser journey.
@@ -63,8 +63,8 @@ exists.
 
 | Layer / class kind | Level | Example |
 |---|---|---|
-| Parser (`app/parsers/**`) | Unit | `Steam::ItemParser` |
-| Builder (`app/builders/**`) | Unit | `Steam::PriceLogBuilder` |
+| Parser (`app/parsers/**`) | Unit | `ItemParser` |
+| Builder (`app/builders/**`) | Unit | `PriceLogBuilder` |
 | DTO / response object (`lib/steam/response/**`) | Unit | `Steam::Response::Data::ItemPriceData` |
 | API client (`lib/steam/client.rb`, `lib/steam/authenticator.rb`) | Unit, via WebMock-stubbed HTTP | `Steam::Client` |
 | Sidekiq worker (`app/workers/**`) | Unit; real backing service only for the part of its job that *is* talking to that service | `PriceUpdateWorker` |
@@ -208,7 +208,7 @@ end
 ```
 
 Not every spec needs this: a pure-function unit spec with no persisted
-data and no stub (e.g. `Steam::ItemParser`, `Steam::PriceLogBuilder`)
+data and no stub (e.g. `ItemParser`, `PriceLogBuilder`)
 has nothing to extract. Reach for this structure once a spec has the
 setup to justify it, not as a blanket rule for every spec file.
 

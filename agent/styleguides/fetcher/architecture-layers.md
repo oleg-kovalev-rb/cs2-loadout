@@ -39,7 +39,7 @@ process:
 ```text
 Api::V1::<X>Controller (app/controllers/api/v1/)
     ↓  synchronous, inside this one request
-Steam::Client (lib/steam/)  /  Steam::<Noun>Parser (app/parsers/steam/)  /  Models (read)
+Steam::Client (lib/steam/)  /  <Noun>Parser (app/parsers/)  /  Models (read)
 ```
 
 **Scenario 2 — scheduled fan-out**, cron-triggered, its own job, no I/O:
@@ -64,19 +64,20 @@ enqueue (from Scenario 1 or Scenario 2)
     ↓  synchronous Ruby calls, all within this one job's execution
 Steam::Client (lib/steam/)
     ↓
-Steam::<Noun>Parser (app/parsers/steam/)  /  Steam::<Noun>Builder (app/builders/steam/)
+<Noun>Parser (app/parsers/)  /  <Noun>Builder (app/builders/)
     ↓
 Models (app/models/, write)
 ```
 
-- **Parsers** (`app/parsers/steam/`): pure, stateless, `.parse` class
-  method, string/hash in → typed DTO out. No AR references, no I/O.
-  Called from Scenario 3 (inside a worker) and, under the carve-out
-  below, directly from Scenario 1 (inside a controller).
-- **Builders** (`app/builders/steam/`): `.build` class method, DTO/API
-  response in → unsaved AR instance out. May reference a model class to
-  instantiate it, never to query or save it. Called only from
-  Scenario 3.
+- **Parsers** (`app/parsers/`, flat/top-level — `<Noun>Parser`, with no
+  `Steam::` prefix): pure, stateless, `.parse` class method, string/hash
+  in → typed DTO out. No AR references, no I/O. Called from Scenario 3
+  (inside a worker) and, under the carve-out below, directly from
+  Scenario 1 (inside a controller).
+- **Builders** (`app/builders/`, flat/top-level — `<Noun>Builder`, with
+  no `Steam::` prefix): `.build` class method, DTO/API response in →
+  unsaved AR instance out. May reference a model class to instantiate
+  it, never to query or save it. Called only from Scenario 3.
 - **Workers** (`app/workers/`): Scenario 3's entry point — the only
   layer that both invokes a parser/builder and persists the result. A
   Sidekiq job in the literal sense (`include Sidekiq::Worker`, a
@@ -92,8 +93,8 @@ Models (app/models/, write)
   point — see `agent/styleguides/fetcher/internal-api-controllers.md`.
 - **Services** (`app/services/`, flat, top-level, named
   `<Noun>Service` — e.g. `UserInventorySyncService` — not namespaced
-  under `Steam::` even when calling `Steam::Client`, the same exception
-  `background-jobs.md` already carves out for workers/schedulers):
+  under `Steam::` even when calling `Steam::Client`, like every other
+  `app_fetcher` application-layer class):
   for non-trivial business logic that warrants its own class — either
   because the same sequence is needed from more than one Scenario, or
   because extracting it keeps a worker's `perform` as thin orchestration
@@ -172,9 +173,11 @@ One-directional, per `rails-layering.md`. Concretely for this app:
 
 ### MUST
 
-- New ingestion data types get their own parser/builder pair under
-  `Steam::`, following the split above — don't merge parse+build+persist
-  into one class (see ADR, "Alternative: single importer class").
+- New ingestion data types get their own parser/builder pair under the
+  flat `app/parsers/`/`app/builders/` roots (top-level `<Noun>Parser`/
+  `<Noun>Builder`, not namespaced under `Steam::`), following the split
+  above — don't merge parse+build+persist into one class (see ADR,
+  "Alternative: single importer class").
 - Only a worker persists parsed/built data, inside a transaction when
   more than one write must stay consistent (see `background-jobs.md`) —
   except the narrow, named exception in
@@ -202,13 +205,13 @@ in a separate worker execution.
 ```text
 sidekiq-cron ⇢ PriceScheduler#perform ⇢ PriceUpdateWorker#perform
     → Steam::Client → PriceUpdateService.call
-        → Steam::PriceLogBuilder → transaction (save)
+        → PriceLogBuilder → transaction (save)
 
 Api::V1::InventoriesController#show / #refresh
     → UserInventorySyncService.call(steam_id)  (the one collaborator —
         see `agent/adr/fetcher/cross-scenario-service-layer.md`)
         → Steam::Client (inventory fetch)
-        → Steam::ItemParser (for any missing names) → Item.upsert_all
+        → ItemParser (for any missing names) → Item.upsert_all
         → UserInventory.sync!
 ```
 
@@ -224,8 +227,8 @@ available for a future, similar case — it just no longer describes what
 
 ## Canonical Implementations
 
-- `app_fetcher/app/parsers/steam/item_parser.rb`
-- `app_fetcher/app/builders/steam/price_log_builder.rb`
+- `app_fetcher/app/parsers/item_parser.rb`
+- `app_fetcher/app/builders/price_log_builder.rb`
 - `app_fetcher/app/workers/price_update_worker.rb`,
   `app_fetcher/app/workers/user_inventory_sync_worker.rb`
 - `app_fetcher/app/schedulers/price_scheduler.rb`

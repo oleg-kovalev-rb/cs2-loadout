@@ -34,8 +34,9 @@ one call site. When in doubt, it is not a service.
 - Flat under `app/services/`, top-level, named `<Noun>Service`
   (`UserInventorySyncService`, not `Steam::UserInventorySyncService` and
   not `Services::UserInventorySyncService`) — the same non-namespacing
-  `background-jobs.md` applies to workers/schedulers, even when the class
-  calls `Steam::Client`.
+  every other `app_fetcher` application-layer class follows (parsers,
+  builders, workers, schedulers, caching), even when the class calls
+  `Steam::Client`.
 - One class per sequence; no shared base class.
 - `ServiceResult` (`app/services/service_result.rb`) is the single,
   deliberate exception to the `<Noun>Service` file/class naming: it is

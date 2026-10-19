@@ -71,7 +71,7 @@ Don't use it for internal `app_fetcher` domain data (e.g. `Item`,
 A DTO's `from_hash` owns turning Steam's raw JSON hash into typed fields.
 It does not own: validation beyond defensive presence checks, business
 logic, or persistence. Turning a DTO into a persisted record is a
-different layer's job (e.g. `Steam::PriceLogBuilder`).
+different layer's job (e.g. `PriceLogBuilder`).
 
 ## Dependencies
 

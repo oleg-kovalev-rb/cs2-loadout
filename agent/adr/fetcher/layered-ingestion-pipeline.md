@@ -24,7 +24,7 @@ relies on (`PriceScheduler` vs `PriceUpdateWorker`'s distinct retry
 counts and queues).
 
 A related question this ADR must also settle: at the time this ADR was
-written, `Api::V1::InventoriesController#show` called `Steam::ItemParser`
+written, `Api::V1::InventoriesController#show` called `ItemParser`
 directly and built unsaved `Item.new` instances for the JSON response,
 while the actual persistence happened later via `ItemsListUpdateWorker`.
 On its face this looks like the controller bypassing the worker layer.
@@ -53,7 +53,7 @@ HTTP request
     ↓
 Api::V1::<X>Controller
     ↓  plain synchronous Ruby calls, all inside this one request
-Steam::Client   /   Steam::<Noun>Parser   /   Models (read)
+Steam::Client   /   <Noun>Parser   /   Models (read)
     ↓
 render json
 ```
@@ -94,7 +94,7 @@ enqueue  ⇢  (from Scenario 1's controller, or Scenario 2's scheduler —
 Worker#perform   (app/workers/ — runs later, in a separate Sidekiq
                   worker process; this is where a job's execution starts)
     ↓  synchronous Ruby calls, all inside this one job's execution
-Steam::Client → Steam::<Noun>Parser / Steam::<Noun>Builder → Models (write,
+Steam::Client → <Noun>Parser / <Noun>Builder → Models (write,
     transaction if >1 write must stay consistent)
 ```
 
@@ -106,9 +106,11 @@ enqueue. ("Worker" here is the literal Sidekiq-job sense — a class with
 
 Within Scenario 3, parsing and building stay their own classes:
 
-- **Parsers** (`app/parsers/steam/`) are pure functions: string/hash in,
-  a typed DTO out. No AR, no I/O, no knowledge of what calls them.
-- **Builders** (`app/builders/steam/`) turn a parsed/API-response DTO into
+- **Parsers** (`app/parsers/`, flat/top-level `<Noun>Parser`) are pure
+  functions: string/hash in, a typed DTO out. No AR, no I/O, no knowledge
+  of what calls them.
+- **Builders** (`app/builders/`, flat/top-level `<Noun>Builder`) turn a
+  parsed/API-response DTO into
   an unsaved AR instance with correctly-shaped attributes (units
   normalized, e.g. prices to cents). They instantiate a model but never
   query or save it — persistence is the worker's job.
@@ -192,7 +194,7 @@ its own retry/queue tuning independent of the cron trigger.
 ### Risks
 
 - A future contributor could read `InventoriesController#show` calling
-  `Steam::ItemParser` directly as drift/inconsistency and "fix" it by
+  `ItemParser` directly as drift/inconsistency and "fix" it by
   making the controller enqueue-and-wait or persist synchronously,
   which would put expensive writes back on the request path. This ADR
   is what should stop that "fix" — **except** for the one narrow,
@@ -208,7 +210,9 @@ its own retry/queue tuning independent of the cron trigger.
 ## Implementation Constraints
 
 - A new ingestion data type gets its own parser (pure) and builder
-  (AR-shaping) pair under `Steam::`, not a merged class.
+  (AR-shaping) pair under the flat `app/parsers/`/`app/builders/` roots
+  (top-level `<Noun>Parser`/`<Noun>Builder`, not namespaced under
+  `Steam::`), not a merged class.
 - Parsers must not reference AR models or perform I/O.
 - Builders may instantiate a model but must not query or save it.
 - Only workers persist and only workers perform the paired
@@ -239,6 +243,6 @@ its own retry/queue tuning independent of the cron trigger.
   longer an example of this ADR's sync-parse/async-persist carve-out
   (see `cross-scenario-service-layer.md` above); kept here as the
   Scenario 1 entry point example for the rest of this ADR's content.
-- `app_fetcher/app/parsers/steam/item_parser.rb`
-- `app_fetcher/app/builders/steam/price_log_builder.rb`
+- `app_fetcher/app/parsers/item_parser.rb`
+- `app_fetcher/app/builders/price_log_builder.rb`
 - `app_fetcher/lib/steam/client.rb`

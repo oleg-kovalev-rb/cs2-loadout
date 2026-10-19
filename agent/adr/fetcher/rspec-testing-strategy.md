@@ -18,7 +18,7 @@ What exists today is thin and inconsistent in "level":
   (`spec/requests/api/v1/inventories_spec.rb`,
   `price_histories_spec.rb`), exercising controllers end-to-end
   (including real `WebMock`-stubbed Steam calls). Nothing tests
-  `Steam::ItemParser`, `Steam::PriceLogBuilder`, `PriceUpdateWorker`,
+  `ItemParser`, `PriceLogBuilder`, `PriceUpdateWorker`,
   `ItemsListUpdateWorker`, or `PriceScheduler` directly — this exact gap
   is what's currently blocking `agent/plans/price-update-pipeline-test-coverage.md`.
 - `app_core` has one `type: :controller` spec with `render_views`
@@ -140,7 +140,7 @@ cleanly into either level:
    `context` share the same setup. Naming the action under test via a
    `subject` avoids repeating `described_class.new.perform(...)` in
    every example body. This is deliberately not applied to pure-function
-   specs with no persisted data or stub (e.g. `Steam::ItemParser`) —
+   specs with no persisted data or stub (e.g. `ItemParser`) —
    forcing the structure onto a one-line call adds indirection without
    buying anything.
 
