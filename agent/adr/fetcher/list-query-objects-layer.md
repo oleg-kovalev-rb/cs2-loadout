@@ -131,9 +131,10 @@ this layer's one hard boundary.
 
 A `namespace :public do ... end` subfolder under an autoloaded `app/`
 root becomes a Zeitwerk namespace automatically (already precedented by
-`app/parsers/steam/` → `Steam::`, just not previously used for anything
-but the Steam domain) — `app/queries/appliers/sort_applier.rb` resolves
-to `Appliers::SortApplier`, not a flat `SortApplier`, by the same rule.
+`app/serializers/admin/` → `Admin::`, just not previously used for
+anything but the admin API) —
+`app/queries/appliers/sort_applier.rb` resolves to
+`Appliers::SortApplier`, not a flat `SortApplier`, by the same rule.
 
 ## Alternatives Considered
 

@@ -54,10 +54,11 @@ matters.
 ## Structure
 
 - One class per cached resource, under `app/caching/`, top-level (not
-  namespaced under `Steam::` — like workers and schedulers, these encode
-  generic caching mechanics, not Steam-domain parsing):
-  `ItemPriceCache`, `PriceHistoryCache` (bulk read-through + invalidation),
-  `UserInventoryCache` (single-key read-through + invalidation).
+  namespaced under `Steam::` — like parsers, builders, services, workers,
+  and schedulers, these stay flat even when they cache Steam-domain
+  data): `ItemPriceCache`, `PriceHistoryCache` (bulk read-through +
+  invalidation), `UserInventoryCache` (single-key read-through +
+  invalidation).
 - Each class is a plain Ruby class with only class-level methods (`class
   << self; extend T::Sig; ...; end` for private ones, per
   `agent/styleguides/ruby-sorbet.md`) — never instantiated.

@@ -27,11 +27,12 @@ what to enqueue.
   `<Noun>Scheduler` (`PriceScheduler`), and is itself a
   `Sidekiq::Worker` — `sidekiq-cron` enqueues it like any other job, on
   the schedule declared in `config/schedule.yml`.
-- Unlike Steam-domain classes elsewhere (`Steam::ItemParser`,
-  `Steam::Client`), workers and schedulers are **not** namespaced under
-  `Steam::` — they stay top-level (`PriceUpdateWorker`, not
-  `Steam::PriceUpdateWorker`), even when everything they do is
-  Steam-related.
+- Workers and schedulers are top-level (`PriceUpdateWorker`, not
+  `Steam::PriceUpdateWorker`), like every other `app_fetcher`
+  application-layer class — parsers, builders, services, and caching
+  classes stay flat too, even when everything they do is Steam-related.
+  Only the `lib/steam/` integration boundary (`Steam::Client`,
+  `Steam::Response`) keeps the `Steam::` namespace.
 - `include Sidekiq::Worker` (not the newer `Sidekiq::Job` alias) on
   every worker and scheduler, for consistency with the two that already
   exist.
@@ -47,8 +48,8 @@ what to enqueue.
 ## Responsibilities
 
 `perform` is orchestration glue: look up records, delegate parsing to a
-parser (`Steam::ItemParser`) or building to a builder
-(`Steam::PriceLogBuilder`), persist, and (for `PriceUpdateWorker`)
+parser (`ItemParser`) or building to a builder
+(`PriceLogBuilder`), persist, and (for `PriceUpdateWorker`)
 publish. It does not itself parse Steam's response shape or implement
 domain logic beyond simple guards and diffing — that stays in the
 parser/builder/client layer.
@@ -158,7 +159,7 @@ PriceScheduler#perform
     ↓ queries local Item state, no external I/O
     ↓ PriceUpdateWorker.perform_async(item.id)  — one job per item
 PriceUpdateWorker#perform
-    ↓ Steam::Client → Steam::PriceLogBuilder → transaction (save + update)
+    ↓ Steam::Client → PriceLogBuilder → transaction (save + update)
     ↓ publish to STREAM_REDIS_POOL ("prices_stream") — only when the
       item has a non-nil price
 

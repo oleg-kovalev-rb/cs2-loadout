@@ -34,10 +34,13 @@ gain real custom logic.
   any constant or method.
 - A `sig { ... }` block immediately above every method definition —
   instance, class (`self.`), and private methods alike.
-- Domain-specific classes (anything Steam-related) live under a
-  `Steam::` module regardless of which app they're in
-  (`Steam::ItemParser`, `Steam::Client` in `app_fetcher`;
-  `Steam::LoginUser`, `Steam::Authenticator` in `app_core`).
+- `app_core`'s Steam-related classes live under a `Steam::` module
+  (`Steam::LoginUser`, `Steam::Authenticator`, `Steam::ProfileFetcher`,
+  `Steam::BridgeToken`). In `app_fetcher`, `Steam::` is reserved for the
+  `lib/steam/` integration boundary (`Steam::Client`, `Steam::Response`
+  and its DTOs); its `app/` layers stay flat/top-level even when
+  Steam-specific (`ItemParser`, `PriceLogBuilder`, services, workers,
+  schedulers).
 
 ## Rules
 
@@ -67,7 +70,7 @@ gain real custom logic.
   literal-inference-savvy reader might expect Sorbet to infer on its own
   (e.g. a frozen string or a `Regexp`) — see `Steam::Client::BASE_URL`,
   `Steam::BridgeToken::ALGORITHM`/`TTL`,
-  `Steam::PriceLogBuilder::PRICE_REGEXP`. Whether a specific literal
+  `PriceLogBuilder::PRICE_REGEXP`. Whether a specific literal
   actually needs `T.let` to pass `srb tc` is inconsistent (a bare
   `Regexp#freeze` needs it, a bare string often doesn't) — wrap all of
   them, consistently, rather than relying on `srb tc` to tell you which
@@ -76,7 +79,7 @@ gain real custom logic.
   `T::Hash[String, T.untyped]` — never a bare `Array`/`Hash`.
 - For a hash with a fixed, known set of keys, use a Sorbet shape type
   (`{key: Type, ...}`, typically behind a `T.type_alias`) instead of
-  `T::Hash[String, T.untyped]` — see `Steam::ItemParser::ItemDto` and
+  `T::Hash[String, T.untyped]` — see `ItemParser::ItemDto` and
   `Steam::ProfileFetcher::ProfileData`. Reserve `T::Hash[KeyType,
   ValueType]` for genuinely dynamic hashes — an unknown/varying number of
   keys of the same value type, e.g. the raw parsed JSON body handed to
@@ -97,17 +100,17 @@ gain real custom logic.
   subset of members — declare that subset as the endpoint's own
   `ALLOWED_PERIODS`-style array rather than forking the enum.
 - Private class methods are declared inside `class << self; extend
-  T::Sig; private; ...; end` (see `Steam::PriceLogBuilder`), not
+  T::Sig; private; ...; end` (see `PriceLogBuilder`), not
   `private_class_method`.
 
 ### SHOULD
 
 - Use Ruby 3.1 hash-value shorthand (`market_hash_name:,` not
   `market_hash_name: market_hash_name,`) whenever the local variable name
-  matches the key (see `Steam::ItemParser#parse`,
-  `Steam::PriceLogBuilder.build`).
+  matches the key (see `ItemParser.parse`,
+  `PriceLogBuilder.build`).
 - Prefer guard clauses (`return ... if ...`) over nested conditionals for
-  early exits (see `Steam::PriceLogBuilder.to_cents`,
+  early exits (see `PriceLogBuilder.to_cents`,
   `PriceUpdateWorker#perform`).
 - Rescue at the end of the method body (no explicit `begin`/`end`) when
   the whole method's failure modes are known upfront (see
@@ -180,7 +183,7 @@ method needs to be guarded.
 ## Canonical Implementations
 
 - `app_fetcher/lib/steam/client.rb`, `app_fetcher/lib/steam/response.rb`
-- `app_fetcher/app/builders/steam/price_log_builder.rb`
+- `app_fetcher/app/builders/price_log_builder.rb`
 - `app_core/lib/steam/bridge_token.rb`,
   `app_core/lib/steam/profile_fetcher.rb`
 - `app_core/app/actions/steam/login_user.rb`,

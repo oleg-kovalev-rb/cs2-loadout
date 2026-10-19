@@ -83,7 +83,7 @@ own query object.
   payload.
 - **`app/queries/appliers/`** → `Appliers::` namespace (Zeitwerk:
   subfolder of an autoloaded `app/` root becomes a namespace, same rule
-  already used by `app/parsers/steam/` → `Steam::`). Fully
+  already used by `app/serializers/admin/` → `Admin::`). Fully
   resource-agnostic classes — never reference a specific model or a
   specific `Options::*` member by name.
 - **`app/queries/options/`** → `Options::` namespace. One `T::Enum`
