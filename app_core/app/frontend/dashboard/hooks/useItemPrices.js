@@ -17,42 +17,52 @@ async function fetchDynamics(fetcherUrl, bridgeToken) {
   if (!response.ok) throw new Error(`Request to item_prices/dynamics failed: ${response.status}`)
   const raw = await response.json()
 
-  const mapped = {}
-  for (const [name, value] of Object.entries(raw)) {
-    mapped[name] = mapPrice(value)
+  const prices = {}
+  for (const [name, value] of Object.entries(raw.prices || {})) {
+    prices[name] = mapPrice(value)
   }
-  return mapped
+  return { prices, pendingCount: raw.pending_count ?? 0 }
 }
 
 // names is the full skeleton item-name list — not sent to the backend
 // (dynamics takes no params), used only to gate when the effect fires
-// (after the skeleton resolves) and to know when a retry has covered
-// every owned item.
+// (after the skeleton resolves). Retry coverage comes from the backend's
+// pending_count: the number of owned items that are marketable, not
+// price_unavailable, and still missing a price. Comparing response keys
+// against `names` instead would never look covered once the inventory
+// contains a non-marketable or price-unavailable item.
 export function useItemPrices(fetcherUrl, bridgeToken, names) {
   const [pricesByName, setPricesByName] = useState({})
   const [status, setStatus] = useState('loading')
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!names || names.length === 0) return undefined
 
     let cancelled = false
+    let loaded = false
     const timers = []
 
     async function attempt(index) {
       try {
-        const result = await fetchDynamics(fetcherUrl, bridgeToken)
+        const { prices, pendingCount } = await fetchDynamics(fetcherUrl, bridgeToken)
         if (cancelled) return
 
-        setPricesByName(result)
+        loaded = true
+        setPricesByName(prices)
         setStatus('success')
+        setError(null)
 
-        const covered = Object.keys(result).length >= names.length
-        if (!covered && index < RETRY_SCHEDULE_MS.length) {
+        if (pendingCount > 0 && index < RETRY_SCHEDULE_MS.length) {
           const timer = setTimeout(() => attempt(index + 1), RETRY_SCHEDULE_MS[index])
           timers.push(timer)
         }
-      } catch {
-        if (!cancelled) setStatus('error')
+      } catch (err) {
+        // A failed retry must not discard prices that already loaded —
+        // only the initial fetch failing leaves nothing to render.
+        if (cancelled || loaded) return
+        setError(err)
+        setStatus('error')
       }
     }
 
@@ -64,5 +74,5 @@ export function useItemPrices(fetcherUrl, bridgeToken, names) {
     }
   }, [fetcherUrl, bridgeToken, names])
 
-  return { pricesByName, status }
+  return { pricesByName, status, error }
 }

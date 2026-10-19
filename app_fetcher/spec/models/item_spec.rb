@@ -43,6 +43,24 @@ RSpec.describe Item do
     end
   end
 
+  describe ".awaiting_price" do
+    subject(:awaiting_price_items) { described_class.awaiting_price }
+
+    let!(:unpriced_marketable_item) { create(:item, :without_price) }
+    let!(:priced_marketable_item) { create(:item) }
+    let!(:unpriced_non_marketable_item) { create(:item, :without_price, :non_marketable) }
+    let!(:unpriced_price_unavailable_item) { create(:item, :without_price, :price_unavailable) }
+
+    it "includes only marketable items that are neither priced nor flagged price-unavailable" do
+      aggregate_failures do
+        expect(awaiting_price_items).to include(unpriced_marketable_item)
+        expect(awaiting_price_items).not_to include(priced_marketable_item)
+        expect(awaiting_price_items).not_to include(unpriced_non_marketable_item)
+        expect(awaiting_price_items).not_to include(unpriced_price_unavailable_item)
+      end
+    end
+  end
+
   describe ".by_categories" do
     let!(:rifle) { create(:item, metadata: { category: "Rifles" }) }
     let!(:knife) { create(:item, metadata: { category: "Knives" }) }

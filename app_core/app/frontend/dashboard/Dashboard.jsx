@@ -23,7 +23,11 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
   // they must not keep the price hook's coverage retry running.
   const coverageNames = useMemo(() => priceableNames(data?.items), [data])
 
-  const { pricesByName } = useItemPrices(fetcherUrl, bridgeToken, coverageNames)
+  const {
+    pricesByName,
+    status: pricesStatus,
+    error: pricesError,
+  } = useItemPrices(fetcherUrl, bridgeToken, coverageNames)
   const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
 
   const items = useMemo(() => {
@@ -63,42 +67,51 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
     : null
 
   return (
-    <main className="dashboard">
-      <PortfolioTile
-        portfolioSeries={portfolioHistory.series}
-        current={portfolioHistory.current}
-        change={portfolioHistory.change}
-        itemHistorySeries={itemHistory.series}
-        itemHistoryStatus={itemHistory.status}
-        range={state.mode === 'item' ? state.itemRange : state.portfolioRange}
-        mode={state.mode}
-        selectedItem={selectedItem}
-        onRangeChange={(range) =>
-          dispatch({
-            type: state.mode === 'item' ? 'ITEM_RANGE_CHANGED' : 'PORTFOLIO_RANGE_CHANGED',
-            range,
-          })
-        }
-        onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}
-      />
+    <>
+      {pricesStatus === 'error' && (
+        <p className="dash-notice" role="alert">
+          Couldn&rsquo;t load current prices
+          {pricesError?.message ? `: ${pricesError.message}` : '.'}
+        </p>
+      )}
 
-      <ItemsTile
-        items={items}
-        filters={state.filters}
-        sort={state.sort}
-        page={state.page}
-        openDropdown={state.openDropdown}
-        selectedItem={selectedItem}
-        onSelectItem={(item) => dispatch({ type: 'ITEM_ROW_CLICKED', item })}
-        onSortChange={(sort) => dispatch({ type: 'SORT_CHANGED', sort })}
-        onWeaponToggle={(value) => dispatch({ type: 'WEAPON_FILTER_TOGGLED', value })}
-        onConditionToggle={(value) => dispatch({ type: 'CONDITION_FILTER_TOGGLED', value })}
-        onStattrakToggle={() => dispatch({ type: 'STATTRAK_FILTER_TOGGLED' })}
-        onFiltersClear={() => dispatch({ type: 'FILTERS_CLEARED' })}
-        onDropdownToggle={(dropdown) => dispatch({ type: 'DROPDOWN_TOGGLED', dropdown })}
-        onDropdownsClosed={() => dispatch({ type: 'DROPDOWNS_CLOSED' })}
-        onPageChange={(page) => dispatch({ type: 'PAGE_CHANGED', page })}
-      />
-    </main>
+      <main className="dashboard">
+        <PortfolioTile
+          portfolioSeries={portfolioHistory.series}
+          current={portfolioHistory.current}
+          change={portfolioHistory.change}
+          itemHistorySeries={itemHistory.series}
+          itemHistoryStatus={itemHistory.status}
+          range={state.mode === 'item' ? state.itemRange : state.portfolioRange}
+          mode={state.mode}
+          selectedItem={selectedItem}
+          onRangeChange={(range) =>
+            dispatch({
+              type: state.mode === 'item' ? 'ITEM_RANGE_CHANGED' : 'PORTFOLIO_RANGE_CHANGED',
+              range,
+            })
+          }
+          onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}
+        />
+
+        <ItemsTile
+          items={items}
+          filters={state.filters}
+          sort={state.sort}
+          page={state.page}
+          openDropdown={state.openDropdown}
+          selectedItem={selectedItem}
+          onSelectItem={(item) => dispatch({ type: 'ITEM_ROW_CLICKED', item })}
+          onSortChange={(sort) => dispatch({ type: 'SORT_CHANGED', sort })}
+          onWeaponToggle={(value) => dispatch({ type: 'WEAPON_FILTER_TOGGLED', value })}
+          onConditionToggle={(value) => dispatch({ type: 'CONDITION_FILTER_TOGGLED', value })}
+          onStattrakToggle={() => dispatch({ type: 'STATTRAK_FILTER_TOGGLED' })}
+          onFiltersClear={() => dispatch({ type: 'FILTERS_CLEARED' })}
+          onDropdownToggle={(dropdown) => dispatch({ type: 'DROPDOWN_TOGGLED', dropdown })}
+          onDropdownsClosed={() => dispatch({ type: 'DROPDOWNS_CLOSED' })}
+          onPageChange={(page) => dispatch({ type: 'PAGE_CHANGED', page })}
+        />
+      </main>
+    </>
   )
 }

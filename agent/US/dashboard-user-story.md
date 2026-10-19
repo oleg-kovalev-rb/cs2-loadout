@@ -102,10 +102,15 @@ guarantees that):
   snapshot, because that snapshot is only invalidated when inventory
   *composition* changes, not when a price updates; it can be up to 15
   minutes stale on price. Returns
-  `{ "<name>": {current_price_cents, change_24h_cents, change_24h_percent} }`
-  for every owned, priced item. Unpriced items are omitted from the
-  response **and** enqueue a capped, deduplicated warmup
-  (`PriceUpdateWorker.perform_async`, max 20/request, 90s dedup).
+  `{ prices: { "<name>": {current_price_cents, change_24h_cents,
+  change_24h_percent} }, pending_count: N }` for every owned, priced
+  item. Unpriced items are omitted from `prices` **and** enqueue a
+  capped, deduplicated warmup (`PriceUpdateWorker.perform_async`, max
+  20/request, 90s dedup). `pending_count` is the number of owned items
+  that are `marketable`, not `price_unavailable`, and still have
+  `current_price_cents: nil` — the same predicate
+  `InventoryValueRecordingService` uses to gate the day's
+  `InventoryValueLog`.
 - `GET /api/v1/item_prices/trend` — same no-param, same-derivation
   shape, but returns a heavily downsampled series (~5 points over the
   last 7 days) per owned item, backed by its own cache
@@ -114,16 +119,20 @@ guarantees that):
   wasted resolution for a 40×12px decorative line.
 
 **A brand-new user's unpriced items get a second chance without
-polling forever.** `useItemPrices` checks whether its response covers
-every owned name; if not, it retries — `[3, 6, 12, 24, 45]` seconds,
+polling forever.** `useItemPrices` retries while the response's
+`pending_count` is greater than zero — `[3, 6, 12, 24, 45]` seconds,
 summing to ~90s, deliberately matching `PriceUpdateWorker`'s own warmup
 dedup window (the system's own estimate of "how long a warmup should
-take"). Each retry just re-calls the same parameterless endpoint and
-merges whatever's newly priced. After 5 attempts, or once everything's
-covered — whichever first — it stops. An item still unpriced after that
-stays that way until the next reload; nothing pushes updates proactively
-(see "Why bounded retry" in `dashboard-api-redesign.md` for why a
-WebSocket push was considered and deliberately deferred, not built now).
+take"). Counting priced response keys against the full owned-name list
+would never look covered once the inventory contains a non-marketable or
+`price_unavailable` item, so the stop condition comes from the backend's
+readiness predicate instead. Each retry just re-calls the same
+parameterless endpoint and merges whatever's newly priced. After 5
+attempts, or once `pending_count` reaches 0 — whichever first — it
+stops. An item still unpriced after that stays that way until the next
+reload; nothing pushes updates proactively (see "Why bounded retry" in
+`dashboard-api-redesign.md` for why a WebSocket push was considered and
+deliberately deferred, not built now).
 
 **5. The portfolio chart.** `usePortfolioHistory` calls
 `GET /api/v1/inventory_values?period=30d` (the tile's default range).
@@ -192,7 +201,7 @@ explicit, separate future task).
 |---|---|---|---|---|
 | `GET /api/v1/inventories/me` | bridge token | none | `UserInventoryCache.fetch` → `UserInventorySyncService` on miss | `{items_count, items: [{market_hash_name, metadata}]}` |
 | `POST /api/v1/inventories/refresh` | bridge token | none | `UserInventorySyncService.call` (rate-limited 1/day) | same as `show` |
-| `GET /api/v1/item_prices/dynamics` | bridge token | none | `UserInventoryCache.fetch` → `ItemPriceCache.fetch_for` | `{name: {current_price_cents, change_24h_cents, change_24h_percent}}` |
+| `GET /api/v1/item_prices/dynamics` | bridge token | none | `UserInventoryCache.fetch` → `ItemPriceCache.fetch_for`; `pending_count` from `Item.awaiting_price` | `{prices: {name: {current_price_cents, change_24h_cents, change_24h_percent}}, pending_count: N}` |
 | `GET /api/v1/item_prices/trend` | bridge token | none | `UserInventoryCache.fetch` → `ItemTrendCache.fetch_for` | `{name: [{at, price_cents, volume}]}` (≤5 pts, 7d) |
 | `GET /api/v1/item_prices/:market_hash_name/history` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `30d`) | `PriceHistoryCache` (default) or direct `PriceLog` query | `[{at, price_cents, volume}]` |
 | `GET /api/v1/inventory_values` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `all`) | `InventoryValueLog` (self-seeding) | `[{date, total_value_cents}]` |

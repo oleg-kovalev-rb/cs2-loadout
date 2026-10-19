@@ -16,6 +16,7 @@ class Item < ApplicationRecord
   scope :marketable, -> { where("metadata @> ?", { marketable: true }.to_json) }
   scope :stale_or_unpriced, -> { where("updated_at < ? OR current_price_cents IS NULL", PRICE_STALE_AFTER.ago) }
   scope :due_for_price_update, -> { marketable.stale_or_unpriced }
+  scope :awaiting_price, -> { marketable.where(current_price_cents: nil, price_unavailable: false) }
 
   scope :by_categories, ->(categories) { where("metadata->>'category' IN (?)", categories) if categories.present? }
   scope :by_rarities, ->(rarities) { where("metadata->>'rarity' IN (?)", rarities) if rarities.present? }
