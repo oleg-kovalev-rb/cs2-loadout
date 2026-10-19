@@ -41,8 +41,8 @@ export function ItemsTile({
     const filtered = applyFilters(items, filters)
     const sorted = applySort(filtered, sort)
     const pages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
-    const clampedPage = Math.min(page, pages - 1)
-    const start = clampedPage * PAGE_SIZE
+    const clampedPage = Math.min(Math.max(page, 1), pages)
+    const start = (clampedPage - 1) * PAGE_SIZE
 
     return {
       pageItems: sorted.slice(start, start + PAGE_SIZE),

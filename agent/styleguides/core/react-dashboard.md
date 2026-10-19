@@ -161,6 +161,12 @@ is never shared between islands directly — two islands only ever share
 pure, stateless code via `shared/`, never a reducer, a hook's state, or a
 Context.
 
+Every Vite entrypoint under `app/frontend/entrypoints/` uses **kebab-case**
+(`admin-panel.jsx`, `tracked-items.jsx`, `inventory-detail.jsx`), never
+snake_case. The entrypoint filename is the contract between Vite Ruby and
+the Rails view, so `vite_javascript_tag` must reference the exact same
+kebab-case name. Single-word entries (`dashboard.jsx`) are unchanged.
+
 ## Component Conventions
 
 - **Named exports only**, e.g. `export function ItemsTile(...)` — never
@@ -367,15 +373,15 @@ owning island's own reducer/state shape?
   dependency, imported directly rather than re-exported or copied. A
   shared component may have a narrower contract than a specific new use
   needs — adapt at the call site, don't fork the component for it.
-  `shared/components/Pagination.jsx`'s contract is 0-indexed and computes
-  its own `start`/`end` display range from a `pageSize` the caller passes
-  in, because it was built against `dashboard/`'s client-side-sliced
-  array. A server-paginated list (an API response that already carries
-  1-indexed `page`/`per_page`/`total_count` metadata, e.g.
-  `inventories/`) still reuses this same component — translate at the
-  call site (`page: meta.page - 1` going in; `onNext`/`onPrev` do `± 1`
-  then convert back to 1-indexed before calling the API) rather than
-  writing a second, server-aware `Pagination` variant. Fork it into a new
+  `shared/components/Pagination.jsx`'s contract is **1-indexed**, the same
+  base as the API's `page`/`per_page`/`total_count` metadata and every
+  island reducer. It computes its own `start`/`end` display range from a
+  `pageSize` the caller passes in, and both an in-memory list
+  (`dashboard/`'s client-side-sliced array) and a server-paginated list
+  (`inventories/`) pass their 1-based page straight through — no `- 1`
+  translation at the call site. It guards the empty result itself
+  (`Math.max(totalPages, 1)` for the page indicator and disabled state),
+  so `totalPages = 0` renders `1 / 1`, never `1 / 0`. Fork it into a new
   component only once a genuinely different *display* shape is needed,
   not merely a different indexing convention.
 - **Write an island-local version instead**, when the piece is coupled to
@@ -386,7 +392,7 @@ owning island's own reducer/state shape?
   equivalents are this case: each dispatches its own island's
   `reducer.js`-specific action types and assumes its specific state shape
   (e.g. `dashboard/`'s in-memory `Pagination` usage assumes a fixed
-  `PAGE_SIZE` and 0-based in-memory page index, while `inventories/`'s
+  `PAGE_SIZE` and 1-based in-memory page index, while `inventories/`'s
   usage of the *same* shared `Pagination` component drives real
   server-side pages — the component is shared, the surrounding
   toolbar/reducer wiring is not). A second island with a materially

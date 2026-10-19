@@ -58,7 +58,7 @@ export function TopItemsList({
       </ul>
 
       <Pagination
-        page={itemsPage - 1}
+        page={itemsPage}
         totalPages={meta.total_pages}
         totalCount={meta.total_count}
         pageSize={ITEMS_PER_PAGE}

@@ -52,7 +52,7 @@ export function InventoriesIndex({ fetcherUrl }) {
       <InventoryGrid inventories={inventories} meta={meta} profiles={profiles} />
 
       <Pagination
-        page={state.page - 1}
+        page={state.page}
         totalPages={totalPages}
         totalCount={totalCount}
         pageSize={PER_PAGE}

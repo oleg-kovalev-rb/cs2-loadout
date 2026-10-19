@@ -1,4 +1,4 @@
-import { rarityColor } from '../utils/format'
+import { rarityColor } from '../utils/rarity'
 import { activeFilterCount } from '../reducer'
 
 export function FilterDropdown({

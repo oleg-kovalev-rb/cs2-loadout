@@ -61,7 +61,7 @@ export function Sparkline({
         d={line}
         fill="none"
         stroke={color}
-        strokeWidth={showArea ? 1.6 : 1.6}
+        strokeWidth={1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

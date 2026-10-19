@@ -57,11 +57,15 @@ describe('dashboardReducer', () => {
     expect(back.selectedItem).toBeNull()
   })
 
-  test('SORT_CHANGED resets page to 0 and closes the dropdown', () => {
+  test('initial state starts on page 1', () => {
+    expect(initialState.page).toBe(1)
+  })
+
+  test('SORT_CHANGED resets page to 1 and closes the dropdown', () => {
     const state = { ...initialState, page: 3, openDropdown: 'sort' }
     const next = dashboardReducer(state, { type: 'SORT_CHANGED', sort: 'price_asc' })
     expect(next.sort).toBe('price_asc')
-    expect(next.page).toBe(0)
+    expect(next.page).toBe(1)
     expect(next.openDropdown).toBeNull()
   })
 
@@ -69,14 +73,14 @@ describe('dashboardReducer', () => {
     const state = { ...initialState, page: 2 }
     const added = dashboardReducer(state, { type: 'WEAPON_FILTER_TOGGLED', value: 'AK-47' })
     expect(added.filters.weapons.has('AK-47')).toBe(true)
-    expect(added.page).toBe(0)
+    expect(added.page).toBe(1)
 
     const removed = dashboardReducer(
       { ...added, page: 5 },
       { type: 'WEAPON_FILTER_TOGGLED', value: 'AK-47' },
     )
     expect(removed.filters.weapons.has('AK-47')).toBe(false)
-    expect(removed.page).toBe(0)
+    expect(removed.page).toBe(1)
   })
 
   test('STATTRAK_FILTER_TOGGLED flips the boolean', () => {
@@ -100,7 +104,7 @@ describe('dashboardReducer', () => {
     expect(next.filters.weapons.size).toBe(0)
     expect(next.filters.conditions.size).toBe(0)
     expect(next.filters.stattrakOnly).toBe(false)
-    expect(next.page).toBe(0)
+    expect(next.page).toBe(1)
   })
 
   test('DROPDOWN_TOGGLED opens then closes the same dropdown', () => {
