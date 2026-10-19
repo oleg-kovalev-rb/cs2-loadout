@@ -16,20 +16,23 @@ inherited the identical rule for the same reason (its one endpoint,
 `#catalog`, is a filtered listing, not CRUD either).
 
 `Api::Admin::` introduces this codebase's first genuinely CRUD-shaped
-internal API resource: `Item` gets real create/read/update/destroy
-actions on individual, id-addressed records, and `PriceLog`/
-`UserInventory`/`InventoryValueLog` get read/destroy lifecycles on their
-own records (nested under their owning resource). This is a materially
-different shape from anything `Api::V1::`/`Api::Public::` have needed so
-far, and the existing "never bare `resources :x`" rule's own stated
+internal API resource: `Item` gets real create/read/destroy actions on
+individual, id-addressed records (it originally also exposed an `update`
+action, removed later once the admin UI's edit control was dropped and no
+caller remained), and `PriceLog`/`UserInventory`/`InventoryValueLog` get
+read/destroy lifecycles on their own records (nested under their owning
+resource). This is a materially different shape from anything
+`Api::V1::`/`Api::Public::` have needed so far, and the existing "never
+bare `resources :x`" rule's own stated
 reason — "these aren't CRUD resources" — doesn't hold for it.
 
 ## Decision
 
-`Api::Admin::` uses standard Rails RESTful routing (`resources :items`,
-and nested `resources :price_logs, only: %i[index destroy]` under
-`items`, `resources :inventory_value_logs, only: %i[index destroy]`
-under `user_inventories`) for its genuine CRUD resources. Non-CRUD
+`Api::Admin::` uses standard Rails RESTful routing
+(`resources :items, only: %i[index show create destroy]`, and nested
+`resources :price_logs, only: %i[destroy]` under `items`,
+`resources :inventory_value_logs, only: %i[destroy]` under
+`user_inventories`) for its genuine CRUD resources. Non-CRUD
 actions on those same resources (`refresh_price`, `warm_cache` on
 `items`; `sync`, `warm_cache` on `user_inventories`) stay explicit member
 routes, the same shape `Api::V1::`/`Api::Public::` already use for all of
@@ -51,9 +54,10 @@ for consistency across all three.
 
 Rejected because:
 
-- `Api::Admin::Items` genuinely is a CRUD resource — hand-rolling five
-  separate named routes per resource to avoid `resources` reproduces
-  exactly what `resources` already generates correctly, for no benefit.
+- `Api::Admin::Items` genuinely is a CRUD resource — hand-rolling a
+  separate named route per lifecycle action to avoid `resources`
+  reproduces exactly what `resources` already generates correctly, for no
+  benefit.
 - The other two namespaces' rule exists *because* their endpoints aren't
   CRUD-shaped. Applying the same rule here would be following its letter
   past its own stated reason, not preserving what the rule actually

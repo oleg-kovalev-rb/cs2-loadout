@@ -1,5 +1,5 @@
 ---
-description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and hero-delta zero-hiding, fixed-height paginated lists, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and hero-delta zero-hiding, fixed-height paginated lists, mutation failure handling, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
 ---
 
 # React Islands (`app_core/app/frontend/`)
@@ -199,10 +199,14 @@ Context.
   shows **no** delta badge at all (the badge is gated on `direction !==
   'flat'`) and passes `variant="flat"` to `Sparkline`, which strokes the
   line in the neutral `--text-muted` rather than `--up`, so a flat row
-  doesn't read as rising. The helper lives in `shared/` because more than
-  one island's item row needs the identical rule (see Reuse Across
-  Islands). Canonical item rows: `dashboard/components/ItemRow.jsx`,
-  `inventories/components/InventoryItemRow.jsx`.
+  doesn't read as rising. A table row with no separate badge wrapper (the
+  admin panel's Item table) renders a muted em dash (`—`) for `flat`
+  instead of an arrow plus `0.0%`, using the same `trendDirection` result.
+  The helper lives in `shared/` because more than one island's item row
+  needs the identical rule (see Reuse Across Islands). Canonical:
+  `dashboard/components/ItemRow.jsx`,
+  `inventories/components/InventoryItemRow.jsx`,
+  `admin-panel/pages/ItemsPage.jsx`.
 - **The same flat rule applies to an aggregate card delta — a `0`/absent
   24h change hides its badge too.** `inventories/components/InventoryCard.jsx`'s
   `.inv-delta` (an inventory's summed 24h change) derives its direction
@@ -519,6 +523,38 @@ verification (Vitest mocks `fetch`, so a test asserting "the delete call
 targets this URL" never validates that URL actually resolves to a real
 Rails route). This rule generalizes that fix for any future flat/global
 list page with a per-row mutation.
+
+## Mutation Failure Handling
+
+A mutation handler (`create`/`update`/`delete`/`refresh`/`sync`/cache-warm
+— anything that calls `adminSend` (or the island's equivalent API wrapper)
+and then refetches) must `catch` a rejected request and render the failure
+inline in the page or form that triggered it. A rejected promise must
+never escape the handler: an unhandled rejection leaves the operator with
+no feedback and is not an acceptable "silent failure" mode for an
+internal ops tool.
+
+- **Keep the page's existing state.** A failed mutation renders the error
+  without clearing the loaded list, pagination, selection, or open
+  panel/menu — the same "a failed request surfaces an inline error
+  without losing the rest of the page's state" contract the admin panel
+  was built to meet. Do not fall back to the page-level load-error
+  placeholder for a mutation failure; that placeholder means "there is
+  nothing to render."
+- **Form errors stay in the form.** Create/edit validation failures render
+  inside the form that submitted them (the existing `createError` pattern
+  in `ItemsPage`), not in a page-level banner.
+- **Row/bulk errors use a page-level action error.** A failed row or
+  toolbar mutation renders a page-level inline alert (not a toast,
+  `alert()`, or `console.error`-only path), and the next mutation attempt
+  clears the previous action error before dispatching.
+- **Don't clear selection on failure.** Clear it only on a successful bulk
+  action; a failed bulk action keeps the selection so the operator can
+  retry.
+
+Canonical: `admin-panel/pages/ItemsPage.jsx` — its create handler's
+form-scoped error and its delete/refresh/cache handlers' page-level
+`actionError` are the two branches of this rule.
 
 ## Charting: Recharts vs. hand-rolled SVG
 

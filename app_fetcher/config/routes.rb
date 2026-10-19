@@ -28,7 +28,7 @@ Rails.application.routes.draw do
       get "price_logs", to: "price_logs#index"
       get "inventory_value_logs", to: "inventory_value_logs#index"
 
-      resources :items, only: %i[index show create update destroy] do
+      resources :items, only: %i[index show create destroy] do
         collection do
           post :bulk_warm_cache
           post :warm_catalog_cache

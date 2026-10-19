@@ -4,6 +4,8 @@ import { useAdminList } from '../hooks/useAdminList'
 import { adminSend } from '../adminApi'
 import { Pagination } from '../components/Pagination'
 import { fmtPrice } from '../utils/format'
+import { changePercent } from '../utils/change'
+import { trendDirection } from '../../shared/utils/trend'
 
 function Swatch({ iconUrl }) {
   if (iconUrl) return <img className="swatch" src={iconUrl} alt="" />
@@ -18,6 +20,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
   })
   const [createName, setCreateName] = useState('')
   const [createError, setCreateError] = useState(null)
+  const [actionError, setActionError] = useState(null)
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -46,6 +49,7 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
   async function handleCreateSubmit(event) {
     event.preventDefault()
     setCreateError(null)
+    setActionError(null)
     try {
       await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/items', {
         item: { market_hash_name: createName },
@@ -59,24 +63,44 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
   }
 
   async function handleDelete(id) {
-    await adminSend(fetcherUrl, bridgeToken, 'DELETE', `/api/admin/items/${id}`)
-    refetch()
+    setActionError(null)
+    try {
+      await adminSend(fetcherUrl, bridgeToken, 'DELETE', `/api/admin/items/${id}`)
+      refetch()
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   async function handleRefreshPrice(id) {
-    await adminSend(fetcherUrl, bridgeToken, 'POST', `/api/admin/items/${id}/refresh_price`)
-    dispatch({ type: 'ROW_MENU_CLOSED' })
+    setActionError(null)
+    try {
+      await adminSend(fetcherUrl, bridgeToken, 'POST', `/api/admin/items/${id}/refresh_price`)
+      dispatch({ type: 'ROW_MENU_CLOSED' })
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   async function handleWarmCatalogCache() {
-    await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/items/warm_catalog_cache')
+    setActionError(null)
+    try {
+      await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/items/warm_catalog_cache')
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   async function handleBulkWarmCache() {
-    await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/items/bulk_warm_cache', {
-      item_ids: [...state.selectedIds],
-    })
-    dispatch({ type: 'SELECTION_CLEARED' })
+    setActionError(null)
+    try {
+      await adminSend(fetcherUrl, bridgeToken, 'POST', '/api/admin/items/bulk_warm_cache', {
+        item_ids: [...state.selectedIds],
+      })
+      dispatch({ type: 'SELECTION_CLEARED' })
+    } catch (err) {
+      setActionError(err.message)
+    }
   }
 
   return (
@@ -117,6 +141,12 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
             </button>
           </div>
         </div>
+
+        {actionError && (
+          <p className="admin-login-error resource-error" role="alert">
+            {actionError}
+          </p>
+        )}
 
         {state.isCreatePanelOpen && (
           <div className="create-panel open">
@@ -172,14 +202,15 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                 <th>market_hash_name</th>
                 <th>Category</th>
                 <th>Price</th>
-                <th>24h</th>
+                <th>24h, %</th>
                 <th className="col-actions" />
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
                 const metadata = item.metadata || {}
-                const changeUp = (item.change_24h_cents || 0) >= 0
+                const pct = changePercent(item.current_price_cents, item.change_24h_cents)
+                const direction = trendDirection(pct)
                 return (
                   <tr key={item.id}>
                     <td className="col-check">
@@ -200,18 +231,13 @@ export function ItemsPage({ fetcherUrl, bridgeToken }) {
                     </td>
                     <td className="text-muted">{metadata.category}</td>
                     <td className="mono">{fmtPrice(item.current_price_cents)}</td>
-                    <td className={`mono ${changeUp ? 'up' : 'down'}`}>
-                      {changeUp ? '▲' : '▼'} {Math.abs(item.change_24h_cents || 0)}
+                    <td className={`mono ${direction === 'flat' ? 'text-muted' : direction}`}>
+                      {direction === 'flat'
+                        ? '—'
+                        : `${direction === 'up' ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%`}
                     </td>
                     <td>
                       <div className="row-actions">
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          aria-label={`Edit ${item.market_hash_name}`}
-                        >
-                          ✎
-                        </button>
                         <div className="menu-wrap">
                           <button
                             type="button"

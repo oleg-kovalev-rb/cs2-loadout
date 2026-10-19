@@ -551,3 +551,7 @@ input[type='checkbox'] {
   color: var(--down);
   font-size: 12px;
 }
+
+.resource-error {
+  margin: 12px 20px 0;
+}
