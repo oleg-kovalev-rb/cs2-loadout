@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# pre-commit helper: run docker compose with non-secret defaults for every
+# variable docker-compose.yml interpolates.
+#
+# Hooks must work in a fresh worktree where `.env` is absent (it is
+# gitignored) and in a checkout with an incomplete `.env`. The values in
+# script/hook.env mirror CI's dummy values; no hook needs a real secret or
+# public URL.
+#
+# See agent/styleguides/git-hooks.md.
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+exec docker compose --env-file "$repo_root/script/hook.env" "$@"

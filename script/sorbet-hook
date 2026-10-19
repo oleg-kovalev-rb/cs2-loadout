@@ -9,7 +9,9 @@
 # regenerated on gem changes, not on every commit.)
 #
 # `tapioca dsl` boots the app and reads the schema, so the app's database is
-# started (and awaited) first.
+# started, awaited, and prepared first. Redis is deliberately not started:
+# neither `tapioca dsl` nor `srb tc` needs it, and its published host port can
+# collide with another worktree's stack.
 #
 # See agent/styleguides/git-hooks.md.
 #
@@ -20,10 +22,11 @@ set -euo pipefail
 app="${1:?usage: script/sorbet-hook <app_fetcher|app_core>}"
 db="db_${app#app_}"
 rbi_dir="$app/sorbet/rbi/dsl"
-compose=(docker compose -f docker-compose.yml -f docker-compose.ci.yml)
+compose=(script/hook-compose -f docker-compose.yml -f docker-compose.ci.yml)
 
-# tapioca dsl needs the database up to read the schema.
-"${compose[@]}" up -d --wait "$db" redis >/dev/null
+# tapioca dsl needs the database up and migrated to read the schema.
+"${compose[@]}" up -d --wait "$db" >/dev/null
+"${compose[@]}" run --rm --no-deps "$app" bin/rails db:prepare
 
 "${compose[@]}" run --rm --no-deps "$app" bundle exec tapioca dsl
 
