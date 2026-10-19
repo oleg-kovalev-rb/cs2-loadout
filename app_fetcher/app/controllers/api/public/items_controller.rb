@@ -2,12 +2,13 @@
 
 module Api
   module Public
-    class ItemsController < ApplicationController
+    class ItemsController < BaseController
       extend T::Sig
 
       sig { void }
       def index
         payload = ItemCatalogCache.read(params)
+
         if payload.nil?
           page = ItemCatalogQuery.call(params)
           payload = ItemCatalogSerializer.call(page)

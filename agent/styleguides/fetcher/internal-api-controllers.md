@@ -31,9 +31,15 @@ conventions and why it's separate rather than an opt-out here.
   "inventories#show"`, `get "item_prices/dynamics", to:
   "item_prices#dynamics"`) — never a bare `resources :x`, since these
   aren't CRUD resources.
-- `ApplicationController < ActionController::API` (no views, sessions,
-  or cookies — a pure JSON API base) applies `before_action
-  :authenticate_bridge_token!` globally, not opt-in per controller.
+- `ApplicationController < ActionController::API` is the app-wide,
+  namespace-neutral base class (no views, sessions, cookies, auth, or
+  namespace-specific error handling). Every namespace base controller
+  inherits it.
+- `Api::V1::BaseController < ::ApplicationController` (no views,
+  sessions, or cookies — a pure JSON API base) applies `before_action
+  :authenticate_bridge_token!` globally, not opt-in per controller. The
+  explicit `::ApplicationController` keeps the lookup pinned to the
+  top-level class rather than a future same-named V1 constant.
 
 ## Interface
 
@@ -45,9 +51,9 @@ conventions and why it's separate rather than an opt-out here.
 - Error bodies are always shaped `{ message: "..." }` (see
   `authenticate_bridge_token!`'s "Missing/Invalid bridge token",
   `InventoriesController#show`'s `{ message: response.error }`).
-- `current_steam_id` (from `ApplicationController`) is the only source of
-  the caller's identity — never read a `steam_id`/user identifier out of
-  `params`.
+- `current_steam_id` (from `Api::V1::BaseController`) is the only source
+  of the caller's identity — never read a `steam_id`/user identifier out
+  of `params`.
 
 ## Responsibilities
 
@@ -57,14 +63,15 @@ exception in `agent/adr/fetcher/cross-scenario-service-layer.md` — a
 cross-Scenario service), and renders JSON based on that single call's
 result. It does not parse Steam's raw response itself (that's
 `Steam::Client`/its DTOs' job) and carries no business logic beyond a
-conditional render — heavier lifting (Steam calls, item resolution,
+conditional render or raising a namespace-local error for the base
+controller to render — heavier lifting (Steam calls, item resolution,
 backfill, persistence) is delegated entirely to the one collaborator.
 
 ## Dependencies
 
 May call `Steam::Client` directly (a fresh `Steam::Client.new` per
 request — no injection) and enqueue Sidekiq workers directly
-(`PriceUpdateWorker.perform_async`). Relies on `ApplicationController`
+(`PriceUpdateWorker.perform_async`). Relies on `Api::V1::BaseController`
 for auth; never re-implements token verification in a specific
 controller. See `agent/adr/fetcher/cross-scenario-service-layer.md`
 for the two named exceptions: `InventoriesController#show`'s cold-start
@@ -91,6 +98,11 @@ seed calls `InventoryValueRecordingService` the same way.
   that has no live trigger in today's call sites (e.g. no `rescue_from
   ActiveRecord::RecordNotFound` — see Error Handling for why this is a
   different case from the global `StandardError` catch-all).
+- Validate a closed-enum query param by raising
+  `Api::V1::UnsupportedParamError` and let `Api::V1::BaseController`
+  render the `:bad_request` response — never render that branch inline
+  in the action, and never reuse `Api::Public::UnsupportedParamError`
+  from V1.
 - Use `current_steam_id` for anything identity-scoped — never a
   client-supplied identifier.
 - Use `POST`, not `GET`, when the request needs a body — e.g. an array of
@@ -128,7 +140,7 @@ seed calls `InventoryValueRecordingService` the same way.
 
 ## Error Handling
 
-Three failure shapes:
+Four failure shapes:
 
 1. **Auth failures** — both `:unauthorized` with a `{ message: "..." }`
    body: missing token vs. invalid/expired token
@@ -140,8 +152,22 @@ Three failure shapes:
    `InventoriesController`'s wrapped `Steam::Client` call: branch on
    `response.success?`, `:bad_request` with `{ message: response.error
    }`.
-3. **Unhandled/infra-level failures** — a single `rescue_from
-   StandardError` on `ApplicationController`, catching anything that
+3. **Raised closed-enum validation error, caught centrally** — an action
+   that validates a closed-enum query param (`period`) against
+   `PricePeriod.resolve` raises
+   `Api::V1::UnsupportedParamError` (`lib/api/v1/unsupported_param_error.rb`)
+   instead of rendering inline. `Api::V1::BaseController` declares
+   `rescue_from Api::V1::UnsupportedParamError, with:
+   :render_unsupported_param_error`, rendering `:bad_request` with
+   `{ message: exception.message }` (`"Unsupported period: <value>"`).
+   Declare this specific handler *after* `rescue_from StandardError`:
+   Rails resolves the most-recently-declared matching handler first, so
+   the more specific handler must come second, not first. The class is
+   namespace-local (mirroring `Api::Public::UnsupportedParamError`) — V1
+   must not depend on the Public namespace's error class. The action
+   raises; it never branches on `nil` to render the 400 itself.
+4. **Unhandled/infra-level failures** — a single `rescue_from
+   StandardError` on `Api::V1::BaseController`, catching anything that
    escapes an action un-rescued (a lost DB connection, any other
    unexpected runtime error — never a specific, named exception class).
    Always `{ message: "Internal error" }` with `:internal_server_error`
@@ -154,7 +180,7 @@ Three failure shapes:
    `Rails.logger.error` is the only thing standing between this and a
    silently lost failure.
 
-Shape 3 is a different category from the `MUST` rule above against a
+Shape 4 is a different category from the `MUST` rule above against a
 defensive per-action rescue/branch for something that can't fail: that
 rule targets a *speculative* branch for a *specific* exception class
 with no live trigger in today's code (e.g. `ActiveRecord::RecordNotFound`
@@ -168,24 +194,33 @@ It never shadows an existing explicit branch: `InventoriesController`'s
 `Steam::Client` failure path still renders its own `:bad_request`
 directly, since that's a handled `response.success? == false`, not a
 raised exception — `rescue_from` only ever fires for whatever reaches it
-un-rescued.
+un-rescued. Shape 3 is different again: it is a live, expected failure
+of a caller-supplied closed-enum param, raised deep in the action and
+rendered once at the base controller; it is not a speculative guard.
 
 ## Interaction With Other Layers
 
 ```text
 Request (Authorization: Bearer <bridge token>)
     ↓
-ApplicationController#authenticate_bridge_token!  (before_action)
+Api::V1::BaseController#authenticate_bridge_token!  (before_action)
     ↓ sets current_steam_id
 Api::V1::<X>Controller action
-    ↓ Steam::Client call  — or —  ActiveRecord query
+    ↓ Steam::Client call  — or —  ActiveRecord query  — or —
+      raise Api::V1::UnsupportedParamError
     ↓
 render json: { ... }, status: :some_symbol
 ```
 
 ## Canonical Implementations
 
-- `app_fetcher/app/controllers/application_controller.rb`
+- `app_fetcher/app/controllers/application_controller.rb` — the
+  namespace-neutral common ancestor.
+- `app_fetcher/app/controllers/api/v1/base_controller.rb` — player
+  bridge-token auth, the `StandardError` catch-all, and the
+  `UnsupportedParamError` handler.
+- `app_fetcher/lib/api/v1/unsupported_param_error.rb` — the V1
+  closed-enum validation error.
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
 - `app_fetcher/app/controllers/api/v1/item_prices_controller.rb`
 - `app_fetcher/config/routes.rb`

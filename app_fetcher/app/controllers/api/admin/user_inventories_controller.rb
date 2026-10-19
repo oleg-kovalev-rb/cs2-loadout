@@ -2,7 +2,7 @@
 
 module Api
   module Admin
-    class UserInventoriesController < ApplicationController
+    class UserInventoriesController < BaseController
       extend T::Sig
 
       sig { void }

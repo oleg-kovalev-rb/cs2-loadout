@@ -27,7 +27,7 @@ token and the response doesn't depend on who's asking. Do not use it as
 a way to avoid dealing with bridge-token auth for an endpoint that
 *does* have a notion of caller identity, even a weak one — that
 endpoint belongs under `Api::V1::`. Do not add a `skip_before_action`
-exception to `Api::V1::ApplicationController` instead of using this
+exception to `Api::V1::BaseController` instead of using this
 namespace — see `internal-api-controllers.md`'s MUST NOT rule, which
 this namespace exists specifically to honor rather than work around.
 
@@ -39,10 +39,13 @@ this namespace exists specifically to honor rather than work around.
   convention as `Api::V1::` (no bare `resources`, see
   `internal-api-controllers.md`'s Structure section; that reasoning
   applies identically here).
-- `Api::Public::ApplicationController < ActionController::API` — no
-  `before_action` for authentication. Declares its own
+- `Api::Public::BaseController < ::ApplicationController` — no
+  `before_action` for authentication. The common
+  `ApplicationController < ActionController::API` is a namespace-neutral
+  ancestor with no auth or rescue behavior of its own; the Public base
+  declares its own
   `rescue_from StandardError, with: :render_internal_server_error`,
-  independent of `Api::V1::ApplicationController`'s (see ADR for why
+  independent of `Api::V1::BaseController`'s (see ADR for why
   this is duplicated rather than shared). Also declares
   `rescue_from ActiveRecord::RecordNotFound, with: :render_not_found`,
   for any single-resource-by-identifier action — see Error Handling.
@@ -92,9 +95,10 @@ distinct param shapes, each with its own validation posture:
   value's own `#apply`) in the query-objects layer. Period/range params
   are resolved by `PricePeriod.resolve` against the queried model's
   `SUPPORTED_PERIODS` (`InventoryValueLog` without `24h`, `PriceLog` with
-  every period); a query object raises `Api::Public::
-  UnsupportedParamError` on nil, while an `Api::V1` action keeps its own
-  inline `:bad_request` branch. See
+  every period); a Public query object raises `Api::Public::
+  UnsupportedParamError` on nil, while an `Api::V1` action raises
+  `Api::V1::UnsupportedParamError` and lets its base controller render
+  the response. See
   `agent/styleguides/fetcher/list-query-objects.md`'s Interface section
   and this file's own Error Handling section below for the resulting
   response shape, which is identical either way.
@@ -145,8 +149,8 @@ sign the endpoint belongs under `Api::V1::` instead.
 ### MUST
 
 - Give `Api::Public::` its own base controller
-  (`Api::Public::ApplicationController`), never inherit from or extend
-  `Api::V1::ApplicationController` — see ADR.
+  (`Api::Public::BaseController`), never inherit from or extend
+  `Api::V1::BaseController` — see ADR.
 - Cap every bounded numeric param's upper range explicitly (e.g.
   `per_page`) — an unauthenticated, not-yet-rate-limited namespace has
   no other defense against a single request requesting an unbounded
@@ -203,10 +207,13 @@ has (there is no auth to fail):
 
 1. **Explicit per-action failure branch** — a closed-enum param
    (`sort`, `period`, `range`) with an unrecognized value, validated
-   inline in the controller action itself: `:bad_request` with
-   `{ message: "Unsupported <param>: <value>" }`. Used by any action not
-   built on the query-objects layer (e.g. `ItemPricesController#history`'s
-   `PricePeriod`/`SUPPORTED_PERIODS` pattern, in `Api::V1::`).
+   inline in a Public controller action that isn't built on the
+   query-objects layer: `:bad_request` with
+   `{ message: "Unsupported <param>: <value>" }`. In `Api::V1::`, the
+   equivalent case (`ItemPricesController#history`'s
+   `PricePeriod`/`SUPPORTED_PERIODS` pattern) instead raises
+   `Api::V1::UnsupportedParamError`, caught by `Api::V1::BaseController`
+   — see `internal-api-controllers.md`'s Error Handling.
 2. **Raised from the query-objects layer, caught centrally** — for a
    list endpoint built on `agent/styleguides/fetcher/list-query-objects.md`,
    sort validation is performed by `Appliers::SortApplier` (or an
@@ -215,7 +222,7 @@ has (there is no auth to fail):
    Both raise `Api::Public::UnsupportedParamError`
    (`lib/api/public/unsupported_param_error.rb`)
    instead of returning an error for the controller to branch on.
-   `Api::Public::ApplicationController` declares
+   `Api::Public::BaseController` declares
    `rescue_from Api::Public::UnsupportedParamError, with:
    :render_unsupported_param_error`, rendering the identical
    `:bad_request` / `{ message: "Unsupported <param>: <value>" }` shape
@@ -224,7 +231,7 @@ has (there is no auth to fail):
    below — Rails resolves the most-recently-declared matching handler
    first, so the more specific handler must come second, not first.
 3. **Unhandled/infra-level failures** — `Api::Public::
-   ApplicationController`'s own `rescue_from StandardError`, same
+   BaseController`'s own `rescue_from StandardError`, same
    behavior as `Api::V1::`'s (log via `Rails.logger.error`, render
    `{ message: "Internal error" }` / `:internal_server_error`) — see ADR
    for why this is declared independently rather than inherited.
@@ -232,7 +239,7 @@ has (there is no auth to fail):
    endpoint identified by a path segment (e.g. `:steam_id`) that doesn't
    exist: looked up via `Model.find_by!(...)` (never a `nil`-checking
    branch inline, per Interface/Rules), which raises
-   `ActiveRecord::RecordNotFound`. `Api::Public::ApplicationController`
+   `ActiveRecord::RecordNotFound`. `Api::Public::BaseController`
    declares `rescue_from ActiveRecord::RecordNotFound, with:
    :render_not_found`, rendering `:not_found` /
    `{ message: "<Resource> not found" }` — the static message names the

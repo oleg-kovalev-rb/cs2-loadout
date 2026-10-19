@@ -2,7 +2,7 @@
 
 module Api
   module Admin
-    class InventoryValueLogsController < ApplicationController
+    class InventoryValueLogsController < BaseController
       extend T::Sig
 
       sig { void }

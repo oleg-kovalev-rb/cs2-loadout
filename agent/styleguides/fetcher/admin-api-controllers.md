@@ -100,12 +100,14 @@ under `Api::V1::`.
   `pluck(*AGGREGATE_COLUMNS.map { ... })` call in a way it didn't against
   the untyped chain it replaced — a real, narrow type-checking
   interaction, not a reason to avoid `apply` generally.
-- `Api::Admin::ApplicationController < ActionController::API` — its own
+- `Api::Admin::BaseController < ::ApplicationController` — its own
   file, its own `before_action :authenticate_admin_bridge_token!`, its
   own independently-declared `rescue_from StandardError, with:
   :render_internal_server_error` (duplicated from `Api::V1::`'s and
   `Api::Public::`'s, not inherited or shared — per
-  `public-api-namespace.md`, not re-decided here).
+  `public-api-namespace.md`, not re-decided here). The common
+  `ApplicationController < ActionController::API` is a namespace-neutral
+  ancestor with no auth or rescue behavior of its own.
 
 ## Interface
 
@@ -134,7 +136,7 @@ every response is an explicit `render json: { ... }, status:
   `total_pages` are genuinely server-derived (a `COUNT(*)` the caller has
   no other way to learn) and worth sending. Built via a shared private
   helper, `pagination_meta(pagination, total_count)` on
-  `Api::Admin::ApplicationController` — every `index` action calls it
+  `Api::Admin::BaseController` — every `index` action calls it
   rather than inlining the hash, so the envelope shape lives in exactly
   one place.
 - `bulk_warm_cache` (Items) accepts `{ item_ids: T::Array[Integer] }` and
@@ -260,10 +262,10 @@ guards against.
   (`refresh_price`, `warm_cache`, `sync`) as member routes inside the
   relevant `resources` block — see `admin-api-crud-routing.md`.
 - `before_action :authenticate_admin_bridge_token!` on
-  `Api::Admin::ApplicationController`, requiring the `admin_id` claim
+  `Api::Admin::BaseController`, requiring the `admin_id` claim
   explicitly — never accept a token merely because it decodes.
 - Look up a record with a raising finder (`find`/`find_by!`) and let
-  `Api::Admin::ApplicationController`'s `rescue_from
+  `Api::Admin::BaseController`'s `rescue_from
   ActiveRecord::RecordNotFound` render the `404` — never a manual
   `find_by` + `unless record; render ...; end` guard repeated per action
   (see Error Handling).
@@ -369,8 +371,8 @@ Same three-shape taxonomy as `internal-api-controllers.md`, with
    look up their record with a raising finder (`Item.find(params[:id])`,
    `UserInventory.find_by!(steam_id: params[:steam_id])`,
    `PriceLog.find_by!(id:, item_id:)`, etc.), never a manual `find_by` +
-   `unless record; render :not_found; end` guard. `Api::Admin::
-   ApplicationController` declares `rescue_from
+   `unless record; render :not_found; end` guard.
+   `Api::Admin::BaseController` declares `rescue_from
    ActiveRecord::RecordNotFound, with: :render_not_found` (`{ message:
    "Not found" }` / `:not_found`), centralizing the 404 shape instead of
    repeating it per action. This is a deliberate divergence from
@@ -379,8 +381,8 @@ Same three-shape taxonomy as `internal-api-controllers.md`, with
    trigger" — that rule's own stated reason doesn't apply here, since
    every admin action genuinely operates on a client-supplied id that may
    not exist, unlike `Api::V1::`'s `current_steam_id`-scoped actions.
-4. **Unhandled/infra-level failures** — `Api::Admin::
-   ApplicationController`'s own `rescue_from StandardError`, logged via
+4. **Unhandled/infra-level failures** — `Api::Admin::BaseController`'s
+   own `rescue_from StandardError`, logged via
    `Rails.logger.error`, rendering `{ message: "Internal error" }` /
    `:internal_server_error` — same behavior as the other two namespaces',
    declared independently here per `public-api-namespace.md`.
@@ -390,7 +392,7 @@ Same three-shape taxonomy as `internal-api-controllers.md`, with
 ```text
 Request (Authorization: Bearer <admin bridge token>)
     ↓
-Api::Admin::ApplicationController#authenticate_admin_bridge_token!
+Api::Admin::BaseController#authenticate_admin_bridge_token!
     ↓ sets current_admin_id
 Api::Admin::<X>Controller action
     ↓ model CRUD  — or —  PriceUpdateWorker.perform_async  — or —
@@ -447,7 +449,7 @@ this section only adds what's specific to this namespace.
 
 ## Canonical Implementations
 
-- `app_fetcher/app/controllers/api/admin/application_controller.rb` —
+- `app_fetcher/app/controllers/api/admin/base_controller.rb` —
   auth, the `rescue_from StandardError`/`rescue_from
   ActiveRecord::RecordNotFound` pair, `pagination_meta` (the shared
   envelope-building helper every `index` action calls).

@@ -107,8 +107,8 @@ Rejected because:
 - Structural duplication between the two session/bridge-token stacks
   (two session keys, two base controllers, two token classes). Accepted
   deliberately, for the same reason this project already accepted
-  duplication between `Api::V1::ApplicationController` and
-  `Api::Public::ApplicationController`'s `rescue_from` — too few examples
+  duplication between `Api::V1::BaseController` and
+  `Api::Public::BaseController`'s `rescue_from` — too few examples
   today to guess at the right shared shape.
 
 ### Risks
@@ -133,7 +133,7 @@ Rejected because:
 - `Admin::BridgeToken` signs with `APP_ADMIN_BRIDGE_JWT_SECRET` (a secret
   distinct from `APP_BRIDGE_JWT_SECRET`) and carries an `admin_id` claim
   (not `steam_id`).
-- `Api::Admin::ApplicationController#authenticate_admin_bridge_token!` in
+- `Api::Admin::BaseController#authenticate_admin_bridge_token!` in
   `app_fetcher` must require the `admin_id` claim's presence explicitly,
   not merely that the token decodes — cheap defense-in-depth on top of
   the secret already being different.

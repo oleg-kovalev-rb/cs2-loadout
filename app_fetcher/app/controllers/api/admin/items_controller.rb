@@ -2,7 +2,7 @@
 
 module Api
   module Admin
-    class ItemsController < ApplicationController
+    class ItemsController < BaseController
       extend T::Sig
 
       sig { void }

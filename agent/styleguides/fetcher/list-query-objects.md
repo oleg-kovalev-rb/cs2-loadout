@@ -1,5 +1,5 @@
 ---
-description: app_fetcher's app/queries/ (per-resource query objects, plus Appliers:: and Options:: subfolders) and app/serializers/ layers — shared filter/sort/pagination mechanics and response-shaping for Api::Public:: list and detail endpoints.
+description: app_fetcher's app/queries/ (per-resource query objects, plus Appliers:: and Options:: subfolders) and app/serializers/ layers — shared filter/sort/pagination mechanics, plus response-shaping for Public list/detail endpoints and V1/concern-specific serializers.
 ---
 
 # List Query Objects (`app/queries/`, `app/serializers/`)
@@ -29,6 +29,14 @@ persisting data, or calling `Steam::Client` — this layer only ever reads
 already-persisted data for a response, the same carve-out
 `architecture-layers.md` already states for `PriceHistoriesController`.
 
+The `app/serializers/` half of this layer is broader than the
+catalog/detail pairs below. Any action whose response body requires
+non-trivial shaping — per-item math, omission rules, nested
+current/history/change structures — gets a serializer even when there is
+no matching `<Resource>CatalogQuery`/`<Resource>DetailQuery`, and even
+when only one action calls it. The serializer still only maps
+already-resolved data; it never becomes a second query layer.
+
 ## When to Use
 
 Use this layer when a new `Api::Public::` (or, in principle, `Api::V1::`)
@@ -49,6 +57,12 @@ belongs here, as a concern query (`InventoryValuation`), not as a third
 per-resource catalog/detail class. The same test applies: a single
 caller with a one-off aggregate should stay inline or in that resource's
 own query object.
+
+The serializer half is different: response shaping is worth extracting
+for a single action when the controller would otherwise own branching
+per-item math, omission rules, or nested envelope construction. Do not
+extract a serializer for a plain one-key render (`{ message: "..." }`)
+or a bare list of already-shaped records.
 
 ## Structure
 
@@ -97,6 +111,18 @@ own query object.
 - **`app/serializers/<resource>_detail_serializer.rb`** (flat root, e.g.
   `InventoryDetailSerializer`) — `<Resource>DetailQuery`'s serializer
   counterpart; same pure-function rule as `<Resource>CatalogSerializer`.
+- **`app/serializers/<concern>_serializer.rb`** (flat root, e.g.
+  `InventoryValuationSerializer`) — shapes a shared concern query's
+  result struct (`InventoryValuation::Page`) for an action that has no
+  `<Resource>CatalogQuery`/`<Resource>DetailQuery` of its own. The name
+  follows the concern query it serializes, not a nonexistent endpoint
+  query.
+- **`app/serializers/<resource>_<action>_serializer.rb`** (flat root,
+  e.g. `ItemPriceDynamicsSerializer`) — action-specific response shaping
+  for an action assembled from already-fetched data plus scalar counts,
+  when no catalog/detail/concern-query class fits. The controller still
+  owns every read, cache call, and enqueue; the serializer owns only the
+  final hash.
 
 ## Interface
 
@@ -138,8 +164,9 @@ own query object.
   `scope :for_period` that applies `#since`/`#since_date`
   (`PricePeriod::All` has no cutoff). The caller decides how to report
   an unsupported value: `InventoryDetailQuery` raises
-  `Api::Public::UnsupportedParamError`; `Api::V1` controllers keep their
-  inline `:bad_request` branch.
+  `Api::Public::UnsupportedParamError`; `Api::V1` actions raise
+  `Api::V1::UnsupportedParamError`, which `Api::V1::BaseController`
+  renders as `:bad_request` (no inline render branch in the action).
 - **`Appliers::FilterApplier.call(scope, params, enum_class:)`** →
   `ActiveRecord::Relation`, by reducing `enum_class.values` over the
   scope.
@@ -166,6 +193,14 @@ own query object.
 - **`<Resource>DetailSerializer.call(<query-result-struct>)`** →
   `T::Hash[Symbol, T.untyped]`. Same pure-function rule as
   `<Resource>CatalogSerializer`.
+- **`<Concern>Serializer.call(<concern-query-result>)`** and
+  **`<Resource><Action>Serializer.call(<already-resolved-inputs>)`** →
+  `T::Hash[Symbol, T.untyped]`. Same pure-function rule. Positional/keyword
+  arguments are chosen per serializer; every argument must already be
+  fully resolved (an `InventoryValuation::Page`, a
+  `T::Hash[String, Item]` plus a scalar count, etc.). Never pass
+  `ActionController::Parameters`, a relation, a model class, or a cache
+  handle.
 
 ## Responsibilities
 
@@ -190,6 +225,10 @@ own query object.
 - `<Resource>CatalogSerializer` owns response-shape mapping only.
 - `<Resource>DetailSerializer` owns response-shape mapping only, same as
   `<Resource>CatalogSerializer`.
+- `<Concern>Serializer`/`<Resource><Action>Serializer` own response-shape
+  mapping only for actions outside the catalog/detail pair. The controller
+  still owns fetching the data they receive (including cache reads, DB
+  counts, and worker enqueues).
 - The controller owns: calling the query object, calling the serializer,
   `ItemCatalogCache`-style response caching, and conditional-GET
   (`stale?`/`ETag`) — none of that belongs in any class above.
@@ -202,8 +241,10 @@ One-directional: `<Resource>CatalogQuery` may depend on `Appliers::*`,
 lookups, per `caching.md`), and shared read-only concern queries in this
 same layer (e.g. `InventoryValuation`), but never on a response-payload
 cache like `ItemCatalogCache` or anything HTTP-related.
-`<Resource>CatalogSerializer` depends on nothing but its input struct.
-`Appliers::*` depend on nothing resource-specific — not even indirectly,
+`<Resource>CatalogSerializer` depends on nothing but its input struct;
+the same holds for `<Concern>Serializer`/`<Resource><Action>Serializer`,
+which may reference the concern-query struct types they serialize but
+must perform no reads. `Appliers::*` depend on nothing resource-specific — not even indirectly,
 by referencing a concrete `Options::*` class by name inside an
 `Appliers::*` file. `Options::*` depend only on the model scopes they
 call from `#apply`. The identical dependency rules apply to
@@ -244,6 +285,10 @@ re-shape its result — compose the structs at the call site instead.
   or build a `Result`-shaped failure value.
 - `<Resource>DetailSerializer` must perform zero I/O, same rule as
   `<Resource>CatalogSerializer`.
+- `<Concern>Serializer`/`<Resource><Action>Serializer` must perform zero
+  I/O too: no `ActiveRecord`, `Rails.cache`, service, or worker call
+  inside `.call`. Any count, cache read, or enqueue stays in the calling
+  controller.
 - A shared concern query (`InventoryValuation`) must return `T::Struct`
   values, never a response hash; response shaping stays in the matching
   serializer. It must perform no writes and must not call a
@@ -288,6 +333,11 @@ itself — both propagate to the controller's base class:
 2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
    record, raised as `ActiveRecord::RecordNotFound` by its bang finder
    (never returned as `nil` — see Rules).
+
+An `Api::V1::` action that validates its own closed-enum param raises
+`Api::V1::UnsupportedParamError` outside this layer, rendered by
+`Api::V1::BaseController` — see `internal-api-controllers.md`'s Error
+Handling.
 
 See `public-api-controllers.md`'s Error Handling section for shapes (2)
 and (4) respectively — the exceptions' definitions/sources and the
@@ -368,6 +418,13 @@ Specific to this layer:
   raising `ActiveRecord::RecordNotFound`.
 - `<Resource>DetailSerializer` specs follow the same zero-I/O,
   unsaved-instance rule as `<Resource>CatalogSerializer`.
+- `<Concern>Serializer`/`<Resource><Action>Serializer` specs are unit
+  specs with in-memory inputs — real `T::Struct` instances, unsaved
+  `Item.new(...)` records, plain hashes/counts — never `create`. Cover
+  the omission rules and math the serializer owns (nil values, zero
+  denominators, empty input). Request specs still cover the same cases
+  end-to-end, but must not be the only place a serializer edge case is
+  proven.
 - A shared concern query (`InventoryValuation`) is a unit spec under
   `spec/queries/`, hitting the database for real (like the resource
   queries) and never referring to a response-payload cache. Cover the
@@ -387,6 +444,13 @@ Specific to this layer:
   `agent/plans/fix-query-param-applier-consistency.md`).
 - `InventoryValuation` — the shared concern query
   (`agent/plans/inventory-valuation-consistency.md`).
+- `InventoryValuationSerializer` — the `<Concern>Serializer` case,
+  shaping `InventoryValuation::Page` for `Api::V1::InventoryValuesController`
+  (`agent/plans/fetcher-controller-layer-polish.md`).
+- `ItemPriceDynamicsSerializer` — the `<Resource><Action>Serializer`
+  case, shaping `ItemPriceDynamics`'s already-fetched item hash plus
+  `pending_count` for `Api::V1::ItemPricesController#dynamics`
+  (`agent/plans/fetcher-controller-layer-polish.md`).
 
 ## Related ADR
 

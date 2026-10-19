@@ -2,7 +2,7 @@
 
 module Api
   module Public
-    class ApplicationController < ActionController::API
+    class BaseController < ::ApplicationController
       extend T::Sig
 
       rescue_from StandardError, with: :render_internal_server_error

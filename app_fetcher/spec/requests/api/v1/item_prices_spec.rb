@@ -205,7 +205,7 @@ RSpec.describe "GET /api/v1/item_prices/:market_hash_name/history", type: :reque
       get "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history?period=3weeks", headers: headers
 
       expect(response).to have_http_status(:bad_request)
-      expect(JSON.parse(response.body)["message"]).to be_present
+      expect(JSON.parse(response.body)["message"]).to eq("Unsupported period: 3weeks")
     end
   end
 

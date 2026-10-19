@@ -2,7 +2,7 @@
 
 module Api
   module V1
-    class InventoriesController < ApplicationController
+    class InventoriesController < BaseController
       extend T::Sig
 
       REFRESH_DEDUP_TTL = T.let(1.day, ActiveSupport::Duration)

@@ -89,7 +89,7 @@ Controller (app/controllers/ — e.g. InventoriesController)
 
 Browser (React island, app/frontend/inventories/)
     → HTTPS, no auth header at all → app_fetcher's Api::Public:: endpoints
-      (Api::Public::ApplicationController has no auth filter — genuinely
+      (Api::Public::BaseController has no auth filter — genuinely
        public; the page-serving controller mints no bridge token and
        embeds none — never proxied through app_core, same rule as both
        identity-scoped stacks)
