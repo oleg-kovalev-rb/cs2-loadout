@@ -42,6 +42,16 @@ RSpec.describe ItemParser do
       expect(result[:metadata][:condition]).to be_nil
     end
 
+    it "extracts condition from a trailing (...) even without a ' | ' separator" do
+      result = described_class.parse("Fracture Case (Factory New)")
+
+      aggregate_failures do
+        expect(result[:metadata][:weapon_type]).to be_nil
+        expect(result[:metadata][:item_name]).to eq("Fracture Case")
+        expect(result[:metadata][:condition]).to eq("Factory New")
+      end
+    end
+
     it "includes a given icon_url in the metadata" do
       result = described_class.parse("AK-47 | Redline (Field-Tested)", icon_url: "https://example.com/icon.png")
 
