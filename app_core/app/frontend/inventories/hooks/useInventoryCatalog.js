@@ -15,7 +15,7 @@ function mapInventory(raw) {
     pricedItemsCount: raw.priced_items_count ?? null,
     pricableItemsCount: raw.pricable_items_count ?? null,
     complete: raw.complete ?? true,
-    rarityMixPercent: raw.rarity_mix_percent,
+    rarityBreakdown: raw.rarity_breakdown,
     lastSyncedAt: raw.last_synced_at,
   }
 }

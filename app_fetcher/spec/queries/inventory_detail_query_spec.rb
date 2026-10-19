@@ -148,7 +148,7 @@ RSpec.describe InventoryDetailQuery do
       end
     end
 
-    describe "range / history / change_cents / change_percent" do
+    describe "period / history / change_cents / change_percent" do
       it "defaults to 7d and keeps only the live point when the stored rows are outside the window" do
         user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 2000) ])
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date, total_value_cents: 1000)
@@ -157,7 +157,7 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.range).to eq(PricePeriod::SevenDays)
+          expect(page.period).to eq(PricePeriod::SevenDays)
           expect(page.history.size).to eq(1)
           expect(page.history.first.total_value_cents).to eq(2000)
           expect(page.change_cents).to eq(0)
@@ -166,12 +166,12 @@ RSpec.describe InventoryDetailQuery do
         end
       end
 
-      it "range=all includes every logged row, computing change across the full history" do
+      it "period=all includes every logged row, computing change across the full history" do
         user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 1500) ])
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date, total_value_cents: 1000)
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: Date.current, total_value_cents: 1500)
 
-        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "all"))
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "all"))
 
         aggregate_failures do
           expect(page.history.size).to eq(2)
@@ -185,7 +185,7 @@ RSpec.describe InventoryDetailQuery do
         user_inventory = create(:user_inventory)
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 60.days.ago.to_date, total_value_cents: 1000)
 
-        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "7d"))
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "7d"))
 
         aggregate_failures do
           expect(page.history.size).to eq(1)
@@ -209,26 +209,26 @@ RSpec.describe InventoryDetailQuery do
         end
       end
 
-      it "raises Api::Public::UnsupportedParamError for an unrecognized range value" do
+      it "raises Api::Public::UnsupportedParamError for an unrecognized period value" do
         user_inventory = create(:user_inventory)
 
-        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "bogus")) }
-          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported range: bogus")
+        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "bogus")) }
+          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported period: bogus")
       end
 
       it "rejects 24h because inventory value logs are daily" do
         user_inventory = create(:user_inventory)
 
-        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "24h")) }
-          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported range: 24h")
+        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "24h")) }
+          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported period: 24h")
       end
 
-      it "keeps total_value_cents from the live valuation regardless of the selected range" do
+      it "keeps total_value_cents from the live valuation regardless of the selected period" do
         user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 2000) ])
         create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date,
                                       total_value_cents: 1000)
 
-        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "7d"))
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(period: "7d"))
 
         aggregate_failures do
           expect(page.total_value_cents).to eq(2000)
@@ -238,7 +238,7 @@ RSpec.describe InventoryDetailQuery do
     end
 
     describe "top_items" do
-      it "defaults items_sort to price_desc" do
+      it "defaults sort to price_desc" do
         user_inventory = create(:user_inventory)
         cheap = create(:item, current_price_cents: 100)
         expensive = create(:item, current_price_cents: 900)
@@ -250,31 +250,31 @@ RSpec.describe InventoryDetailQuery do
         expect(page.top_items).to eq([ expensive, cheap ])
       end
 
-      it "applies items_sort=name_asc" do
+      it "applies sort=name_asc" do
         user_inventory = create(:user_inventory)
         bravo = create(:item, metadata: { item_name: "Bravo" })
         alpha = create(:item, metadata: { item_name: "Alpha" })
         create(:user_inventory_item, user_inventory: user_inventory, item: bravo)
         create(:user_inventory_item, user_inventory: user_inventory, item: alpha)
 
-        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(items_sort: "name_asc"))
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(sort: "name_asc"))
 
         expect(page.top_items).to eq([ alpha, bravo ])
       end
 
-      it "raises Api::Public::UnsupportedParamError for an unrecognized items_sort value" do
+      it "raises Api::Public::UnsupportedParamError for an unrecognized sort value" do
         user_inventory = create(:user_inventory)
 
-        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(items_sort: "bogus")) }
-          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported items_sort: bogus")
+        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(sort: "bogus")) }
+          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported sort: bogus")
       end
 
-      it "defaults items_page/items_per_page to 1/12 and clamps an oversized items_per_page to 100" do
+      it "defaults page/per_page to 1/12 and clamps an oversized per_page to 100" do
         user_inventory = create(:user_inventory)
 
         default_page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
         clamped_page = described_class.call(
-          user_inventory.steam_id, ActionController::Parameters.new(items_per_page: "9999")
+          user_inventory.steam_id, ActionController::Parameters.new(per_page: "9999")
         )
 
         aggregate_failures do

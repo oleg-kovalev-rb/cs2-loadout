@@ -1,6 +1,7 @@
 import { fmtUSD, centsToUSD, fmtDateTime } from '../../shared/utils/format'
 import { trendDirection } from '../../shared/utils/trend'
 import { RarityMixBar } from './RarityMixBar'
+import { rarityPercentages } from '../utils/rarity'
 
 // The nickname/avatar come from app_core's own enrichment endpoint (see
 // agent/styleguides/core/architecture-layers.md's app_core-owned
@@ -49,7 +50,10 @@ export function InventoryCard({ inventory, rank, profile }) {
           </span>
         )}
       </div>
-      <RarityMixBar percentages={inventory.rarityMixPercent} className="inv-mix" />
+      <RarityMixBar
+        percentages={rarityPercentages(inventory.rarityBreakdown)}
+        className="inv-mix"
+      />
       <div className="inv-card-foot">
         <span>{inventory.itemsCount} items</span>
         <span>synced {fmtDateTime(new Date(inventory.lastSyncedAt).getTime())}</span>

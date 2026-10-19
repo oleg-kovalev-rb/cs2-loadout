@@ -8,22 +8,22 @@ const item = (overrides = {}) => ({
   condition: 'Field-Tested',
   stattrak: false,
   currentPriceCents: 3845,
-  changeCents: -120,
+  change24hCents: -120,
   ...overrides,
 })
 
 describe('dashboardReducer', () => {
-  test('PORTFOLIO_RANGE_CHANGED only updates portfolioRange', () => {
-    const next = dashboardReducer(initialState, { type: 'PORTFOLIO_RANGE_CHANGED', range: '30d' })
-    expect(next.portfolioRange).toBe('30d')
-    expect(next.itemRange).toBe(initialState.itemRange)
+  test('PORTFOLIO_PERIOD_CHANGED only updates portfolioPeriod', () => {
+    const next = dashboardReducer(initialState, { type: 'PORTFOLIO_PERIOD_CHANGED', period: '30d' })
+    expect(next.portfolioPeriod).toBe('30d')
+    expect(next.itemPeriod).toBe(initialState.itemPeriod)
     expect(next.mode).toBe(initialState.mode)
   })
 
-  test('ITEM_RANGE_CHANGED only updates itemRange', () => {
-    const next = dashboardReducer(initialState, { type: 'ITEM_RANGE_CHANGED', range: '24h' })
-    expect(next.itemRange).toBe('24h')
-    expect(next.portfolioRange).toBe(initialState.portfolioRange)
+  test('ITEM_PERIOD_CHANGED only updates itemPeriod', () => {
+    const next = dashboardReducer(initialState, { type: 'ITEM_PERIOD_CHANGED', period: '24h' })
+    expect(next.itemPeriod).toBe('24h')
+    expect(next.portfolioPeriod).toBe(initialState.portfolioPeriod)
     expect(next.mode).toBe(initialState.mode)
   })
 

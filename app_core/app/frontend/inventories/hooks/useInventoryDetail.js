@@ -42,7 +42,7 @@ function mapDetail(raw) {
       oldestPriceAt: raw.portfolio.oldest_price_at
         ? new Date(raw.portfolio.oldest_price_at).getTime()
         : null,
-      range: raw.portfolio.range,
+      period: raw.portfolio.period,
       history: raw.portfolio.history.map((point) => ({
         at: new Date(point.at).getTime(),
         value: point.total_value_cents,
@@ -75,11 +75,7 @@ async function fetchDetailJson(url) {
 // already returns one fully composed payload per request, so a single
 // hook with a flat status is correct here — no need to split loading
 // into independently-resolving stages this page doesn't have.
-export function useInventoryDetail(
-  fetcherUrl,
-  steamId,
-  { range, itemsSort, itemsPage, itemsPerPage },
-) {
+export function useInventoryDetail(fetcherUrl, steamId, { period, sort, page, perPage }) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
 
@@ -88,7 +84,7 @@ export function useInventoryDetail(
     setStatus('loading')
 
     async function load() {
-      const url = `${fetcherUrl}/api/public/inventories/${steamId}?range=${range}&items_sort=${itemsSort}&items_page=${itemsPage}&items_per_page=${itemsPerPage}`
+      const url = `${fetcherUrl}/api/public/inventories/${steamId}?period=${period}&sort=${sort}&page=${page}&per_page=${perPage}`
       const payload = await fetchDetailJson(url)
 
       if (cancelled) return
@@ -104,7 +100,7 @@ export function useInventoryDetail(
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, steamId, range, itemsSort, itemsPage, itemsPerPage])
+  }, [fetcherUrl, steamId, period, sort, page, perPage])
 
   return { data, status }
 }

@@ -140,26 +140,4 @@ RSpec.describe Item do
       expect(described_class.matching_search("zzz_no_match")).to be_empty
     end
   end
-
-  describe ".sorted_by" do
-    let!(:cheap) { create(:item, current_price_cents: 100, change_24h_cents: -50, metadata: { item_name: "Bravo" }) }
-    let!(:expensive) { create(:item, current_price_cents: 900, change_24h_cents: 200, metadata: { item_name: "Alpha" }) }
-    let(:scope) { described_class.where(id: [ cheap.id, expensive.id ]) }
-
-    it "orders by current_price_cents descending for price_desc" do
-      expect(scope.sorted_by("price_desc").to_a).to eq([ expensive, cheap ])
-    end
-
-    it "orders by current_price_cents ascending for price_asc" do
-      expect(scope.sorted_by("price_asc").to_a).to eq([ cheap, expensive ])
-    end
-
-    it "orders by metadata item_name ascending for name_asc" do
-      expect(scope.sorted_by("name_asc").to_a).to eq([ expensive, cheap ])
-    end
-
-    it "orders by change_24h_cents descending for change_24h_desc (and as the default)" do
-      expect(scope.sorted_by("change_24h_desc").to_a).to eq([ expensive, cheap ])
-    end
-  end
 end

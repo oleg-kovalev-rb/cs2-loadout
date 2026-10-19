@@ -41,12 +41,12 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
 
   // The backend owns "current value + completeness"; this hook retries on its
   // own bounded schedule while the valuation is still incomplete.
-  const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioRange)
+  const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioPeriod)
   const itemHistory = useItemHistory(
     fetcherUrl,
     bridgeToken,
     state.selectedItem?.marketHashName ?? null,
-    state.itemRange,
+    state.itemPeriod,
   )
 
   if (status === 'loading') {
@@ -82,13 +82,13 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
           change={portfolioHistory.change}
           itemHistorySeries={itemHistory.series}
           itemHistoryStatus={itemHistory.status}
-          range={state.mode === 'item' ? state.itemRange : state.portfolioRange}
+          period={state.mode === 'item' ? state.itemPeriod : state.portfolioPeriod}
           mode={state.mode}
           selectedItem={selectedItem}
-          onRangeChange={(range) =>
+          onPeriodChange={(period) =>
             dispatch({
-              type: state.mode === 'item' ? 'ITEM_RANGE_CHANGED' : 'PORTFOLIO_RANGE_CHANGED',
-              range,
+              type: state.mode === 'item' ? 'ITEM_PERIOD_CHANGED' : 'PORTFOLIO_PERIOD_CHANGED',
+              period,
             })
           }
           onBack={() => dispatch({ type: 'BACK_TO_PORTFOLIO' })}

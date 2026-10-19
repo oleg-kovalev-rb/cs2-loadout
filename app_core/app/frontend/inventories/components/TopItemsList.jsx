@@ -7,13 +7,13 @@ const ITEMS_PER_PAGE = 12
 
 export function TopItemsList({
   topItems,
-  itemsSort,
-  itemsPage,
+  sort,
+  page,
   openDropdown,
   onDropdownToggle,
   onDropdownsClosed,
-  onItemsSortChange,
-  onItemsPageChange,
+  onSortChange,
+  onPageChange,
 }) {
   const toolbarRef = useRef(null)
 
@@ -41,10 +41,10 @@ export function TopItemsList({
         <h2>Top items</h2>
         <div ref={toolbarRef}>
           <ItemsSortDropdown
-            isOpen={openDropdown === 'itemsSort'}
-            onToggle={() => onDropdownToggle('itemsSort')}
-            sort={itemsSort}
-            onSortChange={onItemsSortChange}
+            isOpen={openDropdown === 'sort'}
+            onToggle={() => onDropdownToggle('sort')}
+            sort={sort}
+            onSortChange={onSortChange}
           />
         </div>
       </header>
@@ -58,12 +58,12 @@ export function TopItemsList({
       </ul>
 
       <Pagination
-        page={itemsPage}
+        page={page}
         totalPages={meta.total_pages}
         totalCount={meta.total_count}
         pageSize={ITEMS_PER_PAGE}
-        onPrev={() => onItemsPageChange(itemsPage - 1)}
-        onNext={() => onItemsPageChange(itemsPage + 1)}
+        onPrev={() => onPageChange(page - 1)}
+        onNext={() => onPageChange(page + 1)}
       />
     </section>
   )

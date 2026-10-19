@@ -54,7 +54,7 @@ describe('useDashboardData', () => {
       priceUnavailable: true,
       iconUrl: 'https://community.akamai.steamstatic.com/economy/image/abc123',
       currentPriceCents: null,
-      changeCents: 0,
+      change24hCents: 0,
       change24hPercent: 0,
       trendPoints: [],
     })

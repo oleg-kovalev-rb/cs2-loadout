@@ -39,18 +39,20 @@ class InventoryCatalogSerializer
         change_basis_at: summary.change_basis_at,
         change_partial: summary.change_partial,
         change_available: summary.change_available,
-        rarity_mix_percent: rarity_mix_percent(summary.rarity_counts),
+        rarity_breakdown: rarity_breakdown_json(summary.rarity_counts),
         last_synced_at: summary.last_synced_at
       }
     end
 
-    sig { params(rarity_counts: T::Hash[RarityTier, Integer]).returns(T::Hash[Symbol, Float]) }
-    def rarity_mix_percent(rarity_counts)
+    sig { params(rarity_counts: T::Hash[RarityTier, Integer]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    def rarity_breakdown_json(rarity_counts)
       classified_total = rarity_counts.values.sum
 
-      RarityTier.values.each_with_object({}) do |tier, mix|
+      RarityTier.values.map do |tier|
         count = rarity_counts[tier] || 0
-        mix[tier.serialize.to_sym] = classified_total.zero? ? 0.0 : (count.to_f / classified_total * 100).round(1)
+        percent = classified_total.zero? ? 0.0 : (count.to_f / classified_total * 100).round(1)
+
+        { tier: tier.serialize, count: count, percent: percent }
       end
     end
   end

@@ -372,7 +372,7 @@ html {
   text-decoration: underline;
 }
 
-.dash-root .range-toggle {
+.dash-root .period-toggle {
   display: flex;
   gap: 2px;
   background: var(--surface-raised);
@@ -380,7 +380,7 @@ html {
   border-radius: var(--radius-sm);
   padding: 2px;
 }
-.dash-root .range-btn {
+.dash-root .period-btn {
   appearance: none;
   border: none;
   background: transparent;
@@ -391,10 +391,10 @@ html {
   border-radius: 4px;
   cursor: pointer;
 }
-.dash-root .range-btn:hover {
+.dash-root .period-btn:hover {
   color: var(--text);
 }
-.dash-root .range-btn.is-active {
+.dash-root .period-btn.is-active {
   background: var(--accent-soft);
   color: var(--accent);
 }

@@ -31,11 +31,4 @@ module Steam
       def from_hash(hash); end
     end
   end
-
-  SteamDataObjects = T.type_alias do
-    T.any(
-      Response::Data::ItemPriceData,
-      Response::Data::InventoryData
-    )
-  end
 end

@@ -12,7 +12,7 @@ created: 2026-10-11
   entire `Api::Public::` namespace this plan introduces: its own
   `Api::Public::ApplicationController` with an independently-declared
   `rescue_from StandardError` (duplicated from, not shared with,
-  `Api::V1::ApplicationController` — the ADR's explicit decision, with a
+  the top-level `ApplicationController` — the ADR's explicit decision, with a
   named revisit trigger at a third namespace), and all four query-param
   handling rules the plan's Expected Behavior section relies on: clamp
   (don't reject) bounded numerics (`page`/`per_page`), reject-on-

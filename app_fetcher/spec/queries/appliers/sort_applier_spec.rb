@@ -54,12 +54,12 @@ RSpec.describe Appliers::SortApplier do
       expect {
         described_class.call(
           scope,
-          ActionController::Parameters.new(items_sort: "bogus"),
+          ActionController::Parameters.new(ordering: "bogus"),
           enum_class: Options::ItemSortOption,
           default: Options::ItemSortOption::PriceDesc,
-          param_name: "items_sort"
+          param_name: "ordering"
         )
-      }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported items_sort: bogus")
+      }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported ordering: bogus")
     end
   end
 end

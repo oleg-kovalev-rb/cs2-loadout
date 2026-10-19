@@ -1,7 +1,7 @@
-import { RangeToggle } from '../../shared/components/RangeToggle'
+import { PeriodToggle } from '../../shared/components/PeriodToggle'
 import { HeroChart } from '../../shared/components/HeroChart'
 import { fmtUSD, fmtPrice, centsToUSD, conditionAbbr } from '../../shared/utils/format'
-import { PORTFOLIO_RANGES, ITEM_RANGES } from '../chartConfig'
+import { PORTFOLIO_PERIODS, ITEM_PERIODS } from '../chartConfig'
 
 export function PortfolioTile({
   portfolioSeries,
@@ -9,14 +9,14 @@ export function PortfolioTile({
   change,
   itemHistorySeries,
   itemHistoryStatus,
-  range,
+  period,
   mode,
   selectedItem,
-  onRangeChange,
+  onPeriodChange,
   onBack,
 }) {
   const isItemMode = mode === 'item' && Boolean(selectedItem)
-  const ranges = isItemMode ? ITEM_RANGES : PORTFOLIO_RANGES
+  const periods = isItemMode ? ITEM_PERIODS : PORTFOLIO_PERIODS
   const values = isItemMode ? itemHistorySeries : portfolioSeries
   const isLoadingItemHistory = isItemMode && itemHistoryStatus === 'pending'
   const isTradable =
@@ -70,7 +70,7 @@ export function PortfolioTile({
             </span>
           )}
         </div>
-        <RangeToggle ranges={ranges} range={range} onChange={onRangeChange} />
+        <PeriodToggle periods={periods} period={period} onChange={onPeriodChange} />
       </header>
 
       <div className="hero-value-row">
@@ -104,7 +104,7 @@ export function PortfolioTile({
         )}
       </div>
 
-      <HeroChart values={values} range={range} />
+      <HeroChart values={values} period={period} />
     </section>
   )
 }

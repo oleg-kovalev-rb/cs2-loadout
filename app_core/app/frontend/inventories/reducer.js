@@ -27,22 +27,22 @@ export function catalogReducer(state, action) {
 }
 
 export const initialDetailState = {
-  range: '7d',
-  itemsSort: 'price_desc',
-  itemsPage: 1,
-  openDropdown: null, // 'itemsSort' | null
+  period: '7d',
+  sort: 'price_desc',
+  page: 1,
+  openDropdown: null, // 'sort' | null
 }
 
 export function detailReducer(state, action) {
   switch (action.type) {
-    case 'RANGE_CHANGED':
-      return { ...state, range: action.range }
+    case 'PERIOD_CHANGED':
+      return { ...state, period: action.period }
 
-    case 'ITEMS_SORT_CHANGED':
-      return { ...state, itemsSort: action.itemsSort, itemsPage: 1, openDropdown: null }
+    case 'SORT_CHANGED':
+      return { ...state, sort: action.sort, page: 1, openDropdown: null }
 
-    case 'ITEMS_PAGE_CHANGED':
-      return { ...state, itemsPage: action.itemsPage }
+    case 'PAGE_CHANGED':
+      return { ...state, page: action.page }
 
     case 'DROPDOWN_TOGGLED':
       return {

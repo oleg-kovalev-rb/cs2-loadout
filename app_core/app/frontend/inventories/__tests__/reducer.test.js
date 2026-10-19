@@ -40,34 +40,34 @@ describe('catalogReducer', () => {
 })
 
 describe('detailReducer', () => {
-  test('RANGE_CHANGED only updates range', () => {
-    const next = detailReducer(initialDetailState, { type: 'RANGE_CHANGED', range: '30d' })
-    expect(next.range).toBe('30d')
-    expect(next.itemsSort).toBe(initialDetailState.itemsSort)
+  test('PERIOD_CHANGED only updates period', () => {
+    const next = detailReducer(initialDetailState, { type: 'PERIOD_CHANGED', period: '30d' })
+    expect(next.period).toBe('30d')
+    expect(next.sort).toBe(initialDetailState.sort)
   })
 
-  test('ITEMS_SORT_CHANGED updates sort, resets itemsPage to 1, and closes the dropdown', () => {
-    const state = { ...initialDetailState, itemsPage: 4, openDropdown: 'itemsSort' }
-    const next = detailReducer(state, { type: 'ITEMS_SORT_CHANGED', itemsSort: 'price_asc' })
+  test('SORT_CHANGED updates sort, resets page to 1, and closes the dropdown', () => {
+    const state = { ...initialDetailState, page: 4, openDropdown: 'sort' }
+    const next = detailReducer(state, { type: 'SORT_CHANGED', sort: 'price_asc' })
 
-    expect(next.itemsSort).toBe('price_asc')
-    expect(next.itemsPage).toBe(1)
+    expect(next.sort).toBe('price_asc')
+    expect(next.page).toBe(1)
     expect(next.openDropdown).toBeNull()
   })
 
-  test('ITEMS_PAGE_CHANGED only updates itemsPage', () => {
-    const next = detailReducer(initialDetailState, { type: 'ITEMS_PAGE_CHANGED', itemsPage: 3 })
-    expect(next.itemsPage).toBe(3)
-    expect(next.range).toBe(initialDetailState.range)
+  test('PAGE_CHANGED only updates page', () => {
+    const next = detailReducer(initialDetailState, { type: 'PAGE_CHANGED', page: 3 })
+    expect(next.page).toBe(3)
+    expect(next.period).toBe(initialDetailState.period)
   })
 
   test('DROPDOWN_TOGGLED opens then closes the same dropdown', () => {
     const opened = detailReducer(initialDetailState, {
       type: 'DROPDOWN_TOGGLED',
-      dropdown: 'itemsSort',
+      dropdown: 'sort',
     })
-    expect(opened.openDropdown).toBe('itemsSort')
-    const closed = detailReducer(opened, { type: 'DROPDOWN_TOGGLED', dropdown: 'itemsSort' })
+    expect(opened.openDropdown).toBe('sort')
+    const closed = detailReducer(opened, { type: 'DROPDOWN_TOGGLED', dropdown: 'sort' })
     expect(closed.openDropdown).toBeNull()
   })
 

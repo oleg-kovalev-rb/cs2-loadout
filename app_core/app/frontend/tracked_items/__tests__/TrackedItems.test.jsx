@@ -248,6 +248,7 @@ describe('TrackedItems', () => {
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    await screen.findByText('AK-47 | Flatline', { exact: false })
 
     await user.click(screen.getByRole('button', { name: 'Grid' }))
 

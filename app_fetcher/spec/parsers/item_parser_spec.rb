@@ -92,16 +92,4 @@ RSpec.describe ItemParser do
       end
     end
   end
-
-  describe ".parse_collection" do
-    it "parses every name in the collection" do
-      result = described_class.parse_collection([ "AK-47 | Redline (Field-Tested)", "Fracture Case" ])
-
-      expect(result.map { |dto| dto[:market_hash_name] }).to eq([ "AK-47 | Redline (Field-Tested)", "Fracture Case" ])
-    end
-
-    it "returns an empty array for an empty collection" do
-      expect(described_class.parse_collection([])).to eq([])
-    end
-  end
 end

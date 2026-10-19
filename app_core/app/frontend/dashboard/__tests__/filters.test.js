@@ -15,7 +15,7 @@ const items = [
     condition: 'Field-Tested',
     stattrak: false,
     currentPriceCents: 4000,
-    changeCents: 300,
+    change24hCents: 300,
     change24hPercent: 8.11,
   },
   {
@@ -25,7 +25,7 @@ const items = [
     condition: 'Minimal Wear',
     stattrak: true,
     currentPriceCents: 14500,
-    changeCents: -200,
+    change24hCents: -200,
     change24hPercent: -1.36,
   },
   {
@@ -35,7 +35,7 @@ const items = [
     condition: 'Battle-Scarred',
     stattrak: false,
     currentPriceCents: 5800,
-    changeCents: 100,
+    change24hCents: 100,
     change24hPercent: 1.75,
   },
 ]
@@ -75,8 +75,8 @@ describe('applyFilters', () => {
 })
 
 describe('applySort', () => {
-  test('delta_desc orders biggest gainers first', () => {
-    const result = applySort(items, 'delta_desc')
+  test('change_24h_desc orders biggest gainers first', () => {
+    const result = applySort(items, 'change_24h_desc')
     expect(result.map((i) => i.marketHashName)).toEqual([
       'AK-47 | Redline (FT)',
       'AWP | Asiimov (BS)',
@@ -84,8 +84,8 @@ describe('applySort', () => {
     ])
   })
 
-  test('delta_asc orders biggest losers first', () => {
-    const result = applySort(items, 'delta_asc')
+  test('change_24h_asc orders biggest losers first', () => {
+    const result = applySort(items, 'change_24h_asc')
     expect(result.map((i) => i.marketHashName)).toEqual([
       'AK-47 | Vulcan (MW) ST',
       'AWP | Asiimov (BS)',

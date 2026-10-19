@@ -24,14 +24,6 @@ class Item < ApplicationRecord
   scope :matching_search, lambda { |term|
     where("metadata->>'item_name' ILIKE ?", "%#{sanitize_sql_like(term)}%") if term.present?
   }
-  scope :sorted_by, lambda { |sort|
-    case sort
-    when "price_desc" then order(current_price_cents: :desc)
-    when "price_asc" then order(current_price_cents: :asc)
-    when "name_asc" then order(Arel.sql("metadata->>'item_name' ASC"))
-    else order(change_24h_cents: :desc)
-    end
-  }
 
   sig { returns(T::Boolean) }
   def stattrak

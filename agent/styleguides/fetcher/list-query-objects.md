@@ -156,7 +156,7 @@ or a bare list of already-shaped records.
   must be an `Options::*` sort enum (or another enum whose members
   implement `#apply(scope)`), never a plain value enum such as
   `PricePeriod`.
-- **Period/range params (`PricePeriod`)** are resolved by
+- **Period params (`PricePeriod`)** are resolved by
   `PricePeriod.resolve(raw_value, supported:, default:)` →
   `T.nilable(PricePeriod)`, not by `Appliers::SortApplier`. Each model
   owns the periods it can serve (`InventoryValueLog::SUPPORTED_PERIODS`
@@ -270,7 +270,7 @@ re-shape its result — compose the structs at the call site instead.
   new closed-enum query param in this layer.
 - `Appliers::SortApplier`/`Appliers::FilterApplier` must never reference
   a specific model, scope, or `Options::*` class by name.
-- A period/range param must resolve through `PricePeriod.resolve`
+- A period param must resolve through `PricePeriod.resolve`
   against the queried model's `SUPPORTED_PERIODS`; never route it through
   `Appliers::SortApplier`.
 - `<Resource>CatalogQuery.call` must never reference an
@@ -327,7 +327,7 @@ itself — both propagate to the controller's base class:
 1. An unrecognized closed-enum value, raised as `Api::Public::
    UnsupportedParamError` from `Appliers::SortApplier` for sort params, or
    by the query object after `PricePeriod.resolve` returns nil for a
-   period/range param. (In principle an `Options::*` value's own `#apply`
+   period param. (In principle an `Options::*` value's own `#apply`
    may raise it too if a future resource needs a closed-enum-shaped
    filter — the mechanism is the same.)
 2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
@@ -375,7 +375,7 @@ Api::Public::<X>Controller#show
     ↓ (on miss)
 <Resource>DetailQuery.call(identifier, params)
     ↓ Model.find_by!(identifier)  → raises ActiveRecord::RecordNotFound, or continues
-    ↓ PricePeriod.resolve(...)  — period/range param, or raises
+    ↓ PricePeriod.resolve(...)  — period param, or raises
     ↓ Appliers::SortApplier.call(...) / Appliers::Pagination#apply(...)  — for one embedded sub-collection, if any
     ↓ model scopes, app/caching/ data caches
     → <Resource>DetailQuery::Page (T::Struct)

@@ -14,10 +14,10 @@ const ITEMS_PER_PAGE = 12
 export function InventoryDetail({ fetcherUrl, steamId, profile }) {
   const [state, dispatch] = useReducer(detailReducer, initialDetailState)
   const { data, status } = useInventoryDetail(fetcherUrl, steamId, {
-    range: state.range,
-    itemsSort: state.itemsSort,
-    itemsPage: state.itemsPage,
-    itemsPerPage: ITEMS_PER_PAGE,
+    period: state.period,
+    sort: state.sort,
+    page: state.page,
+    perPage: ITEMS_PER_PAGE,
   })
 
   if (status === 'loading') return <InventoryDetailSkeleton />
@@ -57,7 +57,7 @@ export function InventoryDetail({ fetcherUrl, steamId, profile }) {
       <div className="detail-grid">
         <PortfolioHeroTile
           portfolio={data.portfolio}
-          onRangeChange={(range) => dispatch({ type: 'RANGE_CHANGED', range })}
+          onPeriodChange={(period) => dispatch({ type: 'PERIOD_CHANGED', period })}
         />
 
         <StatTile label="Items" value={data.itemsCount.toLocaleString('en-US')} />
@@ -78,13 +78,13 @@ export function InventoryDetail({ fetcherUrl, steamId, profile }) {
 
         <TopItemsList
           topItems={data.topItems}
-          itemsSort={state.itemsSort}
-          itemsPage={state.itemsPage}
+          sort={state.sort}
+          page={state.page}
           openDropdown={state.openDropdown}
           onDropdownToggle={(dropdown) => dispatch({ type: 'DROPDOWN_TOGGLED', dropdown })}
           onDropdownsClosed={() => dispatch({ type: 'DROPDOWNS_CLOSED' })}
-          onItemsSortChange={(itemsSort) => dispatch({ type: 'ITEMS_SORT_CHANGED', itemsSort })}
-          onItemsPageChange={(itemsPage) => dispatch({ type: 'ITEMS_PAGE_CHANGED', itemsPage })}
+          onSortChange={(sort) => dispatch({ type: 'SORT_CHANGED', sort })}
+          onPageChange={(page) => dispatch({ type: 'PAGE_CHANGED', page })}
         />
       </div>
     </main>

@@ -87,12 +87,12 @@ distinct param shapes, each with its own validation posture:
   empty-array-equivalent result for that criterion, same as any other
   value that happens to match nothing). Never validate these against a
   known-values list; there isn't one to validate against.
-- **Closed-enum params** (e.g. `sort`, `period`, `range`): a small, fixed
+- **Closed-enum params** (e.g. `sort`, `period`): a small, fixed
   set of accepted values this codebase does enumerate. An unrecognized
   value **is** an error: `render json: { message: "Unsupported
   <param_name>: <value>" }, status: :bad_request`. Sort params are
   resolved and raised by `Appliers::SortApplier` (or an `Options::*`
-  value's own `#apply`) in the query-objects layer. Period/range params
+  value's own `#apply`) in the query-objects layer. Period params
   are resolved by `PricePeriod.resolve` against the queried model's
   `SUPPORTED_PERIODS` (`InventoryValueLog` without `24h`, `PriceLog` with
   every period); a Public query object raises `Api::Public::
@@ -206,7 +206,7 @@ Four shapes, minus the auth-failure shape `internal-api-controllers.md`
 has (there is no auth to fail):
 
 1. **Explicit per-action failure branch** — a closed-enum param
-   (`sort`, `period`, `range`) with an unrecognized value, validated
+   (`sort`, `period`) with an unrecognized value, validated
    inline in a Public controller action that isn't built on the
    query-objects layer: `:bad_request` with
    `{ message: "Unsupported <param>: <value>" }`. In `Api::V1::`, the
@@ -217,7 +217,7 @@ has (there is no auth to fail):
 2. **Raised from the query-objects layer, caught centrally** — for a
    list endpoint built on `agent/styleguides/fetcher/list-query-objects.md`,
    sort validation is performed by `Appliers::SortApplier` (or an
-   `Options::*` value's own `#apply`), and period/range validation is
+   `Options::*` value's own `#apply`), and period validation is
    performed by the query object after `PricePeriod.resolve` returns nil.
    Both raise `Api::Public::UnsupportedParamError`
    (`lib/api/public/unsupported_param_error.rb`)

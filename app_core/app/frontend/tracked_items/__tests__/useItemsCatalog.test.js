@@ -87,7 +87,7 @@ describe('useItemsCatalog', () => {
       iconUrl: 'https://example.com/icon.png',
       rarity: 'Classified',
       currentPriceCents: 4218,
-      changeCents: 130,
+      change24hCents: 130,
       change24hPercent: 3.18,
       trendPoints: [{ at: '2026-10-10T00:00:00Z', priceCents: 4000 }],
     })

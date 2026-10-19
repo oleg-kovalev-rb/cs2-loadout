@@ -10,7 +10,7 @@ import {
 import { ChartTooltip } from './ChartTooltip'
 import { fmtUSD, centsToUSD } from '../utils/format'
 import { hasPartialPoints } from '../utils/chartPoints'
-import { generateAxisLabels, Y_AXIS_TICK_COUNT, RANGE_MS } from '../chartConfig'
+import { generateAxisLabels, Y_AXIS_TICK_COUNT, PERIOD_MS } from '../chartConfig'
 
 function PartialDot({ cx, cy, payload, index }) {
   if (payload.complete !== false) return <g key={index} />
@@ -47,11 +47,11 @@ function PartialActiveDot({ cx, cy, payload }) {
   return <circle cx={cx} cy={cy} r={4} fill="var(--accent)" stroke="var(--bg)" strokeWidth={2} />
 }
 
-export function HeroChart({ values, range }) {
+export function HeroChart({ values, period }) {
   const now = Date.now()
   // 'all' has no fixed span — bound the domain to the actual data instead
-  // of a known duration, since RANGE_MS has no entry for it.
-  const domain = range === 'all' ? ['dataMin', 'dataMax'] : [now - RANGE_MS[range], now]
+  // of a known duration, since PERIOD_MS has no entry for it.
+  const domain = period === 'all' ? ['dataMin', 'dataMax'] : [now - PERIOD_MS[period], now]
   const data = values.map(({ at, value, complete, pricedItemsCount, pricableItemsCount }) => ({
     at,
     cents: value,
@@ -60,7 +60,7 @@ export function HeroChart({ values, range }) {
     pricableItemsCount,
   }))
   const hasPartial = hasPartialPoints(data)
-  const xLabels = generateAxisLabels(range)
+  const xLabels = generateAxisLabels(period)
 
   return (
     <>

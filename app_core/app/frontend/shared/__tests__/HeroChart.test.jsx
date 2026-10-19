@@ -11,13 +11,13 @@ function values(complete) {
 
 describe('HeroChart', () => {
   test('shows the partial-estimate note when the series has an incomplete point', () => {
-    render(<HeroChart values={values(false)} range="7d" />)
+    render(<HeroChart values={values(false)} period="7d" />)
 
     expect(screen.getByText('Partial estimate')).toBeInTheDocument()
   })
 
   test('omits the note for a fully complete series', () => {
-    const { container } = render(<HeroChart values={values(true)} range="7d" />)
+    const { container } = render(<HeroChart values={values(true)} period="7d" />)
 
     expect(container.querySelector('.chart-note')).not.toBeInTheDocument()
   })

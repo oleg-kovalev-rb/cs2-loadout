@@ -1,8 +1,8 @@
 import { RarityMixBar } from './RarityMixBar'
-import { rarityTier } from '../utils/rarity'
+import { rarityPercentages, rarityTier } from '../utils/rarity'
 
 export function RarityLegend({ breakdown }) {
-  const percentages = Object.fromEntries(breakdown.map((row) => [row.tier, row.percent]))
+  const percentages = rarityPercentages(breakdown)
 
   return (
     <section className="tile tile-rarity">

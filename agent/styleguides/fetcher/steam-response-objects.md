@@ -29,8 +29,8 @@ Don't use it for internal `app_fetcher` domain data (e.g. `Item`,
   `Steam::Response::Data::InventoryData` →
   `lib/steam/response/data/inventory_data.rb`). Do not add a new DTO
   class into `response.rb` itself — that file holds only the generic
-  `Steam::Response[DataClass]` struct, its `DataClassMethods` interface,
-  and the `SteamDataObjects` type alias.
+  `Steam::Response[DataClass]` struct and its `DataClassMethods`
+  interface.
 - Define each DTO with the **compact class-path form**:
   `class Steam::Response::Data::ItemPriceData < T::Struct ... end`, and
   use the **fully-qualified name inside the class body too**

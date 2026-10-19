@@ -19,10 +19,10 @@ function renderTile(overrides = {}) {
     change: NO_CHANGE,
     itemHistorySeries: [],
     itemHistoryStatus: 'pending',
-    range: '7d',
+    period: '7d',
     mode: 'portfolio',
     selectedItem: null,
-    onRangeChange: vi.fn(),
+    onPeriodChange: vi.fn(),
     onBack: vi.fn(),
     ...overrides,
   }
@@ -173,13 +173,13 @@ describe('PortfolioTile', () => {
     expect(container.querySelector('.hero-delta')).toBeInTheDocument()
   })
 
-  test('portfolio mode: the range toggle has no 24h option', () => {
+  test('portfolio mode: the period toggle has no 24h option', () => {
     renderTile({ mode: 'portfolio' })
 
     expect(screen.queryByRole('button', { name: '24h' })).not.toBeInTheDocument()
   })
 
-  test('item mode: the range toggle includes a 24h option', () => {
+  test('item mode: the period toggle includes a 24h option', () => {
     renderTile({
       mode: 'item',
       selectedItem: {
