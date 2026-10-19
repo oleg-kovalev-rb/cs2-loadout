@@ -35,24 +35,6 @@ a change's scope just because an unrelated file is flagged here.
 
 ## `app_fetcher`
 
-- `app_fetcher/app/models/item.rb` had a latent runtime bug in
-  `#stattrak` (`super.nil? ? false : super`): calling it on an item
-  loaded via a relation query (not a freshly-`.create!`d instance) with
-  no `"stattrak"` key in `metadata` raised `TypeError: Return value:
-  Expected type T::Boolean, got type String with value "stattrak"` at
-  the `sig`-wrapped boundary — root cause traced to
-  `ActiveRecord::Store`'s generated reader (`super_method.call`)
-  returning the attribute's own key name instead of `nil`/the stored
-  value in that specific case; reproducible with zero controller code
-  involved (`Item.all.to_a[0].stattrak`). **Fixed** as part of
-  admin-panel-backend-foundation (not left as a fix_me entry) since the
-  new `Api::Admin::ItemsController#index`/`#show` genuinely needed
-  `Item.all`/`Item.find_by` + `.stattrak` to work; replaced with a direct
-  `!!metadata["stattrak"]` read that doesn't go through the buggy `super`
-  path. `Api::Public::ItemsController#item_json` (which also calls
-  `.stattrak`) benefits from the same fix as a side effect; its own spec
-  coincidentally never exercised the triggering combination (2+ items in
-  one query, missing `"stattrak"` key) so it never surfaced there.
 - `app_fetcher/spec/fixtures/items.yml`, `price_logs.yml` — Rails
   fixtures; `agent/styleguides/rspec-conventions.md` now standardizes
   on `FactoryBot` for test data. Existing rows (`redline`,

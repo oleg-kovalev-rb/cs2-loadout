@@ -14,11 +14,11 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
   end
 
   context "when the steam_id has never been synced" do
-    it "returns an empty object" do
+    it "returns no prices and nothing pending" do
       get "/api/v1/item_prices/dynamics", headers: headers
 
       expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)).to eq({})
+      expect(JSON.parse(response.body)).to eq({ "prices" => {}, "pending_count" => 0 })
     end
   end
 
@@ -27,18 +27,19 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
 
     before { create(:user_inventory, steam_id: steam_id, items: [ priced_item ]) }
 
-    it "returns current price, change, and computed percent" do
+    it "returns current price, change, computed percent, and nothing pending" do
       get "/api/v1/item_prices/dynamics", headers: headers
 
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
 
       aggregate_failures do
-        expect(json.keys).to contain_exactly(priced_item.market_hash_name)
-        expect(json[priced_item.market_hash_name]["current_price_cents"]).to eq(15_050)
-        expect(json[priced_item.market_hash_name]["change_24h_cents"]).to eq(520)
-        expect(json[priced_item.market_hash_name]["change_24h_percent"]).to eq(3.58)
-        expect(json[priced_item.market_hash_name]["price_updated_at"]).to eq(priced_item.price_updated_at.iso8601)
+        expect(json["pending_count"]).to eq(0)
+        expect(json["prices"].keys).to contain_exactly(priced_item.market_hash_name)
+        expect(json["prices"][priced_item.market_hash_name]["current_price_cents"]).to eq(15_050)
+        expect(json["prices"][priced_item.market_hash_name]["change_24h_cents"]).to eq(520)
+        expect(json["prices"][priced_item.market_hash_name]["change_24h_percent"]).to eq(3.58)
+        expect(json["prices"][priced_item.market_hash_name]["price_updated_at"]).to eq(priced_item.price_updated_at.iso8601)
       end
     end
   end
@@ -52,7 +53,7 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
       get "/api/v1/item_prices/dynamics", headers: headers
 
       json = JSON.parse(response.body)
-      expect(json[item.market_hash_name]["change_24h_percent"]).to eq(0.0)
+      expect(json["prices"][item.market_hash_name]["change_24h_percent"]).to eq(0.0)
     end
   end
 
@@ -61,10 +62,10 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
 
     before { create(:user_inventory, steam_id: steam_id, items: [ unpriced_item ]) }
 
-    it "omits it from the response" do
+    it "omits it from the prices and counts it as pending" do
       get "/api/v1/item_prices/dynamics", headers: headers
 
-      expect(JSON.parse(response.body)).to eq({})
+      expect(JSON.parse(response.body)).to eq({ "prices" => {}, "pending_count" => 1 })
     end
 
     it "enqueues a price warmup for it" do
@@ -90,6 +91,33 @@ RSpec.describe "GET /api/v1/item_prices/dynamics", type: :request do
       get "/api/v1/item_prices/dynamics", headers: headers
 
       expect(PriceUpdateWorker.jobs.size).to eq(20)
+    end
+  end
+
+  context "with a mixed inventory of priced and unpriced items" do
+    let(:priced_item) { create(:item, current_price_cents: 1500) }
+    let(:unpriced_marketable) { create(:item, :without_price) }
+    let(:unpriced_non_marketable) { create(:item, :without_price, :non_marketable) }
+    let(:unpriced_price_unavailable) { create(:item, :without_price, :price_unavailable) }
+
+    before do
+      create(:user_inventory, steam_id: steam_id, items: [
+        priced_item,
+        unpriced_marketable,
+        unpriced_non_marketable,
+        unpriced_price_unavailable
+      ])
+    end
+
+    it "counts only marketable, priceable items as pending" do
+      get "/api/v1/item_prices/dynamics", headers: headers
+
+      json = JSON.parse(response.body)
+
+      aggregate_failures do
+        expect(json["pending_count"]).to eq(1)
+        expect(json["prices"].keys).to contain_exactly(priced_item.market_hash_name)
+      end
     end
   end
 end

@@ -19,6 +19,17 @@
   padding-bottom: 14px;
 }
 
+/* ---------- non-blocking load-error notice ---------- */
+.dash-root .dash-notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(240, 84, 107, 0.35);
+  border-radius: var(--radius-md);
+  background: var(--down-soft);
+  color: var(--down);
+  font-size: 0.8125rem;
+}
+
 /* ---------- signed-out state ---------- */
 .dash-root .signin-stage {
   display: flex;

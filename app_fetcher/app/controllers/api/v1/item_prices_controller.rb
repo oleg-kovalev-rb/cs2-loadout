@@ -34,7 +34,9 @@ module Api
           }
         end
 
-        render json: result, status: :ok
+        pending_count = Item.awaiting_price.where(market_hash_name: names).count
+
+        render json: { prices: result, pending_count: pending_count }, status: :ok
       end
 
       sig { void }
