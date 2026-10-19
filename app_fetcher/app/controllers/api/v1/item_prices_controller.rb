@@ -23,24 +23,13 @@ module Api
 
       sig { void }
       def history
-        period = PricePeriod.resolve(
-          params[:period], supported: PriceLog::SUPPORTED_PERIODS, default: PricePeriod::ThirtyDays
-        )
+        item = Item.find_by!(market_hash_name: params[:market_hash_name])
 
-        raise Api::V1::UnsupportedParamError, "Unsupported period: #{params[:period]}" unless period
-
-        item = Item.find_by(market_hash_name: params[:market_hash_name])
-
-        unless item
-          render json: [], status: :ok
-          return
-        end
-
-        points = if period == PricePeriod::ThirtyDays
+        points = if params[:period] == ::Options::DateRange::Last30Days.serialize
           PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name] || []
         else
-          PriceLog.where(item_id: item.id).for_period(period).order(:created_at).map do |log|
-            { at: log.created_at.iso8601, price_cents: log.lowest_price_cents, volume: log.volume }
+          ItemPriceHistoryQuery.call(item, params).points.map do |point|
+            { at: point.at, price_cents: point.price_cents, volume: point.volume }
           end
         end
 

@@ -124,7 +124,7 @@ Rejected because:
   produced no payload" without an out-of-band convention, so the
   convention buys nothing over a plain `nil` return;
 - `ruby-sorbet.md` already prefers a `T::Enum` over a `Hash`/flag set for
-  a closed tag vocabulary (`PricePeriod` is the precedent);
+  a closed tag vocabulary (`Options::DateRange` is the precedent);
 - two booleans (`success`, plus an implied `skipped`) can contradict.
 
 ### Alternative: return `T.nilable(InventoryValueLog)` from the gated service only

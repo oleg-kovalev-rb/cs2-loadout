@@ -175,8 +175,10 @@ a behaviorless Rails-level common ancestor.
 
 - `Api::V1::BaseController < ::ApplicationController`, its own file at
   `app_fetcher/app/controllers/api/v1/base_controller.rb` — player
-  bridge-token `before_action`, its own `rescue_from StandardError`, and
-  its own `rescue_from Api::V1::UnsupportedParamError`.
+  bridge-token `before_action`, its own `rescue_from StandardError`, its
+  own `rescue_from Api::V1::UnsupportedParamError`, and its own
+  `rescue_from ActiveRecord::RecordNotFound` (rendering
+  `404 { message: "Not found" }`).
 - `Api::Public::BaseController < ::ApplicationController`, its own
   file at `app_fetcher/app/controllers/api/public/base_controller.rb`.
   No `before_action` for authentication of any kind.

@@ -92,13 +92,12 @@ distinct param shapes, each with its own validation posture:
   value **is** an error: `render json: { message: "Unsupported
   <param_name>: <value>" }, status: :bad_request`. Sort params are
   resolved and raised by `Appliers::SortApplier` (or an `Options::*`
-  value's own `#apply`) in the query-objects layer. Period params
-  are resolved by `PricePeriod.resolve` against the queried model's
-  `SUPPORTED_PERIODS` (`InventoryValueLog` without `24h`, `PriceLog` with
-  every period); a Public query object raises `Api::Public::
-  UnsupportedParamError` on nil, while an `Api::V1` action raises
-  `Api::V1::UnsupportedParamError` and lets its base controller render
-  the response. See
+  value's own `#apply`) in the query-objects layer. Period params are
+  resolved by `Options::DateRange::Param#parse` with an explicit
+  `allowed_ranges:`/`default:`/`error_class:`; a Public query object
+  passes `Api::Public::UnsupportedParamError`, while a V1 query object
+  passes `Api::V1::UnsupportedParamError` and lets its base controller
+  render the response. See
   `agent/styleguides/fetcher/list-query-objects.md`'s Interface section
   and this file's own Error Handling section below for the resulting
   response shape, which is identical either way.
@@ -211,16 +210,16 @@ has (there is no auth to fail):
    inline in a Public controller action that isn't built on the
    query-objects layer: `:bad_request` with
    `{ message: "Unsupported <param>: <value>" }`. In `Api::V1::`, the
-   equivalent case (`ItemPricesController#history`'s
-   `PricePeriod`/`SUPPORTED_PERIODS` pattern) instead raises
-   `Api::V1::UnsupportedParamError`, caught by `Api::V1::BaseController`
-   — see `internal-api-controllers.md`'s Error Handling.
+   equivalent case (a closed-enum period param) instead passes
+   `Api::V1::UnsupportedParamError` to `Options::DateRange::Param#parse`,
+   caught by `Api::V1::BaseController` — see
+   `internal-api-controllers.md`'s Error Handling.
 2. **Raised from the query-objects layer, caught centrally** — for a
    list endpoint built on `agent/styleguides/fetcher/list-query-objects.md`,
    sort validation is performed by `Appliers::SortApplier` (or an
    `Options::*` value's own `#apply`), and period validation is
-   performed by the query object after `PricePeriod.resolve` returns nil.
-   Both raise `Api::Public::UnsupportedParamError`
+   performed by `Options::DateRange::Param#parse` inside the query
+   object. Both raise `Api::Public::UnsupportedParamError`
    (`lib/api/public/unsupported_param_error.rb`)
    instead of returning an error for the controller to branch on.
    `Api::Public::BaseController` declares

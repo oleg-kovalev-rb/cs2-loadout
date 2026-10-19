@@ -51,7 +51,7 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
       let(:priced_item) { create(:item, current_price_cents: 3845) }
       let!(:user_inventory) { create(:user_inventory, steam_id: steam_id, items: [ priced_item ]) }
 
-      it "computes today's value synchronously and returns a single live history point" do
+      it "returns the live value and a single history point without writing a log" do
         get "/api/v1/inventory_values", headers: headers
 
         json = JSON.parse(response.body)
@@ -63,7 +63,7 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
           expect(json["history"].size).to eq(1)
           expect(json["history"].first["total_value_cents"]).to eq(3845)
           expect(json["change"]["available"]).to be(false)
-          expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).to exist
+          expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
           expect(InventoryValueUpdateWorker.jobs).to be_empty
         end
       end
@@ -86,11 +86,11 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
         end
       end
 
-      it "does not create a duplicate row for today on a repeat request" do
+      it "does not write a row on repeat requests" do
         get "/api/v1/inventory_values", headers: headers
         get "/api/v1/inventory_values", headers: headers
 
-        expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current).count).to eq(1)
+        expect(InventoryValueLog.where(steam_id: steam_id)).to be_empty
       end
     end
 
@@ -167,16 +167,6 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
           expect(response).to have_http_status(:bad_request)
           expect(JSON.parse(response.body)["message"]).to eq("Unsupported period: 24h")
         end
-      end
-
-      it "does not recompute today's row when a narrow period excludes every existing entry" do
-        get "/api/v1/inventory_values?period=7d", headers: headers
-
-        recent_log.update!(log_date: 61.days.ago.to_date)
-
-        get "/api/v1/inventory_values?period=7d", headers: headers
-
-        expect(InventoryValueLog.where(steam_id: steam_id, log_date: Date.current)).not_to exist
       end
     end
 

@@ -53,22 +53,10 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
-  context "with a valid token, cold start (no prior sync)" do
+  context "with a valid token, cold start (no prior sync)",
+          vcr: { cassette_name: "api_v1_inventories/cold_start" } do
     let(:steam_id) { "76561198000000001" }
     let(:token) { bridge_token_for(steam_id) }
-
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [ { classid: "1", market_hash_name: items(:redline).market_hash_name } ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-    end
 
     it "returns the inventory for the steam_id carried in the token, never a client-supplied one" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
@@ -77,7 +65,6 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
       json = JSON.parse(response.body)
       expect(json["items_count"]).to eq(1)
       expect(json["items"].first["market_hash_name"]).to eq(items(:redline).market_hash_name)
-      expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made
     end
 
     it "does not include price values, but exposes the price_unavailable flag" do
@@ -106,31 +93,21 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
       expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(items(:redline))
     end
 
-    it "does not call the Steam API again on a second identical request" do
+    it "does not sync again on a second identical request" do
+      expect(UserInventorySyncService).to receive(:call).once.and_call_original
+
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
 
-      expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made.once
+      expect(response).to have_http_status(:success)
     end
   end
 
-  context "with a valid token, cold start, unknown item carries an icon" do
+  context "with a valid token, cold start, unknown item carries an icon",
+          vcr: { cassette_name: "api_v1_inventories/unknown_item_icon" } do
     let(:steam_id) { "76561198000000004" }
     let(:token) { bridge_token_for(steam_id) }
     let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
-
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [ { classid: "1", market_hash_name: unknown_name, icon_url: "abc123" } ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-    end
 
     it "includes the resolved icon URL in the backfilled item's metadata" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
@@ -140,34 +117,11 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
-  context "with a valid token, cold start, unknown item carries marketable/tradable/rarity/category" do
+  context "with a valid token, cold start, unknown item carries marketable/tradable/rarity/category",
+          vcr: { cassette_name: "api_v1_inventories/unknown_item_metadata" } do
     let(:steam_id) { "76561198000000005" }
     let(:token) { bridge_token_for(steam_id) }
     let(:unknown_name) { "AK-47 | Totally Unknown (Field-Tested)" }
-
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [
-              {
-                classid: "1",
-                market_hash_name: unknown_name,
-                marketable: 1,
-                tradable: 0,
-                tags: [
-                  { category: "Type", localized_tag_name: "Rifle" },
-                  { category: "Rarity", localized_tag_name: "Classified" }
-                ]
-              }
-            ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-    end
 
     it "includes the resolved marketable/tradable/rarity/category values in the backfilled item's metadata" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
@@ -207,22 +161,12 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
-  context "with items that have no price yet" do
+  context "with items that have no price yet",
+          vcr: { cassette_name: "api_v1_inventories/unpriced_item" } do
     let(:steam_id) { "76561198000000002" }
     let(:token) { bridge_token_for(steam_id) }
-    let!(:unpriced_item) { create(:item, :without_price) }
-
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [ { classid: "1", market_hash_name: unpriced_item.market_hash_name } ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
+    let!(:unpriced_item) do
+      create(:item, :without_price, market_hash_name: "AK-47 | Unpriced Test (Field-Tested)")
     end
 
     it "does not enqueue a price warmup from this endpoint (relocated to item_prices#dynamics)" do
@@ -232,112 +176,13 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
-  context "when the Steam call fails" do
+  context "when the Steam call fails",
+          vcr: { cassette_name: "api_v1_inventories/steam_failure" } do
     let(:steam_id) { "76561198000000003" }
     let(:token) { bridge_token_for(steam_id) }
 
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(status: 200, body: { success: false }.to_json, headers: { "Content-Type" => "application/json" })
-    end
-
     it "returns the underlying error" do
       get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
-
-      expect(response).to have_http_status(:bad_request)
-      expect(JSON.parse(response.body)["message"]).to be_present
-    end
-  end
-end
-
-RSpec.describe "POST /api/v1/inventories/refresh", type: :request do
-  let(:steam_id) { "76561198000000001" }
-  let(:token) { bridge_token_for(steam_id) }
-  let(:headers) { { "Authorization" => "Bearer #{token}" } }
-
-  context "without a bridge token" do
-    it "returns unauthorized" do
-      post "/api/v1/inventories/refresh"
-
-      expect(response).to have_http_status(:unauthorized)
-    end
-  end
-
-  context "on a warm inventory" do
-    let(:old_item) { create(:item) }
-    let(:new_item) { create(:item) }
-
-    before do
-      create(:user_inventory, steam_id: steam_id, items: [ old_item ])
-
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [ { classid: "1", market_hash_name: new_item.market_hash_name } ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-    end
-
-    it "re-fetches from Steam and fully replaces the synced item set" do
-      post "/api/v1/inventories/refresh", headers: headers
-
-      aggregate_failures do
-        expect(response).to have_http_status(:success)
-        json = JSON.parse(response.body)
-        expect(json["items_count"]).to eq(1)
-        expect(json["items"].first.keys).to contain_exactly("market_hash_name", "price_unavailable", "metadata")
-        expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made.once
-        expect(UserInventory.find_by(steam_id: steam_id).items).to contain_exactly(new_item)
-      end
-    end
-
-    it "rejects a second refresh for the same steam_id within the same day" do
-      post "/api/v1/inventories/refresh", headers: headers
-      post "/api/v1/inventories/refresh", headers: headers
-
-      aggregate_failures do
-        expect(response).to have_http_status(:too_many_requests)
-        expect(JSON.parse(response.body)["message"]).to be_present
-        expect(a_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/})).to have_been_made.once
-      end
-    end
-  end
-
-  context "on a cold inventory (no prior GET)" do
-    let(:item) { create(:item) }
-
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(
-          status: 200,
-          body: {
-            success: 1,
-            assets: [ { classid: "1" } ],
-            descriptions: [ { classid: "1", market_hash_name: item.market_hash_name } ]
-          }.to_json,
-          headers: { "Content-Type" => "application/json" }
-        )
-    end
-
-    it "still succeeds" do
-      post "/api/v1/inventories/refresh", headers: headers
-
-      expect(response).to have_http_status(:success)
-    end
-  end
-
-  context "when the Steam call fails" do
-    before do
-      stub_request(:get, %r{steamcommunity\.com/inventory/#{steam_id}/730/2})
-        .to_return(status: 200, body: { success: false }.to_json, headers: { "Content-Type" => "application/json" })
-    end
-
-    it "returns the underlying error" do
-      post "/api/v1/inventories/refresh", headers: headers
 
       expect(response).to have_http_status(:bad_request)
       expect(JSON.parse(response.body)["message"]).to be_present

@@ -190,11 +190,23 @@ RSpec.describe "GET /api/v1/item_prices/:market_hash_name/history", type: :reque
   end
 
   context "for an unknown market_hash_name" do
-    it "returns an empty array" do
+    it "returns not_found" do
       get "/api/v1/item_prices/#{ERB::Util.url_encode('AK-47 | Unknown (Field-Tested)')}/history", headers: headers
 
-      expect(response).to have_http_status(:success)
-      expect(JSON.parse(response.body)).to eq([])
+      aggregate_failures do
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)).to eq({ "message" => "Not found" })
+      end
+    end
+
+    it "returns not_found on the explicit 30d cache path too" do
+      get "/api/v1/item_prices/#{ERB::Util.url_encode('AK-47 | Unknown (Field-Tested)')}/history?period=30d",
+          headers: headers
+
+      aggregate_failures do
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)).to eq({ "message" => "Not found" })
+      end
     end
   end
 
@@ -225,11 +237,13 @@ RSpec.describe "GET /api/v1/item_prices/:market_hash_name/history", type: :reque
       end
     end
 
-    it "serves the cached PriceHistoryCache path (no DB hit on a warm cache)" do
-      get "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history", headers: headers
+    it "serves the cached PriceHistoryCache path for an explicit 30d request (no DB hit on a warm cache)" do
+      path = "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history?period=30d"
+
+      get path, headers: headers
 
       queries = count_queries(model: PriceLog) do
-        get "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history", headers: headers
+        get path, headers: headers
       end
 
       expect(queries).to eq(0)

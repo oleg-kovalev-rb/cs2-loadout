@@ -25,10 +25,11 @@ a user's inventory from Steam, resolve which `market_hash_name`s
 already have an `Item` row vs. which are new, backfill the new ones,
 and persist `user_inventories`/`user_inventory_items` — that must run
 **identically** from two independent trigger points: `Api::V1::
-InventoriesController#show`'s cold-start branch and a new `#refresh`
+InventoriesController#show`'s cold-start branch and an initial `#refresh`
 action (both Scenario 1, synchronous, inside the request/response
-cycle), and a new `UserInventorySyncWorker` (Scenario 3, async, inside
-a Sidekiq job, on a weekly cadence). This is the first time any
+cycle; the refresh action was later removed as unused), and a new
+`UserInventorySyncWorker` (Scenario 3, async, inside a Sidekiq job, on
+a weekly cadence). This is the first time any
 sequence in `app_fetcher` has needed to run, unmodified, from both a
 controller and a worker.
 
@@ -80,12 +81,15 @@ backfills missing `Item` rows, persists `user_inventories`/
 `user_inventory_items`, and returns a `Result` (`success`/`error`/
 `items`). Its second is `InventoryValueRecordingService`
 (`app_fetcher/app/services/inventory_value_recording_service.rb`): no
-Steam call at all, just a DB read/sum/upsert, needed identically by
-`InventoryValuesController#index`'s cold-start seed and
+Steam call at all, just a DB read/sum/upsert, originally needed
+identically by `InventoryValuesController#index`'s cold-start seed and
 `InventoryValueUpdateWorker`'s nightly fan-out — confirming the
-qualifying criterion really is cross-Scenario reuse, not "touches
-Steam." *(The caller-count framing here is superseded by the 2026-10-19
-amendment.)* It's called as `InventoryValueRecordingService.call(steam_id)` —
+qualifying criterion really is responsibility, not "touches Steam."
+*(The caller-count framing here is superseded by the 2026-10-19
+amendment; the read endpoint's seed was removed on 2026-10-20, leaving
+`InventoryValueUpdateWorker` as the sole caller — the service stays in
+this layer because recording a snapshot is its own operation, not
+because a controller also called it.)* It's called as `InventoryValueRecordingService.call(steam_id)` —
 the same class-method `.call` shape as `UserInventorySyncService.call`
 and `PriceUpdateService.call`. (It originally shipped as an instance
 method, `.new(steam_id).call!`, on the reasoning that either shape was
@@ -123,9 +127,12 @@ does not generalize to any other controller action without its own
 explicit decision through this same process:
 
 - `UserInventorySyncService` from `InventoriesController#show`'s
-  cold-start branch and `#refresh`.
-- `InventoryValueRecordingService` from `InventoryValuesController#index`'s
-  cold-start seed (first-ever request for a `steam_id`, no log rows yet).
+  cold-start branch.
+
+*(The former `InventoryValueRecordingService` cold-start-seed call site
+was removed on 2026-10-20: `InventoryValuesController#index` is now a
+pure read, and the nightly `InventoryValueUpdateWorker` is the only
+writer of `InventoryValueLog` rows.)*
 
 Everything else in `layered-ingestion-pipeline.md` is unchanged: the
 general "only a worker persists" rule, `ItemsListUpdateWorker`'s own
@@ -226,7 +233,8 @@ layer on its own.
   this one, could misread the new layer as contradicting it outright
   rather than as a narrow, named exception.
 - Added request latency on `InventoriesController#show`'s cold-start
-  branch and `#refresh`: real DB writes (an `Item.upsert_all`, plus
+  branch (and the since-removed `#refresh` action): real DB writes (an
+  `Item.upsert_all`, plus
   `user_inventories`/`user_inventory_items` persistence) now happen
   inside the request/response cycle, not just a Steam HTTP round-trip.
   Accepted deliberately in exchange for removing the FK-ordering gap.

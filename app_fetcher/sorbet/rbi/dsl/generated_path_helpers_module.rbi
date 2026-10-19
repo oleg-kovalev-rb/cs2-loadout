@@ -46,9 +46,6 @@ module GeneratedPathHelpersModule
   def api_v1_inventories_me_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def api_v1_inventories_refresh_path(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def api_v1_inventory_values_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }

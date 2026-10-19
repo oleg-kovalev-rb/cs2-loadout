@@ -16,7 +16,7 @@ class InventoryDetailQuery
   class Page < T::Struct
     const :steam_id, String
     const :last_synced_at, String
-    const :period, PricePeriod
+    const :range, Options::DateRange
     const :total_value_cents, Integer
     const :change_cents, Integer
     const :change_percent, Float
@@ -45,17 +45,18 @@ class InventoryDetailQuery
     def call(steam_id, params)
       user_inventory = UserInventory.find_by!(steam_id: steam_id)
 
-      period = PricePeriod.resolve(
-        params[:period], supported: InventoryValueLog::SUPPORTED_PERIODS, default: PricePeriod::SevenDays
-      )
-      raise Api::Public::UnsupportedParamError, "Unsupported period: #{params[:period]}" unless period
+      range = Options::DateRange::Param.new(
+        allowed_ranges: InventoryValuation::SUPPORTED_RANGES,
+        default: Options::DateRange::Last7Days,
+        error_class: Api::Public::UnsupportedParamError
+      ).parse(params[:period])
 
       top_items_pagination = Appliers::Pagination.new(
         params[:page], params[:per_page], default_per_page: DEFAULT_TOP_ITEMS_PER_PAGE
       )
 
       valuation = InventoryValuation.current(user_inventory)
-      series = InventoryValuation.series(steam_id, period, current: valuation)
+      series = InventoryValuation.series(steam_id, range, current: valuation)
       items_count = valuation.items_count
       total_value_cents = valuation.total_value_cents
 
@@ -72,7 +73,7 @@ class InventoryDetailQuery
       Page.new(
         steam_id: steam_id,
         last_synced_at: user_inventory.updated_at.iso8601,
-        period: period,
+        range: range,
         total_value_cents: total_value_cents,
         change_cents: series.change_cents,
         change_percent: series.change_percent,

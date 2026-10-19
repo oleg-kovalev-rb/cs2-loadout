@@ -110,7 +110,8 @@ query on a cache miss — bulk for the bulk variant, single-record for the
 single-key variant). Must never be called *from* a model — dependency
 direction is Controller/Worker/Service → Caching → Models, one-way, same
 as every other layer in `agent/styleguides/rails-layering.md`. Callers:
-`Api::V1::ItemPricesController#dynamics`/`#trend`/`#history` and
+`Api::V1::ItemPricesController#dynamics`/`#trend` and
+`#history`'s explicit `period=30d` branch, plus
 `UserInventorySyncService` (internally, to resolve known vs. missing
 items) on the read side for the bulk variant (`ItemPriceCache`/
 `PriceHistoryCache`/`ItemTrendCache`), invalidated by `PriceUpdateWorker`
@@ -196,10 +197,12 @@ cross-Scenario service layer instead of a worker (see
 
 ### SHOULD
 
-- Keep `PriceHistoryCache` scoped to the default/no-`since` request
-  shape only; a request with an explicit `since` should bypass the cache
-  and query `PriceLog` directly, rather than trying to extend the cache
-  to an arbitrary, client-supplied time window (see ADR Context).
+- Keep `PriceHistoryCache` scoped to the 30-day window only; a
+  `period=30d` request (or the query object's default `30d`) may use it,
+  while any other range bypasses the cache and queries `PriceLog`
+  directly, rather than trying to extend the cache to an arbitrary,
+  client-supplied time window (see ADR Context). The controller owns
+  that branch; a history query object never touches the cache.
 
 ### MUST NOT
 
@@ -241,7 +244,7 @@ policy attached.
 
 ```text
 Api::V1::ItemPricesController#dynamics       Api::V1::ItemPricesController#history
-    ↓ ItemPriceCache.fetch_for(names)             ↓ PriceHistoryCache.fetch_for(names)  (default period only)
+    ↓ ItemPriceCache.fetch_for(names)             ↓ PriceHistoryCache.fetch_for(names)  (explicit period=30d only)
     ↓ (miss → bulk Item query → write_multi)       ↓ (miss → bulk PriceLog query → write_multi)
     ↓ PriceWarmupService.call(priced_items.values)
     ↓ (nil-price → cap 20 → Rails.cache dedup → PriceUpdateWorker.perform_async)

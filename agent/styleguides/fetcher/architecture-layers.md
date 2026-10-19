@@ -152,8 +152,8 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   (both synchronous) and workers (async enqueue via `.perform_async`,
   never a call) — and, under the carve-out below, a parser directly
   (synchronous). An `Api::V1::` read action may also call a read-only
-  query object for its payload (in addition to the named self-seed
-  service exception).
+  query object for its payload; the only remaining synchronous service
+  exception is `InventoriesController#show`'s cold-start sync.
 - Services may depend on `Steam::Client`, the Caching layer
   (`ItemPriceCache`/`PriceHistoryCache`), parsers, models, and read-only
   query objects in `app/queries/` for their read step — the same
@@ -214,7 +214,7 @@ sidekiq-cron ⇢ PriceScheduler#perform ⇢ PriceUpdateWorker#perform
     → Steam::Client → PriceUpdateService.call
         → PriceLogBuilder → transaction (save)
 
-Api::V1::InventoriesController#show / #refresh
+Api::V1::InventoriesController#show
     → UserInventorySyncService.call(steam_id)  (the one collaborator —
         see `agent/adr/fetcher/cross-scenario-service-layer.md`)
         → Steam::Client (inventory fetch)
@@ -227,7 +227,7 @@ Api::V1::ItemPricesController#dynamics
         ⇢ PriceUpdateWorker.perform_async(item.id)
 ```
 
-`InventoriesController#show`'s cold-start branch and `#refresh` persist
+`InventoriesController#show`'s cold-start branch persists
 synchronously, inline, before rendering — this is a narrow, named
 exception to "only a worker persists" (above), not a layer violation.
 See `agent/adr/fetcher/cross-scenario-service-layer.md` for why, and
@@ -246,13 +246,14 @@ available for a future, similar case — it just no longer describes what
 - `app_fetcher/app/schedulers/price_scheduler.rb`
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
 - `app_fetcher/app/services/user_inventory_sync_service.rb` —
-  `UserInventorySyncService`, called identically from
-  `InventoriesController#show`/`#refresh` (Scenario 1) and
+  `UserInventorySyncService`, called from
+  `InventoriesController#show`'s cold-start branch (Scenario 1) and
   `UserInventorySyncWorker` (Scenario 3).
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
-  `InventoryValueRecordingService`, called identically from
-  `InventoryValuesController#index`'s cold-start seed (Scenario 1) and
-  `InventoryValueUpdateWorker` (Scenario 3); a precondition-gated write —
+  `InventoryValueRecordingService`, called from
+  `InventoryValueUpdateWorker` (Scenario 3) only; the read endpoint no
+  longer seeds, so the nightly worker is the sole writer. A
+  precondition-gated write —
   it returns `ServiceResult::Skipped` (writing nothing) when the
   inventory is not yet fully priced, else `Ok(data: <the log>)`. See
   `agent/styleguides/fetcher/services.md` and

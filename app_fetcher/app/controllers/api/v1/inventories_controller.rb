@@ -5,8 +5,6 @@ module Api
     class InventoriesController < BaseController
       extend T::Sig
 
-      REFRESH_DEDUP_TTL = T.let(1.day, ActiveSupport::Duration)
-
       sig { void }
       def show
         items = UserInventoryCache.fetch(current_steam_id)
@@ -16,17 +14,6 @@ module Api
         else
           render_resolved(UserInventorySyncService.call(current_steam_id))
         end
-      end
-
-      sig { void }
-      def refresh
-        dedup_key = "inventory_refresh_pending:#{current_steam_id}"
-        unless Rails.cache.write(dedup_key, true, unless_exist: true, expires_in: REFRESH_DEDUP_TTL)
-          render json: { message: "Inventory refresh already requested today" }, status: :too_many_requests
-          return
-        end
-
-        render_resolved(UserInventorySyncService.call(current_steam_id))
       end
 
       private
@@ -43,14 +30,7 @@ module Api
 
       sig { params(items: T::Array[Item]).void }
       def render_inventory(items)
-        render json: {
-          items_count: items.size,
-          items: items.as_json(only: [
-            :market_hash_name,
-            :price_unavailable,
-            :metadata
-          ])
-        }, status: :ok
+        render json: InventorySerializer.call(items), status: :ok
       end
     end
   end

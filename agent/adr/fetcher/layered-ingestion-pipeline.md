@@ -29,9 +29,9 @@ directly and built unsaved `Item.new` instances for the JSON response,
 while the actual persistence happened later via `ItemsListUpdateWorker`.
 On its face this looks like the controller bypassing the worker layer.
 It doesn't — see Decision. (That specific example no longer exists in
-current code — `show`'s cold-start branch and `#refresh` now persist
-synchronously via `UserInventorySyncService`, a distinct, later, and
-narrower exception documented in
+current code — `show`'s cold-start branch now persists synchronously
+via `UserInventorySyncService` (the former `#refresh` trigger was
+removed), a distinct, later, and narrower exception documented in
 `agent/adr/fetcher/cross-scenario-service-layer.md`. The carve-out
 described below remains available for a future controller action with
 the same shape as `show` used to have.)
@@ -201,7 +201,7 @@ its own retry/queue tuning independent of the cron trigger.
   named exception in
   `agent/adr/fetcher/cross-scenario-service-layer.md`
   (`UserInventorySyncService`, called synchronously from
-  `InventoriesController#show`'s cold-start branch and `#refresh`),
+  `InventoriesController#show`'s cold-start branch),
   which documents its own distinct rationale for why synchronous
   persistence is correct there specifically. That ADR doesn't reopen
   this one's general rule — see its own Implementation Constraints for

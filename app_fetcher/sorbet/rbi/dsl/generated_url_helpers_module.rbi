@@ -46,9 +46,6 @@ module GeneratedUrlHelpersModule
   def api_v1_inventories_me_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
-  def api_v1_inventories_refresh_url(*args); end
-
-  sig { params(args: T.untyped).returns(String) }
   def api_v1_inventory_values_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }

@@ -89,21 +89,20 @@ gain real custom logic.
 - For a closed set of string tags that each carry their own associated
   behavior/value (not just a fixed-keys *hash*, which the shape-type rule
   above covers), use a `T::Enum` instead of a plain
-  `T::Hash[String, ...]` constant — see `PricePeriod`
-  (`app_fetcher/app/models/price_period.rb`): one member per period tag
-  (`"24h"`, `"7d"`, ...), with a `#duration` instance method mapping each
-  to its `ActiveSupport::Duration` (or `nil` for `"all"`). Parse an
-  incoming param with `.try_deserialize` (returns `nil` for an unknown
-  value — branch on that, don't rescue `KeyError` from `.deserialize`).
-  Reuse the same enum class across multiple controllers/endpoints that
+  `T::Hash[String, ...]` constant — see `Options::DateRange`
+  (`app_fetcher/app/queries/options/date_range.rb`): one member per
+  range tag (`"24h"`, `"7d"`, ...), with a `#duration` instance method
+  mapping each to its `ActiveSupport::Duration` (or `nil` for `"all"`).
+  Reuse the same enum class across multiple query objects/endpoints that
   share the same tag vocabulary, even if each endpoint only accepts a
-  subset of members — declare that subset on the model that owns the
-  rows (`InventoryValueLog::SUPPORTED_PERIODS`,
-  `PriceLog::SUPPORTED_PERIODS`) rather than forking the enum or
-  re-declaring it per controller. Resolve a period param through
-  `PricePeriod.resolve(raw_value, supported:, default:)`, which returns
-  nil for an unknown or unsupported value so each caller can choose its
-  own failure shape.
+  subset of members. Parse an incoming param through the nested
+  `Options::DateRange::Param.new(allowed_ranges:, default:,
+  error_class:).parse(raw)`; it uses `.try_deserialize` internally
+  (unknown and recognized-but-disallowed values both raise `error_class`
+  with `"Unsupported period: <raw>"`, blank input resolves to
+  `default`). Do not add per-model `SUPPORTED_PERIODS` constants or a
+  `.resolve` class method for this — the allow-list is a query-layer
+  concern.
 - Private class methods are declared inside `class << self; extend
   T::Sig; private; ...; end` (see `PriceLogBuilder`), not
   `private_class_method`.
