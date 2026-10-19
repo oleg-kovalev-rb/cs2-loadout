@@ -43,6 +43,32 @@ RSpec.describe InventoryDetailQuery do
       expect(page.avg_item_value_cents).to eq(750)
     end
 
+    it "counts Extraordinary and Contraband rarities under Gold" do
+      user_inventory = create(:user_inventory)
+      create(
+        :user_inventory_item,
+        user_inventory: user_inventory,
+        item: create(
+          :item,
+          market_hash_name: "Sport Gloves | Pandora's Box (Minimal Wear)",
+          metadata: { rarity: "Extraordinary" }
+        )
+      )
+      create(
+        :user_inventory_item,
+        user_inventory: user_inventory,
+        item: create(
+          :item,
+          market_hash_name: "M4A4 | Howl (Field-Tested)",
+          metadata: { rarity: "Contraband" }
+        )
+      )
+
+      page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
+
+      expect(page.rarity_counts).to eq(RarityTier::Gold => 2)
+    end
+
     it "scopes rarity counts to only this inventory's items" do
       user_inventory = create(:user_inventory)
       create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, metadata: { rarity: "Covert" }))

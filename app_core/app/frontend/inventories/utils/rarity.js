@@ -1,6 +1,9 @@
 // Canonical Steam/CS2 rarity tiers, gold-to-consumer — reused verbatim
 // rather than inventing a new palette, since the breakdown should look
-// like the game's own inventory tier colors. `cssVar` deliberately
+// like the game's own inventory tier colors. `gold` is the fetcher's
+// special-tier bucket: ★ items, Steam's "Extraordinary" gloves, and
+// "Contraband" items all classify into it (see RarityTier.for_item), so
+// there is no separate extraordinary/contraband key. `cssVar` deliberately
 // doesn't mirror `key` 1:1: the mil_spec API key maps to the
 // --rarity-milspec custom property (no underscore).
 export const RARITY_TIERS = [
