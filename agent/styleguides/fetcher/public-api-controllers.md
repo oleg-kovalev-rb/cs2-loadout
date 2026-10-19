@@ -178,7 +178,8 @@ sign the endpoint belongs under `Api::V1::` instead.
   composition, not a reason to add a second collaborator layer (see
   `architecture-layers.md`'s carve-out for plain read-only listing
   controllers — no `app/services/` class is warranted here, that layer
-  is reserved for logic needed identically by more than one Scenario).
+  is for cohesive acting operations with no better existing home, not
+  for read-only listing mechanics).
 - For a list endpoint built on the query-objects layer
   (`agent/styleguides/fetcher/list-query-objects.md`), the expected
   shape is instead a fixed, explicit sequence, not one collaborator:
