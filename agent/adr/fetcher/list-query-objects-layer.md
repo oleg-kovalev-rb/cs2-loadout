@@ -26,12 +26,12 @@ logic belongs once more than one controller needs the same mechanics.
 
 No existing layer's documented criterion fits this reuse axis.
 `app/services/` (`agent/adr/fetcher/cross-scenario-service-layer.md`)
-is explicitly scoped to logic "needed identically by two or more
-Scenarios" — concretely, a controller and a worker. Every list endpoint
-in question here is Scenario 1 only; the reuse is *across controllers
-within one Scenario*, a dimension `app/services/` was never designed to
-cover. Reusing it by analogy would misrepresent what that ADR actually
-decided.
+is scoped to cohesive *acting* operations (a write or other side effect),
+not to read-only query/filter/sort/serialization mechanics. Every list
+endpoint in question here is Scenario 1 only, and the reuse is *across
+controllers within one Scenario* — a kind of logic `app/services/` was
+never designed to cover. Reusing it by analogy would misrepresent what
+that ADR actually decided.
 
 A closely related, narrower pattern already exists, undocumented:
 `app_fetcher/app/models/price_period.rb` (`PricePeriod < T::Enum`, a
@@ -143,12 +143,12 @@ anything but the admin API) —
 Treat the new query/filter/sort/paginate logic as more `app/services/`
 classes, since it's "extracted business logic out of a controller."
 
-Rejected: `cross-scenario-service-layer.md`'s qualifying criterion is
-explicit and narrow — needed identically by two or more Scenarios. Every
-consumer here is a Scenario-1 controller. Placing this in `app/services/`
-would silently widen that layer's documented meaning for every future
-reader, rather than recognizing this as a different reuse axis that
-needs its own layer.
+Rejected: `cross-scenario-service-layer.md`'s scope is cohesive *acting*
+operations, not read-only query/filter/sort/pagination/serialization
+mechanics. Every consumer here is a Scenario-1 controller, and placing
+this in `app/services/` would silently widen that layer's documented
+meaning for every future reader, rather than recognizing this as a
+different concern that needs its own layer.
 
 ### Alternative: generic, config-driven dispatch keyed by string/constant
 
@@ -325,7 +325,7 @@ single, consistent answer.
 ## Related
 
 - `agent/adr/fetcher/cross-scenario-service-layer.md` — the layer this
-  decision is deliberately not reusing, and whose qualifying criterion
+  decision is deliberately not reusing, and whose acting-operation scope
   motivates why a new layer is needed at all.
 - `agent/adr/fetcher/public-api-namespace.md` — the "wait for a third
   example" precedent this decision partially follows (mechanism-level

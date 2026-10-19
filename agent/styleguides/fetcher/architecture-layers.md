@@ -95,12 +95,15 @@ Models (app/models/, write)
   `<Noun>Service` — e.g. `UserInventorySyncService` — not namespaced
   under `Steam::` even when calling `Steam::Client`, like every other
   `app_fetcher` application-layer class):
-  for non-trivial business logic that warrants its own class — either
-  because the same sequence is needed from more than one Scenario, or
-  because extracting it keeps a worker's `perform` as thin orchestration
-  glue rather than mixed-responsibility logic. Not a catch-all for any
-  multi-step logic: reach for a service when the extracted sequence has
-  clear, independently-testable boundaries. See
+  for a cohesive business operation that warrants its own class because
+  keeping it in its caller would leave that caller with more than one
+  responsibility. The number of callers is not the criterion: a sequence
+  needed from more than one Scenario qualifies, and so does a
+  single-Scenario sequence extracted to keep a worker's `perform` as
+  thin orchestration glue (e.g. `PriceUpdateService`). Not a catch-all
+  for any multi-step logic: reach for a service when the extracted
+  sequence has clear, independently-testable boundaries and no existing
+  layer owns it (parser, builder, query object, caching, model). See
   `agent/adr/fetcher/cross-scenario-service-layer.md` for the
   layer's origin and how it differs from `app_core`'s `app/actions/`.
   Unlike parsers/builders, a class here may call `Steam::Client`

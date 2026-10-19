@@ -11,9 +11,12 @@ Accepted
 ## Context
 
 `app_fetcher`'s `app/services/` layer (introduced by
-`agent/adr/fetcher/cross-scenario-service-layer.md`) exists for sequences
-needed identically from more than one Scenario — currently a controller
-action and a worker. It has three members, and each signals its outcome
+`agent/adr/fetcher/cross-scenario-service-layer.md`) exists for cohesive
+application-layer operations — originally, sequences needed identically
+from more than one Scenario (a controller action and a worker); membership
+is now responsibility-based, with cross-Scenario reuse being a common
+consequence rather than a criterion (see that ADR's 2026-10-19
+amendment). It has three members, and each signals its outcome
 differently:
 
 - `UserInventorySyncService.call` returns a nested

@@ -1,5 +1,5 @@
 ---
-description: app_fetcher's app/services/ layer — when a service class is warranted, its flat top-level naming and single .call entry point, and the uniform ServiceResult[Payload] return contract (Ok/Skipped/Failed) every service uses.
+description: app_fetcher's app/services/ layer — what a service owns, when it is warranted (responsibility/SRP, not caller count), its flat top-level naming and single .call entry point, and the uniform ServiceResult[Payload] return contract (Ok/Skipped/Failed) every service uses.
 ---
 
 # Services (`app/services/`)
@@ -11,23 +11,58 @@ exists. This file states the rules.
 
 ## Purpose
 
-Hold a sequence of business logic that must run **identically** from more
-than one Scenario — today, from an `Api::V1::` controller action
-(Scenario 1) and from a worker (Scenario 3), with no behavioural
-difference between the two call sites. What belongs here: that shared
-sequence, including its external calls and persistence. What does not: a
-default home for any multi-step logic a controller or worker happens to
-need (see `architecture-layers.md`'s `app/services/` Structure entry).
+Give a cohesive unit of business logic its own class when keeping it in
+its caller would leave that caller with more than one responsibility.
+
+A service is defined by what it owns, not by how many callers it has: one
+business operation with a single `.call` entry point, one reason to
+change, and boundaries that can be tested in isolation. It owns the
+orchestration sequence (fetch → resolve → act → persist), including its
+external calls and persistence.
+
+It is not a home for logic that already belongs to an existing layer:
+Steam-response parsing (parser), DTO → AR attributes (builder), read-only
+aggregate reads (query object), cache mechanics (caching), or a model's
+own invariants (model). See `architecture-layers.md`'s `app/services/`
+Structure entry for where the layer sits.
 
 ## When to Use
 
-Use a service when the same sequence is genuinely required, unmodified,
-by two or more Scenarios. A single-Scenario need stays inline or in the
-existing layer (a worker's `perform`, a controller action, a
-parser/builder).
+Create a service when the logic is a single, nameable business operation
+and no existing layer owns it. Both must hold:
 
-This layer is therefore rare — do not introduce a service to "tidy up"
-one call site. When in doubt, it is not a service.
+- **It is one operation, not a bag of helpers.** You can state it as a
+  verb phrase ("sync a user's inventory", "record an inventory
+  valuation", "apply a price update") and say what must be true when it
+  finishes.
+- **It has no better existing home.** It is not parsing, building, a
+  read-only query, cache mechanics, or a model invariant. Keeping it
+  inline would leave a worker's `perform` or a controller action mixing
+  orchestration with domain logic.
+
+The number of callers is not a criterion. A single call site is not a
+reason to keep mixed responsibilities in a worker or a controller, and
+cross-Scenario reuse is not a requirement for creating a service — it is
+a common consequence of drawing the right boundary, not the test for
+where that boundary is. `PriceUpdateService` is a single-Scenario
+service of this shape; `UserInventorySyncService` is a cross-Scenario
+one.
+
+This layer is not a place for every method that made a class long: if the
+extraction would be a couple of delegating lines with no independent
+behaviour, keep it inline. And if the logic is really parsing, building,
+reading, or caching, it belongs in that layer, not here.
+
+Choosing the right home:
+
+| The logic is...                                            | Home         |
+|------------------------------------------------------------|--------------|
+| parsing a raw Steam response into a typed DTO              | parser       |
+| turning a DTO/API response into AR attributes              | builder      |
+| a read-only aggregate or list query                        | query object |
+| cache keying / read-through / invalidation                 | caching      |
+| a model's own invariant or association behaviour           | model        |
+| a cohesive sequence that acts (writes or has side effects) | service      |
 
 ## Structure
 
@@ -41,8 +76,10 @@ one call site. When in doubt, it is not a service.
 - `ServiceResult` (`app/services/service_result.rb`) is the single,
   deliberate exception to the `<Noun>Service` file/class naming: it is
   the layer's shared value object, not a service.
-- Callers are `Api::V1::` controllers (only the named call sites in
-  `cross-scenario-service-layer.md`) and workers.
+- Callers are workers, and controllers only for the named
+  synchronous-persistence call sites in
+  `cross-scenario-service-layer.md` (plus `admin-api-controllers.md`'s
+  `sync` call site). A service may have a single caller.
 
 ## Interface
 
@@ -70,9 +107,9 @@ delegates to the query layer (`InventoryValuation`) instead of
 re-implementing the SQL; the service remains the only writer.
 
 A service is responsible for **deciding whether its own preconditions are
-met** — a condition both Scenarios would otherwise have to re-check
-belongs inside the service, reported as `Skipped` (see Rules), not
-duplicated at each call site.
+met** — a condition its callers would otherwise have to re-check belongs
+inside the service, reported as `Skipped` (see Rules), not duplicated at
+each call site.
 
 ## Dependencies
 
@@ -105,7 +142,7 @@ object, or a serializer, and must not reach up into controllers.
     raise) — `error` is a non-nil explanation.
 - Branch on the outcome via `success?`/`skipped?`/`failed?` at the call
   site — never infer it from `data.nil?`.
-- Put a precondition that both callers share inside the service, so the
+- Put a precondition that its callers share inside the service, so the
   check is not duplicated — returning `Skipped` rather than letting each
   caller guard first.
 
@@ -154,9 +191,10 @@ Service.call
 ```
 
 Both Scenarios call the identical `.call` and branch on the same
-`ServiceResult`. The controller may persist synchronously only for the
-named call sites in `cross-scenario-service-layer.md`, not as a general
-permission.
+`ServiceResult`. A single-Scenario service has only one of these edges;
+its call shape and return contract are unchanged. The controller may
+persist synchronously only for the named call sites in
+`cross-scenario-service-layer.md`, not as a general permission.
 
 ## Testing
 
@@ -178,7 +216,9 @@ stubbing) are governed by `agent/styleguides/rspec-conventions.md` and
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
   `Ok`/`Skipped` (a precondition-gated write).
 - `app_fetcher/app/services/price_update_service.rb` — `Ok` only; no
-  failure/mutation-only shape any more.
+  failure/mutation-only shape any more. Also the canonical
+  **single-Scenario SRP extraction**: one caller (`PriceUpdateWorker`),
+  extracted to keep `perform` as orchestration glue.
 - `app_fetcher/app/services/service_result.rb` — the shared result type.
 
 ## Related ADR

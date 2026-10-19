@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -52,6 +52,13 @@ after their request completes) doesn't hold.
 
 ## Decision
 
+> **Amended 2026-10-19:** the "two or more Scenarios" membership
+> criterion stated in this section is superseded — a cohesive
+> single-Scenario operation may also be a service. Everything else here
+> (the layer's existence, its naming, the `.call`/`ServiceResult`
+> contract, and the controller-persistence carve-out) still stands. See
+> the Amendment section at the end of this ADR.
+
 Introduce a new layer, `app/services/`, for logic that must run
 identically from more than one Scenario — concretely, for logic needed
 by both a Scenario-1 controller action and a Scenario-3 worker with no
@@ -64,7 +71,9 @@ workers, schedulers, and caching all stay flat even when they call
 Implementation Constraints). Calling `Steam::Client` is
 a capability this layer *permits*, not a requirement for membership in
 it — the qualifying criterion is purely "needed identically by two or
-more Scenarios." Its first class is `UserInventorySyncService`
+more Scenarios." *(Superseded 2026-10-19: membership is now
+responsibility-based — see the Amendment section.)* Its first class is
+`UserInventorySyncService`
 (`app_fetcher/app/services/user_inventory_sync_service.rb`): it calls
 `Steam::Client#fetch_user_inventory`, resolves known vs. missing items,
 backfills missing `Item` rows, persists `user_inventories`/
@@ -75,7 +84,8 @@ Steam call at all, just a DB read/sum/upsert, needed identically by
 `InventoryValuesController#index`'s cold-start seed and
 `InventoryValueUpdateWorker`'s nightly fan-out — confirming the
 qualifying criterion really is cross-Scenario reuse, not "touches
-Steam." It's called as `InventoryValueRecordingService.call(steam_id)` —
+Steam." *(The caller-count framing here is superseded by the 2026-10-19
+amendment.)* It's called as `InventoryValueRecordingService.call(steam_id)` —
 the same class-method `.call` shape as `UserInventorySyncService.call`
 and `PriceUpdateService.call`. (It originally shipped as an instance
 method, `.new(steam_id).call!`, on the reasoning that either shape was
@@ -127,10 +137,11 @@ concern query under `app/queries/` for its read step — for example,
 `InventoryValueRecordingService` calling `InventoryValuation` to obtain
 the snapshot it persists. This adds a dependency, not a second writer:
 the query returns structs and performs no writes, and the service
-remains the owner of the sequence and its persistence. The qualifying
-criterion for this layer is unchanged — a shared *write* sequence needed
-identically by two or more Scenarios — and a query object never becomes
-a service merely because more than one caller reads through it.
+remains the owner of the sequence and its persistence. A service is
+still an *acting* operation (it writes or has side effects), not a
+read-only query — and a query object never becomes a service merely
+because more than one caller reads through it (see the 2026-10-19
+amendment).
 
 ## Alternatives Considered
 
@@ -224,10 +235,11 @@ layer on its own.
 
 - A future contributor could reach for `app/services/` out of
   convenience ("this looks like business logic") rather than because a
-  sequence is genuinely needed, unmodified, from two or more Scenarios.
-  `architecture-layers.md`'s corresponding "When to Use" text is the
-  guard against that — a single-Scenario need still belongs inline or
-  in an existing layer.
+  cohesive operation has no better existing home.
+  `architecture-layers.md`'s and `services.md`'s "When to Use"/"Choosing
+  the Right Home" text is the guard against that — logic that belongs to
+  a parser, builder, query object, cache class, or model stays there,
+  and a couple of delegating lines stay inline.
 - The controller-persistence carve-out could be misread as a general
   loosening of "controllers don't persist." It is not — it applies only
   to the named call sites listed above. Any other controller wanting to
@@ -261,9 +273,13 @@ layer on its own.
   read step, but that dependency never transfers write ownership: the
   query returns structs, performs no writes, and the service remains the
   only writer in the sequence.
-- Reserve this layer for a sequence genuinely needed, unmodified, by two
-  or more Scenarios — not a default home for any non-trivial logic a
-  controller or worker happens to need.
+- A class in this layer must be one cohesive business operation with a
+  single reason to change and no better existing home (parser, builder,
+  query object, caching, model) — not a default home for any non-trivial
+  logic a controller or worker happens to need. Caller count is not a
+  criterion (amended 2026-10-19): a cross-Scenario sequence and a
+  single-Scenario SRP extraction are judged by the same responsibility
+  test.
 - `UserInventory.sync!` (the model-level bulk-replace step
   `UserInventorySyncService` calls) stays a plain model method per
   `rails-layering.md` — this ADR does not change where that specific
@@ -277,6 +293,83 @@ layer on its own.
   step had two (`InventoryValuesController` and
   `InventoryValueUpdateWorker`) before this layer existed.
 
+  *Superseded by the 2026-10-19 amendment:* the caller-count framing
+  above no longer decides membership. Both placements are unchanged —
+  `UserInventory.sync!` stays a model method because it is a model-owned
+  bulk-replace step, while `InventoryValueRecordingService` is a
+  snapshot-recording operation with its own preconditions and therefore
+  belongs in this layer.
+
+## Amendment (2026-10-19): Service-Layer Membership Is Responsibility, Not Caller Count
+
+### Context
+
+The layer originally admitted only sequences required identically by two
+or more Scenarios, and `services.md` still stated that as the sole
+membership rule. `PriceUpdateService` broke that framing in practice: it
+is called only from `PriceUpdateWorker` and was extracted to keep
+`perform` as thin orchestration glue rather than a mix of domain logic
+and job mechanics (`agent/plans/refactor-price-update-worker.md`).
+`architecture-layers.md` was updated at that time to admit this shape,
+but this ADR and `services.md` were not, leaving three documents with two
+different rules.
+
+The narrower criterion also conflated two independent questions: *does
+this logic have a home?* and *how many callers does it have?* Reuse is
+evidence that a boundary is real, not the reason the boundary exists. A
+worker that owns a 24h-change calculation, a transaction, and a price-log
+build has more than one responsibility whether or not a second caller
+ever appears.
+
+### Decision
+
+A class in `app/services/` is justified by **responsibility**, not by
+caller count. It qualifies when both hold:
+
+- it is one cohesive business operation with a single `.call` entry
+  point, one reason to change, and boundaries testable in isolation;
+- no existing layer owns it — it is not parsing, building, read-only
+  aggregate querying, cache mechanics, or a model invariant.
+
+Cross-Scenario reuse is a strong signal that the boundary is real, but it
+is not a criterion: it is a common consequence of drawing the boundary
+correctly, not a separate reason to create a service. Nor is a single
+caller a reason to keep mixed responsibilities inline.
+
+The rest of this ADR is unchanged: the layer still exists for
+application-layer orchestration; classes remain flat, top-level
+`<Noun>Service`; `.call` returns `ServiceResult[Payload]`; and the
+controller-persistence carve-out still applies only to the named call
+sites.
+
+### Constraints
+
+- A service must be a cohesive operation, not a collection of helpers
+  extracted only to shorten a class. A couple of delegating lines stay
+  inline.
+- "No better existing home" is a hard precondition: parser, builder,
+  query object, caching, and model are checked first. `app/services/` is
+  not a substitute for placing logic in the layer that owns it.
+- The single-`.call`/`ServiceResult[Payload]` interface, naming, and
+  dependency rules in `services.md` are unchanged.
+- The controller-synchronous-persistence rule is unchanged: a controller
+  may call a read-only/computing service, but may persist synchronously
+  only at the named call sites.
+
+### Alternatives Considered
+
+- **Keep caller count as a hard requirement.** Rejected: it rejects
+  `PriceUpdateService` despite its clear SRP boundary and leaves the
+  worker with mixed responsibilities; it also conflicts with
+  `architecture-layers.md` and shipped code.
+- **Drop the layer and use `app_core`-style `app/actions/`.** Rejected:
+  the layer's `.call`/`ServiceResult` contract and worker/controller
+  sharing remain useful, and a worker has no request scope.
+- **Keep reuse as a SHOULD signal only.** Rejected in favour of removing
+  it from the criteria entirely: a SHOULD still reads as a positional
+  rule and invites the same "one caller means no service" conclusion.
+  Reuse is documented as a common consequence, not a membership test.
+
 ## Related
 
 - `agent/adr/fetcher/layered-ingestion-pipeline.md` — the ADR this
@@ -288,6 +381,9 @@ layer on its own.
   external I/O.
 - `agent/styleguides/fetcher/architecture-layers.md` — updated
   alongside this ADR with the concrete `app/services/` Structure entry.
+- `agent/styleguides/fetcher/services.md` — the layer's current rules,
+  including the responsibility-based "When to Use" this amendment
+  introduces.
 - `agent/styleguides/rails-layering.md` — the cross-app invariant this
   decision stays inside (Controller → orchestration → Models, one
   direction).
