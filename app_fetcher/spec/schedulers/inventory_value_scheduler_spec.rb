@@ -28,6 +28,19 @@ RSpec.describe InventoryValueScheduler do
       end
     end
 
+    context "with a UserInventory that has multiple historical log entries" do
+      let!(:user_inventory) { create(:user_inventory, steam_id: "76561198000000004") }
+      let!(:logs) do
+        (1..3).map { |n| create(:inventory_value_log, steam_id: "76561198000000004", log_date: n.days.ago.to_date) }
+      end
+
+      it "enqueues the worker exactly once for that steam_id" do
+        perform
+
+        expect(enqueued_steam_ids.count("76561198000000004")).to eq(1)
+      end
+    end
+
     context "with multiple UserInventory rows for distinct steam_ids" do
       let!(:inventories) { create_list(:user_inventory, 2) }
 
@@ -42,6 +55,16 @@ RSpec.describe InventoryValueScheduler do
     end
 
     context "with no UserInventory rows at all" do
+      it "enqueues nothing" do
+        perform
+
+        expect(InventoryValueUpdateWorker.jobs).to be_empty
+      end
+    end
+
+    context "with a value log but no matching UserInventory" do
+      let!(:orphan_log) { create(:inventory_value_log, steam_id: "76561198000000003") }
+
       it "enqueues nothing" do
         perform
 
