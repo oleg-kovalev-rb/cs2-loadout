@@ -120,7 +120,7 @@ gain real custom logic.
 - Rescue at the end of the method body (no explicit `begin`/`end`) when
   the whole method's failure modes are known upfront (see
   `Steam::Client#perform_request`,
-  `ApplicationController#authenticate_bridge_token!`,
+  `Api::V1::BaseController#authenticate_bridge_token!`,
   `Steam::ProfileFetcher.call`).
 
 ### MUST NOT

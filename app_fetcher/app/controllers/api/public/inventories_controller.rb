@@ -2,7 +2,7 @@
 
 module Api
   module Public
-    class InventoriesController < ApplicationController
+    class InventoriesController < BaseController
       extend T::Sig
 
       sig { void }
@@ -21,8 +21,8 @@ module Api
       sig { void }
       def show
         steam_id = params[:steam_id].to_s
-
         payload = InventoryDetailCache.read(steam_id, params)
+
         if payload.nil?
           page = InventoryDetailQuery.call(steam_id, params)
           payload = InventoryDetailSerializer.call(page)

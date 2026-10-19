@@ -2,7 +2,7 @@
 
 module Api
   module Admin
-    class PriceLogsController < ApplicationController
+    class PriceLogsController < BaseController
       extend T::Sig
 
       sig { void }

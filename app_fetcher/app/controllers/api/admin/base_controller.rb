@@ -4,7 +4,7 @@ require "jwt"
 
 module Api
   module Admin
-    class ApplicationController < ActionController::API
+    class BaseController < ::ApplicationController
       extend T::Sig
 
       before_action :authenticate_admin_bridge_token!

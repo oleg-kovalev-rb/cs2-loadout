@@ -220,7 +220,7 @@ client error, not a normal outcome of calling these methods — wrapping
 it in a `Result` forced every caller to carry an `if result.success`
 branch for a case that, once validation is centralized in
 `Appliers::SortApplier`, has exactly one place it can originate and
-exactly one place it's handled (`Api::Public::ApplicationController`'s
+exactly one place it's handled (`Api::Public::BaseController`'s
 `rescue_from`). Earlier drafts of this design also tried threading ETag
 and cache-key data through the same `Result`, which mixed HTTP/caching
 concerns into a class that should only ever answer "is this sort value

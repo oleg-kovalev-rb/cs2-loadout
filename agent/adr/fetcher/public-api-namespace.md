@@ -30,7 +30,7 @@ identity at all — `Api::V1::`'s entire interface (`current_steam_id` as
 no identity for this request," since every existing action is
 authenticated by construction.
 
-Separately, `Api::V1::ApplicationController` already carries a second,
+Separately, `Api::V1::BaseController` already carries a second,
 independent concern beyond auth: a catch-all `rescue_from StandardError`
 (`agent/plans/fetcher-base-controller-rescue-from.md`), logging and
 rendering `{ message: "Internal error" }` / `:internal_server_error` for
@@ -42,11 +42,11 @@ different failure shape just because the endpoint happens to be public.
 
 Introduce `Api::Public::` as a new namespace, sibling to `Api::V1::`,
 under `app/controllers/api/public/`. Its own
-`Api::Public::ApplicationController < ActionController::API` carries no
+`Api::Public::BaseController < ::ApplicationController` carries no
 authentication `before_action` at all — the absence of any identity
 check is the entire point, not an opt-out of one. It independently
 declares `rescue_from StandardError, with: :render_internal_server_error`,
-with a handler identical in behavior to `Api::V1::ApplicationController`'s
+with a handler identical in behavior to `Api::V1::BaseController`'s
 (log via `Rails.logger.error`, render `{ message: "Internal error" }` /
 `:internal_server_error`) — written again in the new class, not inherited
 from a shared ancestor.
@@ -74,9 +74,9 @@ API), differing only in whether a caller must prove an identity first.
 ### Alternative: a shared `Api::BaseController` ancestor
 
 `Api::BaseController < ActionController::API` holds the
-`rescue_from`/handler; `Api::V1::ApplicationController < Api::BaseController`
-adds the bridge-token `before_action`; `Api::Public::ApplicationController
-< Api::BaseController` adds nothing further.
+`rescue_from`/handler; `Api::V1::BaseController < Api::BaseController`
+adds the bridge-token `before_action`; `Api::Public::BaseController <
+Api::BaseController` adds nothing further.
 
 Rejected for now: with only two namespaces, both trivially simple
 (~ten lines each), there isn't yet a second data point to confirm the
@@ -157,23 +157,48 @@ recorded, deliberate re-affirmation of the original decision, not an
 oversight — if a fourth namespace reaches this same point, decide afresh
 there rather than treating this note as a standing exemption.
 
+### Update: Namespace Base Controllers Renamed
+
+The namespace base controllers were later renamed from
+`Api::*::ApplicationController` to `Api::*::BaseController`, and each now
+inherits the app-wide, namespace-neutral
+`ApplicationController < ActionController::API` rather than inheriting
+`ActionController::API` directly. This is a naming/ancestry cleanup, not
+a reversal of the shared-`Api::BaseController` decision above: the common
+`ApplicationController` carries no auth or rescue behavior, and each
+namespace `BaseController` still declares its own `before_action` and
+`rescue_from` handlers independently. The rejected abstraction was a
+shared `Api::BaseController` holding shared error-handling behavior, not
+a behaviorless Rails-level common ancestor.
+
 ## Implementation Constraints
 
-- `Api::Public::ApplicationController < ActionController::API`, its own
-  file at `app_fetcher/app/controllers/api/public/application_controller.rb`.
+- `Api::V1::BaseController < ::ApplicationController`, its own file at
+  `app_fetcher/app/controllers/api/v1/base_controller.rb` — player
+  bridge-token `before_action`, its own `rescue_from StandardError`, and
+  its own `rescue_from Api::V1::UnsupportedParamError`.
+- `Api::Public::BaseController < ::ApplicationController`, its own
+  file at `app_fetcher/app/controllers/api/public/base_controller.rb`.
   No `before_action` for authentication of any kind.
+- `Api::Admin::BaseController < ::ApplicationController`, its own file
+  at `app_fetcher/app/controllers/api/admin/base_controller.rb` — admin
+  bridge-token `before_action`, its own `rescue_from StandardError`, and
+  its own `rescue_from ActiveRecord::RecordNotFound`.
 - `rescue_from StandardError, with: :render_internal_server_error`
-  declared independently on `Api::Public::ApplicationController`, with a
-  handler matching `Api::V1::ApplicationController`'s behavior exactly
+  declared independently on `Api::Public::BaseController`, with a
+  handler matching `Api::V1::BaseController`'s behavior exactly
   (same log call shape, same rendered body/status) — copy the method,
   do not require/include/inherit it from the `Api::V1::` class.
   Rendering/status-symbol/error-body conventions otherwise match
   `internal-api-controllers.md`'s existing Interface/Error Handling
   sections verbatim — not restated in the new styleguide, just
   cross-referenced.
-- Revisit this decision (extract a shared `Api::BaseController`) only
-  once a third namespace needs the identical `rescue_from`/handler
-  shape — not speculatively before then.
+- Keep `Api::BaseController` (a shared namespace ancestor holding the
+  `rescue_from`/handler) unextracted. The third-namespace trigger already
+  fired and was declined (see Consequences); a fourth namespace should
+  decide afresh rather than inherit this as a standing exemption. The
+  behaviorless top-level `ApplicationController` ancestor introduced by
+  the rename is not that abstraction.
 
 ## Related
 
@@ -191,7 +216,7 @@ there rather than treating this note as a standing exemption.
   reasoning style, and the source of the base-service/`Result`-class
   deferral this decision explicitly draws on.
 - `agent/plans/fetcher-base-controller-rescue-from.md` — the plan that
-  put `rescue_from StandardError` on `Api::V1::ApplicationController` in
+  put `rescue_from StandardError` on `Api::V1::BaseController` in
   the first place; this ADR gives `Api::Public::` the same safety net
   independently.
 - `agent/plans/public-items-catalog-endpoint.md` — the plan this

@@ -2,7 +2,7 @@
 
 module Api
   module V1
-    class ItemPricesController < ApplicationController
+    class ItemPricesController < BaseController
       extend T::Sig
 
       WARMUP_CAP = T.let(20, Integer)
@@ -14,25 +14,9 @@ module Api
         priced_items = ItemPriceCache.fetch_for(names)
         enqueue_price_warmup(priced_items.values)
 
-        result = priced_items.each_with_object({}) do |(name, item), hash|
-          current_price_cents = item.current_price_cents
-          next if current_price_cents.nil?
-
-          change = item.change_24h_cents || 0
-          base = current_price_cents - change
-          percent = base.zero? ? 0.0 : (change.to_f / base * 100).round(2)
-
-          hash[name] = {
-            current_price_cents: current_price_cents,
-            change_24h_cents: change,
-            change_24h_percent: percent,
-            price_updated_at: item.price_updated_at&.iso8601
-          }
-        end
-
         pending_count = Item.awaiting_price.where(market_hash_name: names).count
 
-        render json: { prices: result, pending_count: pending_count }, status: :ok
+        render json: ItemPriceDynamicsSerializer.call(priced_items, pending_count), status: :ok
       end
 
       sig { void }
@@ -46,10 +30,7 @@ module Api
           params[:period], supported: PriceLog::SUPPORTED_PERIODS, default: PricePeriod::ThirtyDays
         )
 
-        unless period
-          render json: { message: "Unsupported period: #{params[:period]}" }, status: :bad_request
-          return
-        end
+        raise Api::V1::UnsupportedParamError, "Unsupported period: #{params[:period]}" unless period
 
         item = Item.find_by(market_hash_name: params[:market_hash_name])
 
