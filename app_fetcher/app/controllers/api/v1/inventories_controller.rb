@@ -10,27 +10,16 @@ module Api
         items = UserInventoryCache.fetch(current_steam_id)
 
         if items
-          render_inventory(items)
+          render json: InventorySerializer.call(items), status: :ok
         else
-          render_resolved(UserInventorySyncService.call(current_steam_id))
+          items_sync_result = UserInventorySyncService.call(current_steam_id)
+
+          if items_sync_result.success?
+            render json: InventorySerializer.call(T.must(items_sync_result.data)), status: :ok
+          else
+            render json: { message: items_sync_result.error }, status: :bad_request
+          end
         end
-      end
-
-      private
-
-      sig { params(result: ServiceResult[T::Array[Item]]).void }
-      def render_resolved(result)
-        unless result.success?
-          render json: { message: result.error }, status: :bad_request
-          return
-        end
-
-        render_inventory(T.must(result.data))
-      end
-
-      sig { params(items: T::Array[Item]).void }
-      def render_inventory(items)
-        render json: InventorySerializer.call(items), status: :ok
       end
     end
   end
