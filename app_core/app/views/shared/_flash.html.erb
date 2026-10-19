@@ -1,0 +1,12 @@
+<% messages = flash.to_h.select { |_, message| message.present? } %>
+
+<% if messages.any? %>
+  <div class="flash-stack">
+    <% messages.each do |type, message| %>
+      <% kind = type.to_s == "alert" ? "alert" : "notice" %>
+      <div class="flash flash-<%= kind %>" role="<%= kind == "alert" ? "alert" : "status" %>">
+        <%= message %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

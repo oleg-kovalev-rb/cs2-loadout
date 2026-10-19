@@ -83,15 +83,3 @@ a change's scope just because an unrelated file is flagged here.
   same rationale as the `app_fetcher` fixtures entry above. Existing
   `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`
   factory instead.
-- `app_core/app/views/layouts/application.html.erb` never renders
-  `flash` — `SessionsController#callback`/`#destroy` set
-  `notice:`/`alert:` on their `redirect_to` calls, but nothing in the
-  layout (or any view) outputs `flash[:notice]`/`flash[:alert]`, so those
-  messages are silently dropped today. Confirmed while amending
-  `agent/styleguides/core/admin-authentication.md` for the
-  admin-panel-frontend plan's format-aware login flow — that plan's own
-  login-failure error is passed as an explicit `@error` local instead of
-  `flash`, specifically to avoid building a new feature on top of this
-  gap. Not fixed here since `application.html.erb` isn't otherwise
-  touched by that work.
-
