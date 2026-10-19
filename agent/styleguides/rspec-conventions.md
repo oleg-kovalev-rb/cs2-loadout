@@ -70,10 +70,10 @@ exists.
 | Sidekiq worker (`app/workers/**`) | Unit; real backing service only for the part of its job that *is* talking to that service | `PriceUpdateWorker` |
 | Sidekiq scheduler (`app/schedulers/**`) | Unit, `Sidekiq::Testing.fake!` to assert enqueue | `PriceScheduler` |
 | Model (`app/models/**`) | Unit | `Item`, `PriceLog` |
-| Query object (`app/queries/**`, excluding `appliers/`/`options/`) | Unit | `ItemCatalogQuery` |
+| Query object (`app/queries/**`, excluding `appliers/`/`options/`) | Unit | `ItemListQuery` |
 | Query applier (`app/queries/appliers/**`) | Unit | `Appliers::SortApplier` |
 | Query option enum (`app/queries/options/**`) | Unit | `Options::ItemSortOption`, `Options::DateRange` |
-| Serializer (`app/serializers/**`) | Unit | `ItemCatalogSerializer` |
+| Serializer (`app/serializers/**`) | Unit | `ItemListSerializer` |
 | Action (`app/actions/**`, `app_core`) | Unit | — |
 | Plain `lib/` class | Unit | `Steam::BridgeToken` |
 | JSON API controller (`app_fetcher`) | Request (`type: :request`) | `Api::V1::InventoriesController` |

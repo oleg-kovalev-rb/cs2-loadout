@@ -38,10 +38,10 @@ callers key into it:
 - **TTL-only** (`.read`/`.write`): data changes due to activity this
   codebase has no write path into, so there's no event to hook an
   explicit `.invalidate` call to — staleness is bounded purely by a short
-  TTL instead. `ItemCatalogCache` is this variant's current example
+  TTL instead. `ItemListCache` is this variant's current example
   (keyed by a SHA256 hash of normalized filter/sort/pagination params —
   see Rules — with no single caller-supplied id driving it).
-  `UserInventoryCache` used to be its example before `ItemCatalogCache`
+  `UserInventoryCache` used to be its example before `ItemListCache`
   existed, but moved to the single-key read-through variant once the
   weekly sync + manual refresh (`UserInventorySyncService`, see
   `agent/adr/fetcher/cross-scenario-service-layer.md`) gave it a real
@@ -154,7 +154,7 @@ cross-Scenario service layer instead of a worker (see
   a param a controller accepts but the resource's query object never
   reads (a confirmed no-op for that endpoint, not an oversight) must be
   left out entirely; including it would fragment the cache between two
-  requests that are actually equivalent, for no benefit. `ItemCatalogCache`
+  requests that are actually equivalent, for no benefit. `ItemListCache`
   happens to include every param it accepts (`search`/`category`/
   `rarity`/`stattrak`/`sort`) because each one genuinely does affect that
   endpoint's result, not because accepting a param obligates a class in
@@ -306,7 +306,7 @@ section only adds what's specific to caching.
 `agent/plans/fetcher-price-caching.md`; `ItemTrendCache` is tracked in
 `agent/plans/dashboard-api-redesign.md`; `UserInventoryCache`'s
 single-key read-through shape is tracked in
-`agent/plans/user-inventory-persistence.md`; `ItemCatalogCache` is
+`agent/plans/user-inventory-persistence.md`; `ItemListCache` is
 tracked in `agent/plans/item-catalog-query-refactor.md`. Prop's use of
 `Rails.cache` for rate-limiting, in `config/initializers/prop.rb`,
 predates this styleguide and doesn't follow any of the three variants.

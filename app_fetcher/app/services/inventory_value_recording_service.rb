@@ -13,12 +13,12 @@ class InventoryValueRecordingService
       user_inventory = UserInventory.find_by(steam_id: steam_id)
       return skipped if user_inventory.nil?
 
-      valuation = InventoryValuation.current(user_inventory)
-      return skipped if valuation.pricable_items_count.positive? && valuation.priced_items_count.zero?
-      return skipped if waiting_for_first_prices?(user_inventory, valuation)
+      snapshot = InventoryValueQuery.snapshot_for(user_inventory)
+      return skipped if snapshot.pricable_items_count.positive? && snapshot.priced_items_count.zero?
+      return skipped if waiting_for_first_prices?(user_inventory, snapshot)
 
       InventoryValueLog.upsert_all(
-        [ snapshot_attributes(steam_id, valuation) ],
+        [ snapshot_attributes(steam_id, snapshot) ],
         unique_by: [ :steam_id, :log_date ]
       )
 
@@ -33,10 +33,10 @@ class InventoryValueRecordingService
       ServiceResult[InventoryValueLog].new(status: ServiceResult::Status::Skipped, data: nil, error: nil)
     end
 
-    sig { params(user_inventory: UserInventory, valuation: InventoryValuation::Snapshot).returns(T::Boolean) }
-    def waiting_for_first_prices?(user_inventory, valuation)
+    sig { params(user_inventory: UserInventory, snapshot: InventoryValueQuery::ValueSnapshot).returns(T::Boolean) }
+    def waiting_for_first_prices?(user_inventory, snapshot)
       return false unless bootstrap?(user_inventory)
-      return false unless valuation.pricable_items_count > valuation.priced_items_count
+      return false unless snapshot.pricable_items_count > snapshot.priced_items_count
 
       user_inventory.created_at > BOOTSTRAP_MAX_WAIT.ago
     end
@@ -46,15 +46,15 @@ class InventoryValueRecordingService
       !InventoryValueLog.exists?(steam_id: user_inventory.steam_id)
     end
 
-    sig { params(steam_id: String, valuation: InventoryValuation::Snapshot).returns(T::Hash[Symbol, T.untyped]) }
-    def snapshot_attributes(steam_id, valuation)
+    sig { params(steam_id: String, snapshot: InventoryValueQuery::ValueSnapshot).returns(T::Hash[Symbol, T.untyped]) }
+    def snapshot_attributes(steam_id, snapshot)
       {
         steam_id: steam_id,
         log_date: Date.current,
-        total_value_cents: valuation.total_value_cents,
-        items_count: valuation.items_count,
-        pricable_items_count: valuation.pricable_items_count,
-        priced_items_count: valuation.priced_items_count
+        total_value_cents: snapshot.total_value_cents,
+        items_count: snapshot.items_count,
+        pricable_items_count: snapshot.pricable_items_count,
+        priced_items_count: snapshot.priced_items_count
       }
     end
   end

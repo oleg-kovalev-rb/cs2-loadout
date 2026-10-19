@@ -7,9 +7,9 @@ module Api
 
       sig { void }
       def index
-        page = InventoryValueHistoryQuery.call(current_steam_id, params)
+        value = InventoryValueHistoryQuery.call(current_steam_id, params)
 
-        render json: InventoryValuationSerializer.call(page), status: :ok
+        render json: InventoryValueSerializer.call(value), status: :ok
       end
     end
   end

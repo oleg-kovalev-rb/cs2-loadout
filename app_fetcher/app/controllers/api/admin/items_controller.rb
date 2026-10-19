@@ -70,8 +70,8 @@ module Api
 
       sig { void }
       def warm_catalog_cache
-        page = ItemCatalogQuery.call(params)
-        ItemCatalogCache.write(params, ItemCatalogSerializer.call(page))
+        catalog = ItemListQuery.call(params)
+        ItemListCache.write(params, ItemListSerializer.call(catalog))
 
         render json: { message: "Catalog cache warmed" }, status: :ok
       end

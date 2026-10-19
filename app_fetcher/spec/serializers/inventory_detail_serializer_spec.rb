@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe InventoryDetailSerializer do
   describe ".call" do
     it "exposes exactly the contracted top-level keys" do
-      result = described_class.call(build_page)
+      result = described_class.call(build_details)
 
       expect(result.keys).to contain_exactly(
         :steam_id, :last_synced_at, :portfolio, :items_count, :avg_item_value_cents,
@@ -12,21 +12,21 @@ RSpec.describe InventoryDetailSerializer do
     end
 
     it "builds the portfolio hash, serializing period and reshaping history" do
-      page = build_page(
+      details = build_details(
         range: Options::DateRange::Last30Days,
         total_value_cents: 5000, change_cents: 500, change_percent: 11.11,
-        change_basis_at: "2024-01-01T00:00:00Z", change_partial: false, change_available: true,
+        change_basis_at: Time.utc(2024, 1, 1), change_partial: false, change_available: true,
         complete: true, priced_items_count: 2, pricable_items_count: 2,
         oldest_price_at: Time.utc(2024, 1, 2, 12, 0, 0),
         history: [
-          InventoryDetailQuery::HistoryPoint.new(
-            at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true,
+          InventoryValueQuery::ValueHistory::Point.new(
+            at: Time.utc(2024, 1, 1), total_value_cents: 4500, complete: true,
             priced_items_count: 2, pricable_items_count: 2
           )
         ]
       )
 
-      portfolio = described_class.call(page)[:portfolio]
+      portfolio = described_class.call(details)[:portfolio]
 
       expect(portfolio).to eq(
         total_value_cents: 5000, change_cents: 500, change_percent: 11.11,
@@ -43,7 +43,7 @@ RSpec.describe InventoryDetailSerializer do
     end
 
     it "returns nil priciest_item when there is none" do
-      result = described_class.call(build_page(priciest_item: nil))
+      result = described_class.call(build_details(priciest_item: nil))
 
       expect(result[:priciest_item]).to be_nil
     end
@@ -56,7 +56,7 @@ RSpec.describe InventoryDetailSerializer do
         metadata: { weapon_type: "Karambit", item_name: "Doppler", category: "Knives", condition: "Factory New", stattrak: false, icon_url: "https://x", rarity: "Covert" }
       )
 
-      priciest_item = described_class.call(build_page(priciest_item: item))[:priciest_item]
+      priciest_item = described_class.call(build_details(priciest_item: item))[:priciest_item]
 
       aggregate_failures do
         expect(priciest_item.keys).to contain_exactly(
@@ -72,7 +72,7 @@ RSpec.describe InventoryDetailSerializer do
 
     it "builds rarity_breakdown with all 7 tiers, percent against the classified count" do
       rarity_breakdown = described_class.call(
-        build_page(rarity_counts: { RarityTier::Covert => 1, RarityTier::Classified => 3 })
+        build_details(rarity_counts: { RarityTier::Covert => 1, RarityTier::Classified => 3 })
       )[:rarity_breakdown]
 
       covert = rarity_breakdown.find { |entry| entry[:tier] == "covert" }
@@ -88,9 +88,9 @@ RSpec.describe InventoryDetailSerializer do
     end
 
     it "builds top_items meta from pagination/total_count" do
-      page = build_page(top_items_pagination: Appliers::Pagination.new("2", "12"), top_items_total_count: 25)
+      details = build_details(items_pagination: Appliers::Pagination.new("2", "12"), items_total_count: 25)
 
-      meta = described_class.call(page)[:top_items][:meta]
+      meta = described_class.call(details)[:top_items][:meta]
 
       expect(meta).to eq(page: 2, per_page: 12, total_count: 25, total_pages: 3)
     end
@@ -102,12 +102,12 @@ RSpec.describe InventoryDetailSerializer do
         price_updated_at: Time.utc(2024, 1, 1, 12, 0, 0),
         metadata: { weapon_type: "AK-47", item_name: "Redline", category: "Rifles", condition: "Field-Tested", stattrak: false, icon_url: "https://x", rarity: "Classified" }
       )
-      page = build_page(
-        top_items: [ item ],
+      details = build_details(
+        entries: [ item ],
         trends: { item.market_hash_name => [ { at: "2024-01-01T00:00:00Z", price_cents: 4000, volume: 12 } ] }
       )
 
-      entry = described_class.call(page)[:top_items][:entries].first
+      entry = described_class.call(details)[:top_items][:entries].first
 
       aggregate_failures do
         expect(entry[:metadata].keys).to contain_exactly(
@@ -122,22 +122,47 @@ RSpec.describe InventoryDetailSerializer do
     end
   end
 
-  def build_page(steam_id: "76561198000000001", last_synced_at: "2024-01-01T00:00:00Z",
-                 range: Options::DateRange::Last7Days, total_value_cents: 0, change_cents: 0, change_percent: 0.0,
-                 change_basis_at: nil, change_partial: false, change_available: false,
-                 history: [], items_count: 0, pricable_items_count: 0, priced_items_count: 0,
-                 complete: true, oldest_price_at: nil, avg_item_value_cents: 0, priciest_item: nil,
-                 rarity_counts: {}, top_items: [], top_items_pagination: Appliers::Pagination.new(nil, nil),
-                 top_items_total_count: 0, trends: {})
-    InventoryDetailQuery::Page.new(
-      steam_id: steam_id, last_synced_at: last_synced_at, range: range,
-      total_value_cents: total_value_cents, change_cents: change_cents, change_percent: change_percent,
-      change_basis_at: change_basis_at, change_partial: change_partial,
-      change_available: change_available, history: history, items_count: items_count,
-      pricable_items_count: pricable_items_count, priced_items_count: priced_items_count,
-      complete: complete, oldest_price_at: oldest_price_at, avg_item_value_cents: avg_item_value_cents,
-      priciest_item: priciest_item, rarity_counts: rarity_counts, top_items: top_items,
-      top_items_pagination: top_items_pagination, top_items_total_count: top_items_total_count, trends: trends
+  def build_details(steam_id: "76561198000000001", last_synced_at: Time.utc(2024, 1, 1),
+                    range: Options::DateRange::Last7Days, total_value_cents: 0, change_cents: 0,
+                    change_percent: 0.0, change_basis_at: nil, change_partial: false,
+                    change_available: false, history: [], items_count: 0, pricable_items_count: 0,
+                    priced_items_count: 0, complete: true, oldest_price_at: nil,
+                    avg_item_value_cents: 0, priciest_item: nil, rarity_counts: {},
+                    entries: [], items_pagination: Appliers::Pagination.new(nil, nil),
+                    items_total_count: 0, trends: {})
+    snapshot = InventoryValueQuery::ValueSnapshot.new(
+      total_value_cents: total_value_cents,
+      items_count: items_count,
+      pricable_items_count: pricable_items_count,
+      priced_items_count: priced_items_count,
+      oldest_price_at: oldest_price_at
+    )
+    delta = InventoryValueQuery::ValueDelta.new(
+      cents: change_cents,
+      percent: change_percent,
+      basis_at: change_basis_at,
+      partial: change_partial,
+      available: change_available
+    )
+    value = InventoryValueQuery::InventoryValue.new(
+      snapshot: snapshot,
+      history: InventoryValueQuery::ValueHistory.new(points: history, delta: delta)
+    )
+    items = InventoryDetailQuery::InventoryItems.new(
+      entries: entries,
+      pagination: items_pagination,
+      total_count: items_total_count,
+      trends: trends
+    )
+    InventoryDetailQuery::InventoryDetails.new(
+      steam_id: steam_id,
+      last_synced_at: last_synced_at,
+      range: range,
+      value: value,
+      items: items,
+      avg_item_value_cents: avg_item_value_cents,
+      priciest_item: priciest_item,
+      rarity_counts: rarity_counts
     )
   end
 end

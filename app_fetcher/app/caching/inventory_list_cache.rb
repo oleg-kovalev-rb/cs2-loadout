@@ -2,10 +2,10 @@
 
 require "digest"
 
-class InventoryCatalogCache
+class InventoryListCache
   extend T::Sig
 
-  CACHE_KEY_VERSION = T.let(3, Integer)
+  CACHE_KEY_VERSION = T.let(4, Integer)
   TTL = T.let(2.minutes, ActiveSupport::Duration)
 
   class << self
@@ -30,7 +30,7 @@ class InventoryCatalogCache
         per_page: params[:per_page].to_s,
         sort: params[:sort].to_s
       }
-      [ "inventories_catalog", CACHE_KEY_VERSION, Digest::SHA256.hexdigest(normalized.to_json) ]
+      [ "inventory_list", CACHE_KEY_VERSION, Digest::SHA256.hexdigest(normalized.to_json) ]
     end
   end
 end

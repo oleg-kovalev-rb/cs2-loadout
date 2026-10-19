@@ -113,7 +113,7 @@ Models (app/models/, write)
   as a general permission. Its full rules — including the uniform
   `ServiceResult[Payload]` return contract every `.call` uses — live in
   `agent/styleguides/fetcher/services.md`.
-- **Query objects** (`app/queries/`, flat, one `<Resource>CatalogQuery`
+- **Query objects** (`app/queries/`, flat, one `<Resource>ListQuery`
   per resource, plus `app/queries/appliers/` → `Appliers::` and
   `app/queries/options/` → `Options::` for resource-agnostic
   filter/sort/pagination mechanics) and **Serializers**
@@ -122,7 +122,7 @@ Models (app/models/, write)
   whose filter/sort/pagination/serialization mechanics are shared across
   more than one controller — a different reuse axis from Services above
   (cross-controller within one Scenario, not cross-Scenario). A shared
-  read-only concern query (e.g. `InventoryValuation`) also lives here
+  read-only concern query (e.g. `InventoryValueQuery`) also lives here
   when its result is consumed by more than one query object, an
   `Api::V1::` read action, or a cross-Scenario service; it returns
   structs, not response hashes, and is not an endpoint query. See
@@ -165,12 +165,12 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   e.g. `PriceWarmupService`'s warmup cap/dedup/enqueue. A side-effect
   service writes no records; only the named persistence sites carry the
   controller-persistence permission.
-- Query objects (`<Resource>CatalogQuery`, `<Resource>DetailQuery`, and
-  shared concern queries such as `InventoryValuation`) may depend on
+- Query objects (`<Resource>ListQuery`, `<Resource>DetailQuery`, and
+  shared concern queries such as `InventoryValueQuery`) may depend on
   `Appliers::*`, `Options::*`, model scopes, other read-only concern
   queries in the same layer, and bulk/single-key read-through caching
   classes (e.g. `ItemTrendCache`) — never on a response-payload TTL
-  cache (e.g. `ItemCatalogCache`), a serializer, a service, a
+  cache (e.g. `ItemListCache`), a serializer, a service, a
   controller, or anything HTTP-related, which stay the caller's job.
   `Appliers::*` depend on nothing resource-specific. Serializers depend
   only on the data already fetched by a query object. See

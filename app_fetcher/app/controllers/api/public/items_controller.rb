@@ -7,12 +7,12 @@ module Api
 
       sig { void }
       def index
-        payload = ItemCatalogCache.read(params)
+        payload = ItemListCache.read(params)
 
         if payload.nil?
-          page = ItemCatalogQuery.call(params)
-          payload = ItemCatalogSerializer.call(page)
-          ItemCatalogCache.write(params, payload)
+          catalog = ItemListQuery.call(params)
+          payload = ItemListSerializer.call(catalog)
+          ItemListCache.write(params, payload)
         end
 
         render json: payload, status: :ok if stale?(etag: payload[:meta][:last_synced_at], public: true)

@@ -141,7 +141,7 @@ hold for every other ingestion path in this app.
 
 **Read-only query collaboration.** A service may use a read-only
 concern query under `app/queries/` for its read step — for example,
-`InventoryValueRecordingService` calling `InventoryValuation` to obtain
+`InventoryValueRecordingService` calling `InventoryValueQuery` to obtain
 the snapshot it persists. This adds a dependency, not a second writer:
 the query returns structs and performs no writes, and the service
 remains the owner of the sequence and its persistence. A service is

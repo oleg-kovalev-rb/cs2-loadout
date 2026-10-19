@@ -30,12 +30,11 @@ class ItemPriceDynamicsSerializer
         next if current_price_cents.nil?
 
         change = item.change_24h_cents || 0
-        base = current_price_cents - change
 
         prices[name] = {
           current_price_cents: current_price_cents,
           change_24h_cents: change,
-          change_24h_percent: base.zero? ? 0.0 : (change.to_f / base * 100).round(2),
+          change_24h_percent: PriceChangePercent.call(current_cents: current_price_cents, change_cents: change),
           price_updated_at: item.price_updated_at&.iso8601
         }
       end

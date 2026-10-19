@@ -12,21 +12,21 @@ RSpec.describe InventoryValueHistoryQuery do
   it "defaults to all time" do
     page = described_class.call(steam_id, ActionController::Parameters.new)
 
-    expect(page.series.points.map(&:total_value_cents)).to eq([ 100, 200, 300 ])
+    expect(page.history.points.map(&:total_value_cents)).to eq([ 100, 200, 300 ])
   end
 
   it "applies an explicit supported range" do
     page = described_class.call(steam_id, ActionController::Parameters.new(period: "7d"))
 
-    expect(page.series.points.map(&:total_value_cents)).to eq([ 200, 300 ])
+    expect(page.history.points.map(&:total_value_cents)).to eq([ 200, 300 ])
   end
 
-  it "returns a nil current and empty series for an unknown steam_id" do
+  it "returns a nil current and empty history for an unknown steam_id" do
     page = described_class.call("unknown", ActionController::Parameters.new)
 
     aggregate_failures do
-      expect(page.current).to be_nil
-      expect(page.series.points).to eq([])
+      expect(page.snapshot).to be_nil
+      expect(page.history.points).to eq([])
     end
   end
 

@@ -110,7 +110,7 @@ Owns: the whole fetch → resolve → act → persist sequence it exists for,
 including its external calls and its persistence. Does not own: response
 rendering (controller), Steam-response parsing (parser/DTO), or Steam HTTP
 mechanics (client). When its read step is a shared aggregate, it
-delegates to the query layer (`InventoryValuation`) instead of
+delegates to the query layer (`InventoryValueQuery`) instead of
 re-implementing the SQL; the service remains the only writer.
 
 A service is responsible for **deciding whether its own preconditions are
@@ -123,7 +123,7 @@ each call site.
 May depend on `Steam::Client`, the `app/caching/` classes, parsers,
 models, and read-only query objects under `app/queries/` for its read
 step (e.g. `InventoryValueRecordingService` calling
-`InventoryValuation`) — the same dependency set a worker already has,
+`InventoryValueQuery`) — the same dependency set a worker already has,
 plus the query layer. A query-object dependency does not transfer write
 ownership: the service still owns the sequence and persistence, and the
 query only reads/computes. Must not be called *from* a model, a query

@@ -3,22 +3,22 @@
 class ItemPriceHistoryQuery
   extend T::Sig
 
-  class Point < T::Struct
-    const :at, String
+  class PricePoint < T::Struct
+    const :at, Time
     const :price_cents, Integer
     const :volume, Integer
   end
 
-  class Page < T::Struct
+  class ItemPriceHistory < T::Struct
     const :range, Options::DateRange
-    const :points, T::Array[Point]
+    const :points, T::Array[PricePoint]
   end
 
   class << self
     extend T::Sig
 
     sig do
-      params(item: Item, params: ActionController::Parameters).returns(Page)
+      params(item: Item, params: ActionController::Parameters).returns(ItemPriceHistory)
     end
     def call(item, params)
       range = Options::DateRange::Param.new(
@@ -31,15 +31,15 @@ class ItemPriceHistoryQuery
       cutoff = range.since
       scope = scope.where(created_at: cutoff..) if cutoff
 
-      points = scope.order(:created_at).map do |log|
-        Point.new(
-          at: log.created_at.iso8601,
+      points = scope.order(:created_at, :id).map do |log|
+        PricePoint.new(
+          at: log.created_at.to_time.utc,
           price_cents: log.lowest_price_cents,
           volume: log.volume
         )
       end
 
-      Page.new(range: range, points: points)
+      ItemPriceHistory.new(range: range, points: points)
     end
   end
 end

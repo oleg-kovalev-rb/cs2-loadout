@@ -180,7 +180,7 @@ RSpec.describe "Api::Public::Inventories", type: :request do
 
     context "when an unhandled error escapes the action" do
       it "renders the generic internal-error shape" do
-        allow(InventoryCatalogQuery).to receive(:call).and_raise(StandardError, "boom")
+        allow(InventoryListQuery).to receive(:call).and_raise(StandardError, "boom")
 
         get "/api/public/inventories"
 

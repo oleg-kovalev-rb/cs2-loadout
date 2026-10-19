@@ -1,9 +1,9 @@
 require "rails_helper"
 
-RSpec.describe InventoryCatalogCache do
-  let(:params_a) { ActionController::Parameters.new(page: "1", sort: "change_24h_desc") }
-  let(:params_b) { ActionController::Parameters.new(page: "2", sort: "price_desc") }
-  let(:payload) { { meta: { page: 1 }, inventories: [] } }
+RSpec.describe ItemListCache do
+  let(:params_a) { ActionController::Parameters.new(page: "1", category: [ "Rifles" ], sort: "change_24h_desc") }
+  let(:params_b) { ActionController::Parameters.new(page: "2", category: [ "Knives" ], sort: "price_desc") }
+  let(:payload) { { meta: { page: 1 }, items: [] } }
 
   describe ".read / .write" do
     it "round-trips a written value for the same params" do
@@ -22,10 +22,10 @@ RSpec.describe InventoryCatalogCache do
       expect(described_class.read(params_b)).to be_nil
     end
 
-    it "treats two requests differing only in search as the same key (search has no effect)" do
-      described_class.write(ActionController::Parameters.new(page: "1", search: "frostbyte"), payload)
+    it "treats equivalent params the same regardless of array ordering" do
+      described_class.write(ActionController::Parameters.new(category: [ "Rifles", "Knives" ]), payload)
 
-      expect(described_class.read(ActionController::Parameters.new(page: "1", search: "someone-else"))).to eq(payload)
+      expect(described_class.read(ActionController::Parameters.new(category: [ "Knives", "Rifles" ]))).to eq(payload)
     end
   end
 
@@ -33,7 +33,7 @@ RSpec.describe InventoryCatalogCache do
     it "expires a written value after the cache's TTL has passed" do
       described_class.write(params_a, payload)
 
-      travel_to((InventoryCatalogCache::TTL + 1.second).from_now) do
+      travel_to((ItemListCache::TTL + 1.second).from_now) do
         expect(described_class.read(params_a)).to be_nil
       end
     end
@@ -41,7 +41,7 @@ RSpec.describe InventoryCatalogCache do
     it "still returns the value just before the TTL elapses" do
       described_class.write(params_a, payload)
 
-      travel_to((InventoryCatalogCache::TTL - 1.second).from_now) do
+      travel_to((ItemListCache::TTL - 1.second).from_now) do
         expect(described_class.read(params_a)).to eq(payload)
       end
     end
