@@ -14,7 +14,7 @@ decisions are taken as given.
 ## Purpose
 
 Expose `app_fetcher`-owned data (`Item`, `PriceLog`, `UserInventory`,
-`InventoryValueLog`) for administrative management: genuine CRUD on
+`InventoryValueLog`) for administrative management: create/read/destroy on
 `Item`, read/delete on the others, plus a handful of operator-triggered
 actions (`refresh_price`, `sync`, `warm_cache`). What belongs here:
 anything gated by "is this an authorized administrator," with no
@@ -39,10 +39,13 @@ under `Api::V1::`.
 - Unlike `Api::V1::`/`Api::Public::`, genuine CRUD resources use standard
   `resources`, not explicit named routes (see
   `admin-api-crud-routing.md`):
-  - `resources :items` (full CRUD) with member routes `post
-    :refresh_price` and `post :warm_cache`, plus collection routes `post
-    :bulk_warm_cache` and `post :warm_catalog_cache`, plus a nested
-    `resources :price_logs, only: %i[destroy]`.
+  - `resources :items, only: %i[index show create destroy]` — Item's
+    create/read/destroy lifecycle, with no `update` action — plus member
+    routes `post :refresh_price` and `post :warm_cache`, collection routes
+    `post :bulk_warm_cache` and `post :warm_catalog_cache`, and a nested
+    `resources :price_logs, only: %i[destroy]`. Removing a lifecycle
+    action narrows the `only:` list; it does not replace `resources` with
+    explicit named routes.
   - `resources :user_inventories, only: %i[index show destroy], param:
     :steam_id` with member routes `post :sync` and `post :warm_cache`,
     plus a collection route `post :bulk_warm_cache`, plus a nested
@@ -185,8 +188,9 @@ every response is an explicit `render json: { ... }, status:
 Same shape as `internal-api-controllers.md`'s Responsibilities: an action
 parses params, calls one collaborator, and renders based on that call's
 result. For genuine CRUD actions, the one collaborator is the model
-itself (`Item.create!`, `item.update!`, `item.destroy!`) — consistent
-with these being real CRUD, not an action dressed as one.
+itself (`Item.create!`, `Item.destroy!`, or a future resource's
+`update!` when it exposes that lifecycle action) — consistent with these
+being real CRUD, not an action dressed as one.
 
 **Cache-warm collaborator-count rule**: `ItemsController#warm_cache`
 calling `ItemPriceCache.fetch_for`/`PriceHistoryCache.fetch_for`/
@@ -354,11 +358,13 @@ Same three-shape taxonomy as `internal-api-controllers.md`, with
    token, invalid/expired token, or a token that decodes but lacks the
    `admin_id` claim (e.g. a per-player bridge token).
 2. **Explicit per-action failure branch** — validation failures on
-   `create`/`update` (blank/duplicate `market_hash_name`):
-   `:unprocessable_content` with `{ message: "..." }`. An id-list param
+   `create` (blank/duplicate `market_hash_name`):
+   `:unprocessable_content` with `{ message: "..." }`. Item exposes no
+   `update`, so there is no update-validation branch; a future resource
+   that adds one follows the same shape. An id-list param
    (`item_ids`/`steam_ids`) resolving to zero existing records is *not*
    this case — see Rules.
-3. **Missing record** — `show`/`update`/`destroy`/`refresh_price`/
+3. **Missing record** — `show`/`destroy`/`refresh_price`/
    `warm_cache`/the nested `price_logs`/`inventory_value_logs` actions
    look up their record with a raising finder (`Item.find(params[:id])`,
    `UserInventory.find_by!(steam_id: params[:steam_id])`,
@@ -445,8 +451,9 @@ this section only adds what's specific to this namespace.
   auth, the `rescue_from StandardError`/`rescue_from
   ActiveRecord::RecordNotFound` pair, `pagination_meta` (the shared
   envelope-building helper every `index` action calls).
-- `app_fetcher/app/controllers/api/admin/items_controller.rb` — full
-  CRUD, `refresh_price`/`warm_cache`/`bulk_warm_cache`, the
+- `app_fetcher/app/controllers/api/admin/items_controller.rb` —
+  `index`/`show`/`create`/`destroy` (no `update`),
+  `refresh_price`/`warm_cache`/`bulk_warm_cache`, the
   raising-finder-per-action shape; `app_fetcher/app/serializers/admin/item_serializer.rb`
   (`::Admin::ItemSerializer`) for its response shapes.
 - `app_fetcher/app/controllers/api/admin/price_logs_controller.rb#index` —

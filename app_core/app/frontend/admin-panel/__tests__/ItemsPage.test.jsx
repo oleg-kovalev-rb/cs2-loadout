@@ -249,6 +249,137 @@ describe('ItemsPage', () => {
     })
   })
 
+  test('renders a positive 24h change as a percentage with the up class', async () => {
+    mockFetchSequence(() =>
+      jsonResponse(
+        listResponse([itemFixture({ current_price_cents: 1000, change_24h_cents: 100 })]),
+      ),
+    )
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+
+    const delta = await screen.findByText('▲ 11.1%')
+    expect(delta).toHaveClass('up')
+  })
+
+  test('renders a negative 24h change as a percentage with the down class', async () => {
+    mockFetchSequence(() =>
+      jsonResponse(
+        listResponse([itemFixture({ current_price_cents: 1000, change_24h_cents: -100 })]),
+      ),
+    )
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+
+    const delta = await screen.findByText('▼ 9.1%')
+    expect(delta).toHaveClass('down')
+  })
+
+  test('renders a zero 24h change as flat, never as growth', async () => {
+    mockFetchSequence(() =>
+      jsonResponse(listResponse([itemFixture({ current_price_cents: 1000, change_24h_cents: 0 })])),
+    )
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+
+    const cell = (await screen.findByText('—')).closest('td')
+    expect(cell).toHaveClass('text-muted')
+    expect(cell).not.toHaveClass('up')
+    expect(cell).not.toHaveClass('down')
+    expect(screen.queryByText(/▲/)).not.toBeInTheDocument()
+  })
+
+  test('does not render the dead edit button', async () => {
+    mockFetchSequence(() => jsonResponse(listResponse([itemFixture()])))
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('button', { name: /Edit/ })).not.toBeInTheDocument()
+  })
+
+  test('a failed delete surfaces an inline error and keeps the row', async () => {
+    const user = userEvent.setup()
+    mockFetchSequence((url, options) => {
+      if (options?.method === 'DELETE')
+        return jsonResponse({ message: 'Delete failed' }, false, 500)
+      return jsonResponse(listResponse([itemFixture()]))
+    })
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
+
+    await user.click(screen.getByRole('button', { name: '⋯' }))
+    await user.click(screen.getByText('Delete'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Delete failed')
+    expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument()
+  })
+
+  test('a failed refresh_price surfaces an inline error', async () => {
+    const user = userEvent.setup()
+    mockFetchSequence((url) => {
+      if (url.endsWith('/refresh_price'))
+        return jsonResponse({ message: 'Refresh failed' }, false, 500)
+      return jsonResponse(listResponse([itemFixture()]))
+    })
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
+
+    await user.click(screen.getByRole('button', { name: '⋯' }))
+    await user.click(screen.getByText('Refresh price now'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Refresh failed')
+  })
+
+  test('a failed catalog cache warm surfaces an inline error', async () => {
+    const user = userEvent.setup()
+    mockFetchSequence((url) => {
+      if (url.endsWith('/warm_catalog_cache'))
+        return jsonResponse({ message: 'Catalog warm failed' }, false, 500)
+      return jsonResponse(listResponse([itemFixture()]))
+    })
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Warm catalog cache' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Catalog warm failed')
+  })
+
+  test('a failed bulk cache warm surfaces an inline error and keeps the selection', async () => {
+    const user = userEvent.setup()
+    mockFetchSequence((url) => {
+      if (url.endsWith('/bulk_warm_cache'))
+        return jsonResponse({ message: 'Bulk warm failed' }, false, 500)
+      return jsonResponse(listResponse([itemFixture()]))
+    })
+
+    render(<ItemsPage fetcherUrl={FETCHER_URL} bridgeToken={BRIDGE_TOKEN} />)
+    await waitFor(() =>
+      expect(screen.getByText('AK-47 | Redline (Field-Tested)')).toBeInTheDocument(),
+    )
+
+    const rowCheckbox = screen
+      .getAllByRole('checkbox')
+      .find((el) => el.className.includes('row-check'))
+    await user.click(rowCheckbox)
+    await user.click(screen.getByRole('button', { name: 'Warm cache' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bulk warm failed')
+    expect(screen.getByText('Selected: 1')).toBeInTheDocument()
+  })
+
   test('pagination change triggers a new fetch with the new page', async () => {
     const fetchMock = mockFetchSequence(() =>
       jsonResponse(listResponse([itemFixture()], { total_count: 60, total_pages: 3 })),

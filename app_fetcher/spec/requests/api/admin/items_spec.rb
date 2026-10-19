@@ -134,20 +134,6 @@ RSpec.describe "Api::Admin::Items", type: :request do
     end
   end
 
-  describe "PATCH /api/admin/items/:id" do
-    let!(:item) { create(:item) }
-
-    it "updates metadata fields" do
-      patch "/api/admin/items/#{item.id}", params: { item: { category: "Knives", marketable: true } }, headers: headers, as: :json
-
-      aggregate_failures do
-        expect(response).to have_http_status(:ok)
-        expect(item.reload.category).to eq("Knives")
-        expect(item.marketable).to eq(true)
-      end
-    end
-  end
-
   describe "DELETE /api/admin/items/:id" do
     let!(:item) { create(:item) }
 

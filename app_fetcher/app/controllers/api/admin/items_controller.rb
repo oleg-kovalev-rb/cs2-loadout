@@ -34,17 +34,6 @@ module Api
       end
 
       sig { void }
-      def update
-        item = Item.find(params[:id])
-
-        if item.update(update_params)
-          render json: ::Admin::ItemSerializer.call(item), status: :ok
-        else
-          render json: { message: item.errors.full_messages.to_sentence }, status: :unprocessable_content
-        end
-      end
-
-      sig { void }
       def destroy
         item = Item.find(params[:id])
 
@@ -99,15 +88,6 @@ module Api
       sig { returns(ActionController::Parameters) }
       def create_params
         params.require(:item).permit(:market_hash_name)
-      end
-
-      sig { returns(ActionController::Parameters) }
-      def update_params
-        params.require(:item).permit(
-          :market_hash_name, :weapon_type, :item_name, :condition, :stattrak, :souvenir,
-          :icon_url, :marketable, :tradable, :rarity, :category,
-          :current_price_cents, :change_24h_cents
-        )
       end
     end
   end
