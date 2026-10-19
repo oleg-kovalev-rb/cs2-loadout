@@ -216,11 +216,16 @@ cross-Scenario service layer instead of a worker (see
 ## Warmup/Dedup Pattern
 
 A request-triggered "warm this up now" enqueue (e.g.
-`InventoriesController` enqueuing `PriceUpdateWorker` for an item with no
-price yet, instead of waiting for `PriceScheduler`'s next hourly pass)
-follows this shape, kept in the *calling* controller/worker, not in
-`app/caching/` itself (it's about deduplicating an enqueue, not about the
-cache-read-through pattern above):
+`ItemPricesController#dynamics` enqueuing `PriceUpdateWorker` for an
+item with no price yet, instead of waiting for `PriceScheduler`'s next
+hourly pass) follows this shape. It never belongs in `app/caching/`
+itself (it's about deduplicating an enqueue, not about the
+cache-read-through pattern above). When the calling controller would
+otherwise own the cap, TTL, key format, and enqueue loop, put the whole
+operation in a dedicated service — `PriceWarmupService` is the canonical
+shape. A worker/controller may still own a genuinely trivial one-line
+variant; don't extract a service for a single `perform_async` with no
+policy attached.
 
 1. Before enqueuing, `Rails.cache.write("<prefix>:#{id}", true,
    unless_exist: true, expires_in: <short TTL>)`.
@@ -238,6 +243,8 @@ cache-read-through pattern above):
 Api::V1::ItemPricesController#dynamics       Api::V1::ItemPricesController#history
     ↓ ItemPriceCache.fetch_for(names)             ↓ PriceHistoryCache.fetch_for(names)  (default period only)
     ↓ (miss → bulk Item query → write_multi)       ↓ (miss → bulk PriceLog query → write_multi)
+    ↓ PriceWarmupService.call(priced_items.values)
+    ↓ (nil-price → cap 20 → Rails.cache dedup → PriceUpdateWorker.perform_async)
 
 Api::V1::ItemPricesController#trend
     ↓ ItemTrendCache.fetch_for(names)

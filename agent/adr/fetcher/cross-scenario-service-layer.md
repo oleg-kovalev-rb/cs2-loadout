@@ -355,6 +355,12 @@ sites.
 - The controller-synchronous-persistence rule is unchanged: a controller
   may call a read-only/computing service, but may persist synchronously
   only at the named call sites.
+- A controller may also call a cohesive **side-effect** service that
+  writes no records — e.g. `PriceWarmupService` owning the warmup cap,
+  dedup key/TTL, and `PriceUpdateWorker` enqueue loop for
+  `ItemPricesController#dynamics`. This is not the persistence
+  carve-out: the service only performs the controller's existing
+  enqueue/dedup side effect behind one nameable operation.
 
 ### Alternatives Considered
 
