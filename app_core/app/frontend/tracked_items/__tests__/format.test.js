@@ -9,12 +9,14 @@ describe('rarityColor', () => {
     ['Restricted', '#8847ff'],
     ['Classified', '#d32ce6'],
     ['Covert', '#eb4b4b'],
+    ['Extraordinary', '#e4ae39'],
+    ['Contraband', '#e4ae39'],
   ])('maps %s to %s', (rarity, color) => {
     expect(rarityColor(rarity)).toBe(color)
   })
 
   test('falls back to a neutral color for an unrecognized rarity', () => {
-    expect(rarityColor('Contraband')).toBe('#8791ab')
+    expect(rarityColor('High Grade')).toBe('#8791ab')
   })
 
   test('falls back to the same neutral color for a missing rarity', () => {

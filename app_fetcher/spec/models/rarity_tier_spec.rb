@@ -9,7 +9,9 @@ RSpec.describe RarityTier do
         "Mil-Spec Grade" => RarityTier::MilSpec,
         "Restricted" => RarityTier::Restricted,
         "Classified" => RarityTier::Classified,
-        "Covert" => RarityTier::Covert
+        "Covert" => RarityTier::Covert,
+        "Extraordinary" => RarityTier::Gold,
+        "Contraband" => RarityTier::Gold
       }
 
       aggregate_failures do

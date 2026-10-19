@@ -1,8 +1,8 @@
 // Keyed by the exact rarity strings the public items catalog returns
-// (Item#rarity, straight from Steam — see ItemCatalogSerializer). There is
-// no gold/"extraordinary" tier here: that's a fetcher-internal-only concept
-// (RarityTier) the serializer doesn't expose, so a knife/glove's rarity
-// string lands in the same bucket as any other item at that grade.
+// (Item#rarity, straight from Steam — see ItemCatalogSerializer).
+// "Extraordinary" (gloves) and "Contraband" share the gold color with the
+// fetcher's RarityTier gold bucket. The catalog doesn't expose that tier
+// itself, so a knife's raw "Covert" tag still maps to Covert here.
 const RARITY_COLORS = {
   'Consumer Grade': '#b0c3d9',
   'Industrial Grade': '#5e98d9',
@@ -10,6 +10,8 @@ const RARITY_COLORS = {
   Restricted: '#8847ff',
   Classified: '#d32ce6',
   Covert: '#eb4b4b',
+  Extraordinary: '#e4ae39',
+  Contraband: '#e4ae39',
 }
 
 const NEUTRAL_RARITY_COLOR = '#8791ab'

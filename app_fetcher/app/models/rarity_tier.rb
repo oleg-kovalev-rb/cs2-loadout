@@ -29,6 +29,7 @@ class RarityTier < T::Enum
       when "Restricted" then Restricted
       when "Classified" then Classified
       when "Covert" then Covert
+      when "Extraordinary", "Contraband" then Gold
       else nil
       end
     end
