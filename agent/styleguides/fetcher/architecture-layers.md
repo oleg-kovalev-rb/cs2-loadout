@@ -160,7 +160,11 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   dependency set a worker already has, plus the query layer. Calling a
   query does not transfer write ownership. May also be called
   synchronously from a controller (Scenario 1) for the specific named
-  call sites in `cross-scenario-service-layer.md`.
+  persistence call sites in `cross-scenario-service-layer.md`, or for a
+  cohesive side-effect operation the controller would otherwise own —
+  e.g. `PriceWarmupService`'s warmup cap/dedup/enqueue. A side-effect
+  service writes no records; only the named persistence sites carry the
+  controller-persistence permission.
 - Query objects (`<Resource>CatalogQuery`, `<Resource>DetailQuery`, and
   shared concern queries such as `InventoryValuation`) may depend on
   `Appliers::*`, `Options::*`, model scopes, other read-only concern
@@ -216,6 +220,11 @@ Api::V1::InventoriesController#show / #refresh
         → Steam::Client (inventory fetch)
         → ItemParser (for any missing names) → Item.upsert_all
         → UserInventory.sync!
+
+Api::V1::ItemPricesController#dynamics
+    → PriceWarmupService.call(items)  (nil-price filter, cap 20,
+        Rails.cache dedup, enqueue — no persistence)
+        ⇢ PriceUpdateWorker.perform_async(item.id)
 ```
 
 `InventoriesController#show`'s cold-start branch and `#refresh` persist
@@ -257,6 +266,14 @@ available for a future, similar case — it just no longer describes what
   `Failed` branch (its writes are bang methods that raise), and the
   caller reads the result off `result.data` rather than the mutated
   argument (see `agent/styleguides/fetcher/services.md`).
+- `app_fetcher/app/services/price_warmup_service.rb` —
+  `PriceWarmupService`, called from
+  `Api::V1::ItemPricesController#dynamics` (Scenario 1). A
+  single-Scenario side-effect service: filters nil-price items, caps at
+  20, deduplicates the enqueue with a 90-second `Rails.cache` write,
+  and enqueues `PriceUpdateWorker`; returns
+  `ServiceResult[T::Array[Integer]]` (`Ok(data: <enqueued ids>)`) and
+  persists nothing.
 - Query objects / Appliers / Options / Serializers: none implemented
   yet — `app_fetcher/app/queries/item_catalog_query.rb` and siblings
   (`agent/plans/item-catalog-query-refactor.md`) will be this layer's

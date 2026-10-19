@@ -76,10 +76,17 @@ Choosing the right home:
 - `ServiceResult` (`app/services/service_result.rb`) is the single,
   deliberate exception to the `<Noun>Service` file/class naming: it is
   the layer's shared value object, not a service.
-- Callers are workers, and controllers only for the named
-  synchronous-persistence call sites in
-  `cross-scenario-service-layer.md` (plus `admin-api-controllers.md`'s
-  `sync` call site). A service may have a single caller.
+- Callers are workers, and controllers for:
+  - the named synchronous-persistence call sites in
+    `cross-scenario-service-layer.md` (plus `admin-api-controllers.md`'s
+    `sync` call site); and
+  - a cohesive side-effect operation the controller would otherwise have
+    to implement itself — e.g. `PriceWarmupService` owning the warmup
+    cap, dedup key/TTL, and `PriceUpdateWorker` enqueue loop for
+    `ItemPricesController#dynamics`. This is not the persistence
+    carve-out: the service writes no records, it only performs the
+    controller's existing side effects behind one nameable operation.
+  A service may have a single caller.
 
 ## Interface
 
@@ -180,7 +187,7 @@ object, or a serializer, and must not reach up into controllers.
 ## Interaction With Other Layers
 
 ```text
-Api::V1::<X>Controller#action   (Scenario 1, named call sites only)
+Api::V1::<X>Controller#action   (Scenario 1)
     ↓  .call(...)   — synchronous, inline, before rendering
 Service.call
     ↓  Steam::Client / Caching / parsers / Models
@@ -192,9 +199,12 @@ Service.call
 
 Both Scenarios call the identical `.call` and branch on the same
 `ServiceResult`. A single-Scenario service has only one of these edges;
-its call shape and return contract are unchanged. The controller may
-persist synchronously only for the named call sites in
-`cross-scenario-service-layer.md`, not as a general permission.
+its call shape and return contract are unchanged. A controller may call
+a service either for one of the named synchronous-persistence sites in
+`cross-scenario-service-layer.md` or for a cohesive side-effect
+operation like `PriceWarmupService`'s enqueue/dedup. The persistence
+permission itself is still limited to those named sites — a warmup
+service writes no records.
 
 ## Testing
 
@@ -219,6 +229,11 @@ stubbing) are governed by `agent/styleguides/rspec-conventions.md` and
   failure/mutation-only shape any more. Also the canonical
   **single-Scenario SRP extraction**: one caller (`PriceUpdateWorker`),
   extracted to keep `perform` as orchestration glue.
+- `app_fetcher/app/services/price_warmup_service.rb` —
+  `PriceWarmupService` — the canonical controller-called side-effect
+  service: nil-price filter, 20-item cap, 90-second `Rails.cache`
+  dedup, and `PriceUpdateWorker.perform_async`, returning
+  `ServiceResult[T::Array[Integer]]` with the enqueued item ids.
 - `app_fetcher/app/services/service_result.rb` — the shared result type.
 
 ## Related ADR

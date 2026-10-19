@@ -39,7 +39,7 @@ has room for it as originally drafted:
   unrelated file.
 
 Separately, the task requires a **lazy warmup** path: when
-`InventoriesController#show` sees items with no price yet
+`ItemPricesController#dynamics` sees items with no price yet
 (`current_price_cents IS NULL`), it should trigger `PriceUpdateWorker`
 immediately rather than wait for `PriceScheduler`'s next hourly pass. This
 interacts with an existing constraint: `Prop.throttle!`
@@ -96,12 +96,15 @@ and queries `PriceLog` directly, unchanged from today — this keeps
 invalidation a single by-key delete instead of needing a scheme for an
 otherwise-unbounded `since`-keyed cache space.
 
-Lazy warmup, triggered from `InventoriesController#show` for items with
-`current_price_cents.nil?`, is capped at **20 items per request** —
+Lazy warmup, triggered from `ItemPricesController#dynamics` for items
+with `current_price_cents.nil?`, is capped at **20 items per request** —
 exactly `steam_price_rpm`'s own ceiling, not an arbitrary larger number —
 and deduplicated via `Rails.cache.write(key, true, unless_exist: true,
 expires_in: 90.seconds)` before calling the existing
 `PriceUpdateWorker.perform_async`, rather than a job-uniqueness gem.
+The cap, dedup key/TTL, and enqueue loop live in
+`PriceWarmupService`; the controller calls that one service and owns no
+warmup policy itself.
 
 ## Alternatives Considered
 
@@ -232,7 +235,9 @@ insufficient in practice.
 - Lazy warmup enqueues at most 20 `PriceUpdateWorker.perform_async` calls
   per request, matching (not exceeding) `steam_price_rpm`'s own ceiling —
   don't raise this cap without revisiting the shared daily-budget risk
-  above.
+  above. `PriceWarmupService` owns this cap, the per-item dedup key/TTL,
+  and the enqueue loop; a caller must not re-implement any of them
+  inline.
 
 ## Related
 

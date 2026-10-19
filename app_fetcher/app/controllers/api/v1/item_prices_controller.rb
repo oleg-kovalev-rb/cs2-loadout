@@ -5,15 +5,12 @@ module Api
     class ItemPricesController < BaseController
       extend T::Sig
 
-      WARMUP_CAP = T.let(20, Integer)
-      WARMUP_DEDUP_TTL = T.let(90.seconds, ActiveSupport::Duration)
-
       sig { void }
       def dynamics
         names = owned_market_hash_names
         priced_items = ItemPriceCache.fetch_for(names)
-        enqueue_price_warmup(priced_items.values)
 
+        PriceWarmupService.call(priced_items.values)
         pending_count = Item.awaiting_price.where(market_hash_name: names).count
 
         render json: ItemPriceDynamicsSerializer.call(priced_items, pending_count), status: :ok
@@ -55,16 +52,6 @@ module Api
       sig { returns(T::Array[String]) }
       def owned_market_hash_names
         (UserInventoryCache.fetch(current_steam_id) || []).map(&:market_hash_name)
-      end
-
-      sig { params(items: T::Array[Item]).void }
-      def enqueue_price_warmup(items)
-        items.select { |item| item.current_price_cents.nil? }.first(WARMUP_CAP).each do |item|
-          dedup_key = "price_warmup_pending:#{item.id}"
-          next unless Rails.cache.write(dedup_key, true, unless_exist: true, expires_in: WARMUP_DEDUP_TTL)
-
-          PriceUpdateWorker.perform_async(item.id)
-        end
       end
     end
   end
