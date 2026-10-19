@@ -27,6 +27,32 @@ RSpec.describe "GET /api/v1/inventories/me", type: :request do
     end
   end
 
+  context "with a valid token that has no steam_id claim" do
+    it "returns unauthorized" do
+      token = JWT.encode({ exp: 2.minutes.from_now.to_i }, ENV.fetch("APP_BRIDGE_JWT_SECRET"), "HS256")
+
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      aggregate_failures do
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body["message"]).to eq("Invalid bridge token")
+      end
+    end
+  end
+
+  context "with a valid token whose steam_id claim is not a string" do
+    it "returns unauthorized" do
+      token = JWT.encode({ steam_id: 123, exp: 2.minutes.from_now.to_i }, ENV.fetch("APP_BRIDGE_JWT_SECRET"), "HS256")
+
+      get "/api/v1/inventories/me", headers: { "Authorization" => "Bearer #{token}" }
+
+      aggregate_failures do
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body["message"]).to eq("Invalid bridge token")
+      end
+    end
+  end
+
   context "with a valid token, cold start (no prior sync)" do
     let(:steam_id) { "76561198000000001" }
     let(:token) { bridge_token_for(steam_id) }

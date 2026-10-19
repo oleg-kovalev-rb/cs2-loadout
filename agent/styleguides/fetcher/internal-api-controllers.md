@@ -132,8 +132,10 @@ Three failure shapes:
 
 1. **Auth failures** — both `:unauthorized` with a `{ message: "..." }`
    body: missing token vs. invalid/expired token
-   (`JWT::ExpiredSignature`, `JWT::DecodeError`, `JWT::VerificationError`
-   all rescued together in `authenticate_bridge_token!`).
+   (`JWT::ExpiredSignature`, `JWT::DecodeError`, `JWT::VerificationError`,
+   and `KeyError` all rescued together in `authenticate_bridge_token!`).
+   A token that decodes but carries no `steam_id` claim, or a non-string
+   one, is rejected the same as an invalid token.
 2. **Explicit per-action failure branch** — today, only
    `InventoriesController`'s wrapped `Steam::Client` call: branch on
    `response.success?`, `:bad_request` with `{ message: response.error
