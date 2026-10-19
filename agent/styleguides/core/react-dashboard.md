@@ -44,7 +44,7 @@ app/frontend/dashboard/
   Dashboard.jsx           — root component: owns the useReducer + the
                             data-loading hook, renders the tiles
   reducer.js              — the one UI-state reducer + its initialState
-  chartConfig.js           — chart tuning constants (ranges, tick counts)
+  chartConfig.js           — chart tuning constants (periods, tick counts)
   hooks/
     useDashboardData.js    — the one data-loading hook
   components/
@@ -104,15 +104,15 @@ app/frontend/shared/
     tokens.css             — font-face rules, design-token custom
                              properties, and page-agnostic chrome
                              (topbar/nav-tabs, tile/card shell, dropdown,
-                             range-toggle, pager) every island's own
+                             period-toggle, pager) every island's own
                              stylesheet layers on top of
   utils/
     format.js               — display formatting with no island-specific shape
   chartConfig.js            — chart-rendering constants/mechanics
-                              (RANGE_MS, tick counts, generateAxisLabels)
-                              with no per-island range-set choice baked in
+                              (PERIOD_MS, tick counts, generateAxisLabels)
+                              with no per-island period-set choice baked in
   components/
-    Sparkline.jsx, RangeToggle.jsx, Pagination.jsx, HeroChart.jsx,
+    Sparkline.jsx, PeriodToggle.jsx, Pagination.jsx, HeroChart.jsx,
     ChartTooltip.jsx         — generic chart/sparkline/pagination primitives
   __tests__/
     format.test.js
@@ -128,9 +128,9 @@ directly from `dashboard/` at first; `inventories/` becoming a third
 consumer of the same pure code is what triggered extracting `shared/`,
 exactly the trigger that ADR named in advance). An island's own
 `chartConfig.js` is the pattern for the part that *doesn't* generalize:
-it keeps its own range-set choice (e.g. `dashboard/chartConfig.js`'s
-`PORTFOLIO_RANGES`/`ITEM_RANGES`, with the comment on why `24h` is
-excluded there) once the range-rendering mechanics (`RANGE_MS`,
+it keeps its own period-set choice (e.g. `dashboard/chartConfig.js`'s
+`PORTFOLIO_PERIODS`/`ITEM_PERIODS`, with the comment on why `24h` is
+excluded there) once the period-rendering mechanics (`PERIOD_MS`,
 `generateAxisLabels`) move to `shared/chartConfig.js` — split a file at
 the "is this a choice this specific island makes, or a mechanism any
 island would use identically" line, rather than moving it wholesale just
@@ -221,7 +221,7 @@ kebab-case name. Single-word entries (`dashboard.jsx`) are unchanged.
   `change24hPercent` never shows `▲ 0.0%`. This is deliberately the
   `trendDirection` helper, **not** the bare `!== 0` guard the hero/
   portfolio delta below uses — the card delta is a 24h change (same
-  meaning as an item row's), while the hero delta is a range-over-range
+  meaning as an item row's), while the hero delta is a period-over-period
   value difference. Canonical: `inventories/components/InventoryCard.jsx`.
 - **A stale item price keeps its last price and last computed delta, with
   a freshness marker.** When `price_updated_at` is older than the shared
@@ -346,10 +346,10 @@ These functions:
   Testing).
 
 An island's own `chartConfig.js` is a sibling exception: it holds tuning
-*constants* (range-set choices, tick counts), not derivation over request
+*constants* (period-set choices, tick counts), not derivation over request
 data — it lives at the top level next to `reducer.js`, not inside
 `utils/`, because it configures the chart components rather than
-transforming data. The range-rendering *mechanics* shared by every
+transforming data. The period-rendering *mechanics* shared by every
 island's charts live in `shared/chartConfig.js` instead (see Structure).
 
 ## Reuse Across Islands
@@ -435,7 +435,7 @@ state (which page is active, via `useHashRoute()`) — it is not where a
 page's table/pagination/selection state lives, even though it's the
 "root component" in the Structure sense.
 
-Action types are flat strings (`'RANGE_CHANGED'`, `'ITEM_ROW_CLICKED'`,
+Action types are flat strings (`'PERIOD_CHANGED'`, `'ITEM_ROW_CLICKED'`,
 `'WEAPON_FILTER_TOGGLED'`, ...), each returning a full new state object
 via spread. Multi-select filter state is a plain object of `Set`s
 (`{weapons: Set, conditions: Set, stattrakOnly: bool}`), toggled through a
@@ -641,7 +641,7 @@ globals even though they'd work.
 ### What gets a dedicated test file
 
 Not every component has one — `SortDropdown`, `ItemsToolbar`,
-`FilterDropdown`, `Pagination`, `RangeToggle`, `Sparkline`,
+`FilterDropdown`, `Pagination`, `PeriodToggle`, `Sparkline`,
 `ChartTooltip`, and `HeroChart` have none today. The dividing line
 observed across the existing suite: a component gets its own test when
 it **composes/orchestrates other pieces** (`ItemsTile` wires the

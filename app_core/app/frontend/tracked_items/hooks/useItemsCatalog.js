@@ -15,7 +15,7 @@ function mapItem(raw) {
     iconUrl: metadata.icon_url,
     rarity: metadata.rarity,
     currentPriceCents: raw.current_price_cents,
-    changeCents: raw.change_24h_cents,
+    change24hCents: raw.change_24h_cents,
     change24hPercent: raw.change_24h_percent,
     trendPoints: (raw.trend_7d || []).map((point) => ({
       at: point.at,

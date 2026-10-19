@@ -19,3 +19,7 @@ export const RARITY_TIERS = [
 export function rarityTier(key) {
   return RARITY_TIERS.find((tier) => tier.key === key) || null
 }
+
+export function rarityPercentages(breakdown = []) {
+  return Object.fromEntries(breakdown.map(({ tier, percent }) => [tier, percent]))
+}

@@ -11,9 +11,9 @@ RSpec.describe InventoryDetailSerializer do
       )
     end
 
-    it "builds the portfolio hash, serializing range and reshaping history" do
+    it "builds the portfolio hash, serializing period and reshaping history" do
       page = build_page(
-        range: PricePeriod::ThirtyDays,
+        period: PricePeriod::ThirtyDays,
         total_value_cents: 5000, change_cents: 500, change_percent: 11.11,
         change_basis_at: "2024-01-01T00:00:00Z", change_partial: false, change_available: true,
         complete: true, priced_items_count: 2, pricable_items_count: 2,
@@ -32,7 +32,7 @@ RSpec.describe InventoryDetailSerializer do
         total_value_cents: 5000, change_cents: 500, change_percent: 11.11,
         change_basis_at: "2024-01-01T00:00:00Z", change_partial: false, change_available: true,
         complete: true, priced_items_count: 2, pricable_items_count: 2,
-        oldest_price_at: "2024-01-02T12:00:00Z", range: "30d",
+        oldest_price_at: "2024-01-02T12:00:00Z", period: "30d",
         history: [
           {
             at: "2024-01-01T00:00:00Z", total_value_cents: 4500, complete: true,
@@ -123,14 +123,14 @@ RSpec.describe InventoryDetailSerializer do
   end
 
   def build_page(steam_id: "76561198000000001", last_synced_at: "2024-01-01T00:00:00Z",
-                 range: PricePeriod::SevenDays, total_value_cents: 0, change_cents: 0, change_percent: 0.0,
+                 period: PricePeriod::SevenDays, total_value_cents: 0, change_cents: 0, change_percent: 0.0,
                  change_basis_at: nil, change_partial: false, change_available: false,
                  history: [], items_count: 0, pricable_items_count: 0, priced_items_count: 0,
                  complete: true, oldest_price_at: nil, avg_item_value_cents: 0, priciest_item: nil,
                  rarity_counts: {}, top_items: [], top_items_pagination: Appliers::Pagination.new(nil, nil),
                  top_items_total_count: 0, trends: {})
     InventoryDetailQuery::Page.new(
-      steam_id: steam_id, last_synced_at: last_synced_at, range: range,
+      steam_id: steam_id, last_synced_at: last_synced_at, period: period,
       total_value_cents: total_value_cents, change_cents: change_cents, change_percent: change_percent,
       change_basis_at: change_basis_at, change_partial: change_partial,
       change_available: change_available, history: history, items_count: items_count,

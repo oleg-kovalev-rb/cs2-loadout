@@ -21,7 +21,7 @@ function detailPayload(overrides = {}) {
       priced_items_count: 127,
       pricable_items_count: 127,
       oldest_price_at: '2026-10-12T15:30:45Z',
-      range: '7d',
+      period: '7d',
       history: [
         {
           at: '2026-10-05T15:30:45Z',
@@ -93,17 +93,17 @@ describe('useInventoryDetail', () => {
 
     const { result } = renderHook(() =>
       useInventoryDetail('http://fetcher.test', '76561198000000001', {
-        range: '7d',
-        itemsSort: 'price_desc',
-        itemsPage: 1,
-        itemsPerPage: 12,
+        period: '7d',
+        sort: 'price_desc',
+        page: 1,
+        perPage: 12,
       }),
     )
 
     await waitFor(() => expect(result.current.status).toBe('success'))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://fetcher.test/api/public/inventories/76561198000000001?range=7d&items_sort=price_desc&items_page=1&items_per_page=12',
+      'http://fetcher.test/api/public/inventories/76561198000000001?period=7d&sort=price_desc&page=1&per_page=12',
       expect.anything(),
     )
     const [, options] = fetchMock.mock.calls[0]
@@ -175,10 +175,10 @@ describe('useInventoryDetail', () => {
 
     const { result } = renderHook(() =>
       useInventoryDetail('http://fetcher.test', '76561198000000001', {
-        range: '7d',
-        itemsSort: 'price_desc',
-        itemsPage: 1,
-        itemsPerPage: 12,
+        period: '7d',
+        sort: 'price_desc',
+        page: 1,
+        perPage: 12,
       }),
     )
 
@@ -186,26 +186,26 @@ describe('useInventoryDetail', () => {
     expect(result.current.data.priciestItem).toBeNull()
   })
 
-  test('re-fetches when range, itemsSort, or itemsPage changes', async () => {
+  test('re-fetches when period, sort, or page changes', async () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse(detailPayload()))
     vi.stubGlobal('fetch', fetchMock)
 
     const { rerender } = renderHook(
-      ({ range }) =>
+      ({ period }) =>
         useInventoryDetail('http://fetcher.test', '76561198000000001', {
-          range,
-          itemsSort: 'price_desc',
-          itemsPage: 1,
-          itemsPerPage: 12,
+          period,
+          sort: 'price_desc',
+          page: 1,
+          perPage: 12,
         }),
-      { initialProps: { range: '7d' } },
+      { initialProps: { period: '7d' } },
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-    rerender({ range: '30d' })
+    rerender({ period: '30d' })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(fetchMock).toHaveBeenLastCalledWith(
-      expect.stringContaining('range=30d'),
+      expect.stringContaining('period=30d'),
       expect.anything(),
     )
   })
@@ -218,10 +218,10 @@ describe('useInventoryDetail', () => {
 
     const { result } = renderHook(() =>
       useInventoryDetail('http://fetcher.test', 'unknown', {
-        range: '7d',
-        itemsSort: 'price_desc',
-        itemsPage: 1,
-        itemsPerPage: 12,
+        period: '7d',
+        sort: 'price_desc',
+        page: 1,
+        perPage: 12,
       }),
     )
 
@@ -236,10 +236,10 @@ describe('useInventoryDetail', () => {
 
     const { result } = renderHook(() =>
       useInventoryDetail('http://fetcher.test', '76561198000000001', {
-        range: '7d',
-        itemsSort: 'price_desc',
-        itemsPage: 1,
-        itemsPerPage: 12,
+        period: '7d',
+        sort: 'price_desc',
+        page: 1,
+        perPage: 12,
       }),
     )
 

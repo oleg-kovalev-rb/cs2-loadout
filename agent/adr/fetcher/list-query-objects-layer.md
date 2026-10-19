@@ -164,13 +164,13 @@ giving up static checking for the one piece of this design most worth
 checking (did every enum value actually get handled?). Second, this
 codebase's existing filter/sort logic already has irregular cases a
 naive declarative config can't express without escape hatches —
-`Item#sorted_by`'s `name_asc` branch orders by a raw-SQL jsonb
-expression, not a plain column, and its `else` branch is a fallback, not
-an enum-driven case. A config-driven engine would need an escape hatch
-for exactly this on its first real resource. `T::Enum` with a per-value
-method body has no such limitation: each value's `#apply` is arbitrary
-Ruby, the "genericity" is confined to *how a value gets resolved and
-iterated*, never to *what it's allowed to do*.
+`Options::ItemSortOption`'s `NameAsc` value orders by a raw-SQL jsonb
+expression, not a plain column, and each value's `#apply` is arbitrary
+Ruby rather than a column/order pair. A config-driven engine would need
+an escape hatch for exactly this on its first real resource. `T::Enum`
+with a per-value method body has no such limitation: each value's `#apply`
+is arbitrary Ruby, the "genericity" is confined to *how a value gets
+resolved and iterated*, never to *what it's allowed to do*.
 
 ### Alternative: one `Constants`-style file enumerating every resource's options
 

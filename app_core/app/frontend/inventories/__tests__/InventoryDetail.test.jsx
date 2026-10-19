@@ -22,7 +22,7 @@ function detailPayload(overrides = {}) {
       priced_items_count: 127,
       pricable_items_count: 127,
       oldest_price_at: '2026-10-12T15:30:45Z',
-      range: '7d',
+      period: '7d',
       history: [
         { at: '2026-10-05T15:30:45Z', total_value_cents: 487500, complete: true },
         { at: '2026-10-12T15:30:45Z', total_value_cents: 500000, complete: true },
@@ -88,7 +88,7 @@ describe('InventoryDetail', () => {
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://fetcher.test/api/public/inventories/76561198000000001?range=7d&items_sort=price_desc&items_page=1&items_per_page=12',
+      'http://fetcher.test/api/public/inventories/76561198000000001?period=7d&sort=price_desc&page=1&per_page=12',
       expect.anything(),
     )
     const [, options] = fetchMock.mock.calls[0]
@@ -149,7 +149,7 @@ describe('InventoryDetail', () => {
         total_value_cents: 500000,
         change_cents: 0,
         change_percent: 0,
-        range: '7d',
+        period: '7d',
         history: [{ at: '2026-10-12T15:30:45Z', total_value_cents: 500000 }],
       },
     })
@@ -166,7 +166,7 @@ describe('InventoryDetail', () => {
     expect(container.querySelector('.hero-delta')).not.toBeInTheDocument()
   })
 
-  test('changing the range re-fetches with the new range', async () => {
+  test('changing the period re-fetches with the new period', async () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse(detailPayload()))
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
@@ -178,13 +178,13 @@ describe('InventoryDetail', () => {
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('range=24h'),
+        expect.stringContaining('period=24h'),
         expect.anything(),
       ),
     )
   })
 
-  test('changing the items sort re-fetches and resets to items_page=1', async () => {
+  test('changing the items sort re-fetches and resets to page=1', async () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse(detailPayload()))
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
@@ -197,7 +197,7 @@ describe('InventoryDetail', () => {
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('items_sort=name_asc&items_page=1'),
+        expect.stringContaining('sort=name_asc&page=1'),
         expect.anything(),
       ),
     )
@@ -205,7 +205,7 @@ describe('InventoryDetail', () => {
 
   test('paginating the top items uses the 1-based items page directly', async () => {
     const fetchMock = vi.fn().mockImplementation((url) => {
-      const pageNumber = Number(new URL(url).searchParams.get('items_page'))
+      const pageNumber = Number(new URL(url).searchParams.get('page'))
       return jsonResponse(
         detailPayload({
           top_items: {
@@ -227,7 +227,7 @@ describe('InventoryDetail', () => {
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('items_page=2'),
+        expect.stringContaining('page=2'),
         expect.anything(),
       ),
     )

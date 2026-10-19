@@ -51,7 +51,7 @@ describe('useItemPrices', () => {
     )
     expect(result.current.pricesByName[NAMES[0]]).toEqual({
       currentPriceCents: 3845,
-      changeCents: 120,
+      change24hCents: 120,
       change24hPercent: 3.22,
       priceUpdatedAt: new Date('2026-10-18T09:00:00Z').getTime(),
     })
@@ -199,7 +199,7 @@ describe('useItemPrices', () => {
     expect(result.current.status).toBe('success')
     expect(result.current.pricesByName[NAMES[0]]).toEqual({
       currentPriceCents: 100,
-      changeCents: 0,
+      change24hCents: 0,
       change24hPercent: 0,
       priceUpdatedAt: null,
     })

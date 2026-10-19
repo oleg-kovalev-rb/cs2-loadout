@@ -1,6 +1,6 @@
 import { SORT_LABELS } from '../utils/filters'
 
-const SORT_OPTIONS = ['delta_desc', 'delta_asc', 'price_desc', 'price_asc', 'name_asc']
+const SORT_OPTIONS = ['change_24h_desc', 'change_24h_asc', 'price_desc', 'price_asc', 'name_asc']
 
 export function SortDropdown({ isOpen, onToggle, sort, onSortChange }) {
   return (

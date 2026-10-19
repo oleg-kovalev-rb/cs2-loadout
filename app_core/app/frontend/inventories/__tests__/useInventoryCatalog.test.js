@@ -18,15 +18,15 @@ const rawInventory = {
   priced_items_count: 127,
   pricable_items_count: 127,
   complete: true,
-  rarity_mix_percent: {
-    gold: 0.8,
-    covert: 5.5,
-    classified: 8.3,
-    restricted: 15.2,
-    mil_spec: 22.1,
-    industrial: 28.4,
-    consumer: 19.7,
-  },
+  rarity_breakdown: [
+    { tier: 'gold', count: 1, percent: 0.8 },
+    { tier: 'covert', count: 7, percent: 5.5 },
+    { tier: 'classified', count: 11, percent: 8.3 },
+    { tier: 'restricted', count: 19, percent: 15.2 },
+    { tier: 'mil_spec', count: 28, percent: 22.1 },
+    { tier: 'industrial', count: 36, percent: 28.4 },
+    { tier: 'consumer', count: 25, percent: 19.7 },
+  ],
   last_synced_at: '2026-10-12T15:30:45Z',
 }
 
@@ -69,7 +69,7 @@ describe('useInventoryCatalog', () => {
         pricedItemsCount: 127,
         pricableItemsCount: 127,
         complete: true,
-        rarityMixPercent: rawInventory.rarity_mix_percent,
+        rarityBreakdown: rawInventory.rarity_breakdown,
         lastSyncedAt: '2026-10-12T15:30:45Z',
       },
     ])

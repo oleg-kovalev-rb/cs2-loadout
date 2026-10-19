@@ -23,7 +23,7 @@ RSpec.describe InventoryCatalogSerializer do
         :steam_id, :total_value_cents, :change_24h_cents, :change_24h_percent,
         :items_count, :pricable_items_count, :priced_items_count, :complete,
         :change_basis_at, :change_partial, :change_available,
-        :rarity_mix_percent, :last_synced_at
+        :rarity_breakdown, :last_synced_at
       )
     end
 
@@ -67,30 +67,31 @@ RSpec.describe InventoryCatalogSerializer do
       expect(inventory_json[:complete]).to be(false)
     end
 
-    it "computes rarity_mix_percent against the classified item count, not items_count" do
+    it "builds rarity_breakdown against the classified item count, not items_count" do
       page = page_with(build_summary(
         items_count: 5,
         rarity_counts: { RarityTier::Covert => 1, RarityTier::Classified => 3 }
       ))
 
-      rarity_mix_percent = described_class.call(page)[:inventories].first[:rarity_mix_percent]
+      rarity_breakdown = described_class.call(page)[:inventories].first[:rarity_breakdown]
+      covert = rarity_breakdown.find { |entry| entry[:tier] == "covert" }
+      classified = rarity_breakdown.find { |entry| entry[:tier] == "classified" }
+      gold = rarity_breakdown.find { |entry| entry[:tier] == "gold" }
 
       aggregate_failures do
-        expect(rarity_mix_percent.keys).to contain_exactly(
-          :gold, :covert, :classified, :restricted, :mil_spec, :industrial, :consumer
-        )
-        expect(rarity_mix_percent[:covert]).to be_within(0.01).of(25.0)
-        expect(rarity_mix_percent[:classified]).to be_within(0.01).of(75.0)
-        expect(rarity_mix_percent[:gold]).to eq(0.0)
+        expect(rarity_breakdown.size).to eq(7)
+        expect(covert).to eq(tier: "covert", count: 1, percent: 25.0)
+        expect(classified).to eq(tier: "classified", count: 3, percent: 75.0)
+        expect(gold).to eq(tier: "gold", count: 0, percent: 0.0)
       end
     end
 
-    it "returns all-zero rarity_mix_percent when nothing classified" do
+    it "returns all-zero rarity_breakdown when nothing classified" do
       page = page_with(build_summary(rarity_counts: {}))
 
-      rarity_mix_percent = described_class.call(page)[:inventories].first[:rarity_mix_percent]
+      rarity_breakdown = described_class.call(page)[:inventories].first[:rarity_breakdown]
 
-      expect(rarity_mix_percent.values).to all(eq(0.0))
+      expect(rarity_breakdown.map { |entry| entry[:percent] }).to all(eq(0.0))
     end
   end
 

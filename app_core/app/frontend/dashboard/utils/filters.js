@@ -36,8 +36,8 @@ export function changePct(item) {
 }
 
 export const SORTERS = {
-  delta_desc: (a, b) => changePct(b) - changePct(a),
-  delta_asc: (a, b) => changePct(a) - changePct(b),
+  change_24h_desc: (a, b) => changePct(b) - changePct(a),
+  change_24h_asc: (a, b) => changePct(a) - changePct(b),
   price_desc: (a, b) => b.currentPriceCents - a.currentPriceCents,
   price_asc: (a, b) => a.currentPriceCents - b.currentPriceCents,
   name_asc: (a, b) =>
@@ -45,8 +45,8 @@ export const SORTERS = {
 }
 
 export const SORT_LABELS = {
-  delta_desc: '24h Δ ↓',
-  delta_asc: '24h Δ ↑',
+  change_24h_desc: '24h Δ ↓',
+  change_24h_asc: '24h Δ ↑',
   price_desc: 'Price ↓',
   price_asc: 'Price ↑',
   name_asc: 'Name A–Z',

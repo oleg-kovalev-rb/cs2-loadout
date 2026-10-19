@@ -121,10 +121,10 @@ every response is an explicit `render json: { ... }, status:
 - `authenticate_admin_bridge_token!` requires the JWT's `admin_id` claim
   specifically, decoded with `APP_ADMIN_BRIDGE_JWT_SECRET` — a token that
   decodes but lacks `admin_id` is rejected the same as a missing token.
-- `current_admin_id` (set by the above) exists for potential future
-  audit-logging use. Unlike `Api::V1::`'s `current_steam_id`, no action
-  in this namespace actually scopes a query by it today — there is no
-  per-admin data partitioning, every admin sees and manages everything.
+  The claim is validated but not stored or exposed: no action in this
+  namespace actually scopes anything by the caller's admin identity, and
+  there is no per-admin data partitioning — every admin sees and manages
+  everything.
 - A paginated `index` action's response adds a `meta` key alongside the
   resource's existing bare-array key:
   `{ meta: { total_count:, total_pages: }, <key>: [...] }`
@@ -335,9 +335,9 @@ guards against.
   reason to extract a builder/action object — see Responsibilities; this
   specific grouping is the one named exception to that SHOULD rule, not
   a general relaxation of it.
-- Don't scope any query by `current_admin_id` — there is no per-admin
-  partitioning in this namespace today; that field exists for potential
-  audit logging only.
+- Don't scope any query by the caller's admin identity — the token's
+  `admin_id` is validated but not stored/exposed, and there is no per-admin
+  partitioning in this namespace today.
 - Don't adopt the full `list-query-objects.md` stack for an `index`
   action that only needs pagination — that layer's own "When to Use"
   reserves it for endpoints that also need shared sort/filter/response-
@@ -393,7 +393,7 @@ Same three-shape taxonomy as `internal-api-controllers.md`, with
 Request (Authorization: Bearer <admin bridge token>)
     ↓
 Api::Admin::BaseController#authenticate_admin_bridge_token!
-    ↓ sets current_admin_id
+    ↓ validates the admin_id claim
 Api::Admin::<X>Controller action
     ↓ model CRUD  — or —  PriceUpdateWorker.perform_async  — or —
       UserInventorySyncService.call  — or —  cache class .fetch_for/.fetch

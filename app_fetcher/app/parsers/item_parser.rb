@@ -87,9 +87,4 @@ class ItemParser
       }
     end
   end
-
-  sig { params(market_hash_names: T::Array[String]).returns(T::Array[ItemDto]) }
-  def self.parse_collection(market_hash_names)
-    market_hash_names.map { |name| parse(name) }
-  end
 end

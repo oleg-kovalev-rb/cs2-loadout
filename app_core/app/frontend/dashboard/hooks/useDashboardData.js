@@ -13,7 +13,7 @@ function mapItem(raw) {
     priceUnavailable: raw.price_unavailable || false,
     iconUrl: metadata.icon_url,
     currentPriceCents: null,
-    changeCents: 0,
+    change24hCents: 0,
     change24hPercent: 0,
     trendPoints: [],
   }

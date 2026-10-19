@@ -30,9 +30,9 @@ RSpec.describe "Api::Public::Inventories", type: :request do
             "steam_id", "total_value_cents", "change_24h_cents", "change_24h_percent",
             "items_count", "pricable_items_count", "priced_items_count", "complete",
             "change_basis_at", "change_partial", "change_available",
-            "rarity_mix_percent", "last_synced_at"
+            "rarity_breakdown", "last_synced_at"
           )
-          expect(inventory_json["rarity_mix_percent"].keys).to contain_exactly(
+          expect(inventory_json["rarity_breakdown"].map { |entry| entry["tier"] }).to contain_exactly(
             "gold", "covert", "classified", "restricted", "mil_spec", "industrial", "consumer"
           )
         end
@@ -257,7 +257,7 @@ RSpec.describe "Api::Public::Inventories", type: :request do
         expect(json["portfolio"].keys).to contain_exactly(
           "total_value_cents", "change_cents", "change_percent", "change_basis_at",
           "change_partial", "change_available", "complete", "priced_items_count",
-          "pricable_items_count", "oldest_price_at", "range", "history"
+          "pricable_items_count", "oldest_price_at", "period", "history"
         )
       end
 
@@ -297,41 +297,41 @@ RSpec.describe "Api::Public::Inventories", type: :request do
       end
     end
 
-    context "range" do
+    context "period" do
       let!(:inventory) { create(:user_inventory) }
 
       it "defaults to 7d" do
         get "/api/public/inventories/#{inventory.steam_id}"
 
-        expect(JSON.parse(response.body)["portfolio"]["range"]).to eq("7d")
+        expect(JSON.parse(response.body)["portfolio"]["period"]).to eq("7d")
       end
 
-      it "accepts range=all" do
-        get "/api/public/inventories/#{inventory.steam_id}", params: { range: "all" }
+      it "accepts period=all" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { period: "all" }
 
-        expect(JSON.parse(response.body)["portfolio"]["range"]).to eq("all")
+        expect(JSON.parse(response.body)["portfolio"]["period"]).to eq("all")
       end
 
-      it "rejects an unrecognized range value with :bad_request" do
-        get "/api/public/inventories/#{inventory.steam_id}", params: { range: "bogus" }
+      it "rejects an unrecognized period value with :bad_request" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { period: "bogus" }
 
         aggregate_failures do
           expect(response).to have_http_status(:bad_request)
-          expect(JSON.parse(response.body)["message"]).to eq("Unsupported range: bogus")
+          expect(JSON.parse(response.body)["message"]).to eq("Unsupported period: bogus")
         end
       end
 
-      it "rejects range=24h because the portfolio history is daily" do
-        get "/api/public/inventories/#{inventory.steam_id}", params: { range: "24h" }
+      it "rejects period=24h because the portfolio history is daily" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { period: "24h" }
 
         aggregate_failures do
           expect(response).to have_http_status(:bad_request)
-          expect(JSON.parse(response.body)["message"]).to eq("Unsupported range: 24h")
+          expect(JSON.parse(response.body)["message"]).to eq("Unsupported period: 24h")
         end
       end
     end
 
-    context "items_sort" do
+    context "sort" do
       let!(:inventory) { create(:user_inventory) }
       let!(:cheap) { create(:item, current_price_cents: 100, metadata: { item_name: "Bravo" }) }
       let!(:expensive) { create(:item, current_price_cents: 900, metadata: { item_name: "Alpha" }) }
@@ -348,31 +348,31 @@ RSpec.describe "Api::Public::Inventories", type: :request do
         expect(names.index(expensive.market_hash_name)).to be < names.index(cheap.market_hash_name)
       end
 
-      it "applies items_sort=name_asc" do
-        get "/api/public/inventories/#{inventory.steam_id}", params: { items_sort: "name_asc" }
+      it "applies sort=name_asc" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { sort: "name_asc" }
 
         names = JSON.parse(response.body)["top_items"]["entries"].map { |e| e["market_hash_name"] }
         expect(names.index(expensive.market_hash_name)).to be < names.index(cheap.market_hash_name)
       end
 
-      it "rejects an unrecognized items_sort value with :bad_request" do
-        get "/api/public/inventories/#{inventory.steam_id}", params: { items_sort: "bogus" }
+      it "rejects an unrecognized sort value with :bad_request" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { sort: "bogus" }
 
         aggregate_failures do
           expect(response).to have_http_status(:bad_request)
-          expect(JSON.parse(response.body)["message"]).to eq("Unsupported items_sort: bogus")
+          expect(JSON.parse(response.body)["message"]).to eq("Unsupported sort: bogus")
         end
       end
     end
 
-    context "items_page/items_per_page edge cases" do
+    context "page/per_page edge cases" do
       let!(:inventory) { create(:user_inventory) }
 
-      it "defaults to page 1/per_page 12 and clamps an oversized items_per_page" do
+      it "defaults to page 1/per_page 12 and clamps an oversized per_page" do
         get "/api/public/inventories/#{inventory.steam_id}"
         default_meta = JSON.parse(response.body)["top_items"]["meta"]
 
-        get "/api/public/inventories/#{inventory.steam_id}", params: { items_per_page: "9999" }
+        get "/api/public/inventories/#{inventory.steam_id}", params: { per_page: "9999" }
         clamped_meta = JSON.parse(response.body)["top_items"]["meta"]
 
         aggregate_failures do

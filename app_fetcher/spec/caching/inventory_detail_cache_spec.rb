@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe InventoryDetailCache do
   let(:steam_id_a) { "76561198000000001" }
   let(:steam_id_b) { "76561198000000002" }
-  let(:params_a) { ActionController::Parameters.new(range: "7d", items_sort: "price_desc") }
-  let(:params_b) { ActionController::Parameters.new(range: "30d", items_sort: "name_asc") }
+  let(:params_a) { ActionController::Parameters.new(period: "7d", sort: "price_desc") }
+  let(:params_b) { ActionController::Parameters.new(period: "30d", sort: "name_asc") }
   let(:payload) { { steam_id: steam_id_a, portfolio: {} } }
 
   describe ".read / .write" do

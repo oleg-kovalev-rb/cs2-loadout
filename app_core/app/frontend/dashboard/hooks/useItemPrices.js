@@ -4,7 +4,7 @@ import { RETRY_SCHEDULE_MS } from '../../shared/utils/retrySchedule'
 function mapPrice(raw) {
   return {
     currentPriceCents: raw.current_price_cents,
-    changeCents: raw.change_24h_cents,
+    change24hCents: raw.change_24h_cents,
     change24hPercent: raw.change_24h_percent,
     priceUpdatedAt: raw.price_updated_at ? new Date(raw.price_updated_at).getTime() : null,
   }

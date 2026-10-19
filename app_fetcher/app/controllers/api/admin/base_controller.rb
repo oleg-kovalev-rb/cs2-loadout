@@ -13,11 +13,6 @@ module Api
 
       private
 
-      sig { returns(String) }
-      def current_admin_id
-        T.must(@current_admin_id)
-      end
-
       sig { void }
       def authenticate_admin_bridge_token!
         token = request.headers["Authorization"]&.delete_prefix("Bearer ")
@@ -28,7 +23,7 @@ module Api
         end
 
         payload, = JWT.decode(token, ENV.fetch("APP_ADMIN_BRIDGE_JWT_SECRET"), true, algorithm: "HS256")
-        @current_admin_id = T.let(payload.fetch("admin_id"), T.nilable(String))
+        payload.fetch("admin_id")
       rescue JWT::ExpiredSignature, JWT::DecodeError, JWT::VerificationError, KeyError
         render json: { message: "Invalid bridge token" }, status: :unauthorized
       end

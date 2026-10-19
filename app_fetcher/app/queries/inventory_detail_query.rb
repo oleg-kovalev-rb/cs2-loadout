@@ -16,7 +16,7 @@ class InventoryDetailQuery
   class Page < T::Struct
     const :steam_id, String
     const :last_synced_at, String
-    const :range, PricePeriod
+    const :period, PricePeriod
     const :total_value_cents, Integer
     const :change_cents, Integer
     const :change_percent, Float
@@ -45,17 +45,17 @@ class InventoryDetailQuery
     def call(steam_id, params)
       user_inventory = UserInventory.find_by!(steam_id: steam_id)
 
-      range = PricePeriod.resolve(
-        params[:range], supported: InventoryValueLog::SUPPORTED_PERIODS, default: PricePeriod::SevenDays
+      period = PricePeriod.resolve(
+        params[:period], supported: InventoryValueLog::SUPPORTED_PERIODS, default: PricePeriod::SevenDays
       )
-      raise Api::Public::UnsupportedParamError, "Unsupported range: #{params[:range]}" unless range
+      raise Api::Public::UnsupportedParamError, "Unsupported period: #{params[:period]}" unless period
 
       top_items_pagination = Appliers::Pagination.new(
-        params[:items_page], params[:items_per_page], default_per_page: DEFAULT_TOP_ITEMS_PER_PAGE
+        params[:page], params[:per_page], default_per_page: DEFAULT_TOP_ITEMS_PER_PAGE
       )
 
       valuation = InventoryValuation.current(user_inventory)
-      series = InventoryValuation.series(steam_id, range, current: valuation)
+      series = InventoryValuation.series(steam_id, period, current: valuation)
       items_count = valuation.items_count
       total_value_cents = valuation.total_value_cents
 
@@ -65,14 +65,14 @@ class InventoryDetailQuery
           params,
           enum_class: Options::ItemSortOption,
           default: Options::ItemSortOption::PriceDesc,
-          param_name: "items_sort"
+          param_name: "sort"
         )
       ).to_a
 
       Page.new(
         steam_id: steam_id,
         last_synced_at: user_inventory.updated_at.iso8601,
-        range: range,
+        period: period,
         total_value_cents: total_value_cents,
         change_cents: series.change_cents,
         change_percent: series.change_percent,

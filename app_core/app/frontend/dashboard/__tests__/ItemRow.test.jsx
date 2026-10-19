@@ -9,7 +9,7 @@ const baseItem = {
   condition: 'Field-Tested',
   stattrak: false,
   currentPriceCents: 4000,
-  changeCents: 300,
+  change24hCents: 300,
   change24hPercent: 8.11,
   trendPoints: [],
 }
