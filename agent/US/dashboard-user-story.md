@@ -138,15 +138,19 @@ deliberately deferred, not built now).
 `GET /api/v1/inventory_values?period=30d` (the tile's default range).
 Backend reads `InventoryValueLog` — one row per day per `steam_id`. A
 genuinely new user (zero rows) gets an empty array back, and the
-controller self-seeds: enqueues `InventoryValueUpdateWorker` (deduped
-90s), which sums today's owned items' `current_price_cents` and writes
-the first row. The chart is empty on the very first load and fills in
-from the next reload (or the next night's scheduled run) — this is a
-second, independent self-seed trigger from the skeleton's own cold-start
-sync (see Risks in `user-inventory-persistence.md` for the known gap
-between the two). Returning users just get their history, filtered to
-the requested period (`7d`/`30d`/`1y`/`all` — note there's no `24h`
-option; `InventoryValueLog` is daily-granularity by design).
+controller self-seeds synchronously: it calls
+`InventoryValueRecordingService`, which sums today's owned items'
+`current_price_cents` and writes the first row only when the inventory is
+synced and every `marketable` item has a price. While the inventory is
+missing or still estimating, the service deliberately writes nothing and
+returns the empty list. The chart is empty on the first load and fills
+in from the next request once prices complete, or from the next nightly
+`InventoryValueScheduler` run — the two triggers are independent (see
+Risks in `user-inventory-persistence.md`), but the nightly run covers
+every `UserInventory`, so a first seed missed during a dashboard visit is
+backfilled the next night. Returning users just get their history,
+filtered to the requested period (`7d`/`30d`/`1y`/`all` — note there's no
+`24h` option; `InventoryValueLog` is daily-granularity by design).
 
 **6. Clicking an item.** The hero chart switches to item-detail mode and
 shows a loading state — no attempt to reuse the sparkline's 5-point
@@ -185,9 +189,11 @@ looking.**
   *inventory composition* (not price) is at most a week stale unless
   they hit the manual refresh button or revisit after a trade.
 - `InventoryValueScheduler` (daily): fans out `InventoryValueUpdateWorker`
-  to every `steam_id` that already has at least one `InventoryValueLog`
-  row — pure DB read/sum/upsert, no Steam call (price freshness already
-  comes from `PriceScheduler` independently).
+  to every `steam_id` in `user_inventories`, including one that has no
+  `InventoryValueLog` row yet — so a first seed missed during a dashboard
+  visit is backfilled on the next night. Pure DB read/sum/upsert, no
+  Steam call (price freshness already comes from `PriceScheduler`
+  independently).
 
 **8. Manual refresh.** `POST /api/v1/inventories/refresh` (rate-limited,
 once/day per `steam_id`) re-runs `UserInventorySyncService.call`

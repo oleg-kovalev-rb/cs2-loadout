@@ -10,6 +10,27 @@ RSpec.describe UserInventory do
     end
   end
 
+  describe "#destroy" do
+    subject(:destroy) { user_inventory.destroy! }
+
+    let(:steam_id) { "76561198000000001" }
+    let!(:user_inventory) { create(:user_inventory, steam_id: steam_id) }
+    let!(:own_log) { create(:inventory_value_log, steam_id: steam_id, log_date: 1.day.ago.to_date) }
+    let!(:other_log) { create(:inventory_value_log, steam_id: "76561198000000099", log_date: 1.day.ago.to_date) }
+
+    it "deletes its inventory value logs" do
+      destroy
+
+      expect(InventoryValueLog.where(steam_id: steam_id)).to be_empty
+    end
+
+    it "leaves another steam_id's inventory value logs untouched" do
+      destroy
+
+      expect(InventoryValueLog.where(steam_id: other_log.steam_id)).to exist
+    end
+  end
+
   describe ".sync!" do
     subject(:sync!) { described_class.sync!(steam_id, item_ids) }
 
