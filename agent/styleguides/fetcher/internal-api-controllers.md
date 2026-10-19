@@ -74,10 +74,12 @@ request — no injection) and enqueue Sidekiq workers directly
 (`PriceUpdateWorker.perform_async`). Relies on `Api::V1::BaseController`
 for auth; never re-implements token verification in a specific
 controller. See `agent/adr/fetcher/cross-scenario-service-layer.md`
-for the two named exceptions: `InventoriesController#show`'s cold-start
-branch and `#refresh` call `UserInventorySyncService` synchronously
-instead of enqueuing, and `InventoryValuesController#index`'s cold-start
-seed calls `InventoryValueRecordingService` the same way.
+for the one remaining named exception:
+`InventoriesController#show`'s cold-start branch calls
+`UserInventorySyncService` synchronously instead of enqueuing.
+`InventoryValuesController#index` is a pure read — it calls the
+`InventoryValueHistoryQuery`; writing the day's log is the nightly
+`InventoryValueUpdateWorker`'s job.
 
 ## Rules
 
@@ -95,9 +97,16 @@ seed calls `InventoryValueRecordingService` the same way.
   branch is correct (see `InventoryValuesController#index`,
   `ItemPricesController#dynamics`/`#trend`) — don't add a defensive
   rescue/branch, in a specific action, for a specific exception class
-  that has no live trigger in today's call sites (e.g. no `rescue_from
-  ActiveRecord::RecordNotFound` — see Error Handling for why this is a
-  different case from the global `StandardError` catch-all).
+  that has no live trigger in today's call sites.
+- Look up a path-segment resource with a bang finder
+  (`Model.find_by!(...)`) and let the miss raise
+  `ActiveRecord::RecordNotFound`; `Api::V1::BaseController` renders it
+  as the standard not-found response (see Error Handling). Never check
+  for `nil` and render `:not_found` (or an empty success body) inline.
+  `ItemPricesController#history` is the canonical case: it resolves the
+  `Item` by `market_hash_name` before branching between the 30-day
+  cache and the history query, so every period has the same 404
+  contract.
 - Validate a closed-enum query param by raising
   `Api::V1::UnsupportedParamError` and let `Api::V1::BaseController`
   render the `:bad_request` response — never render that branch inline
@@ -140,7 +149,7 @@ seed calls `InventoryValueRecordingService` the same way.
 
 ## Error Handling
 
-Four failure shapes:
+Five failure shapes:
 
 1. **Auth failures** — both `:unauthorized` with a `{ message: "..." }`
    body: missing token vs. invalid/expired token
@@ -152,11 +161,12 @@ Four failure shapes:
    `InventoriesController`'s wrapped `Steam::Client` call: branch on
    `response.success?`, `:bad_request` with `{ message: response.error
    }`.
-3. **Raised closed-enum validation error, caught centrally** — an action
-   that validates a closed-enum query param (`period`) against
-   `PricePeriod.resolve` raises
-   `Api::V1::UnsupportedParamError` (`lib/api/v1/unsupported_param_error.rb`)
-   instead of rendering inline. `Api::V1::BaseController` declares
+3. **Raised closed-enum validation error, caught centrally** — a query
+   object validates a closed-enum query param (`period`) through
+   `Options::DateRange::Param#parse`, passing
+   `Api::V1::UnsupportedParamError`
+   (`lib/api/v1/unsupported_param_error.rb`) as `error_class`, instead
+   of rendering inline. `Api::V1::BaseController` declares
    `rescue_from Api::V1::UnsupportedParamError, with:
    :render_unsupported_param_error`, rendering `:bad_request` with
    `{ message: exception.message }` (`"Unsupported period: <value>"`).
@@ -164,9 +174,20 @@ Four failure shapes:
    Rails resolves the most-recently-declared matching handler first, so
    the more specific handler must come second, not first. The class is
    namespace-local (mirroring `Api::Public::UnsupportedParamError`) — V1
-   must not depend on the Public namespace's error class. The action
-   raises; it never branches on `nil` to render the 400 itself.
-4. **Unhandled/infra-level failures** — a single `rescue_from
+   must not depend on the Public namespace's error class. The query
+   raises; the controller never branches on `nil` to render the 400
+   itself.
+4. **Missing resource, caught centrally** — an action that looks up a
+   path-segment resource with `Model.find_by!(...)` lets the miss raise
+   `ActiveRecord::RecordNotFound`. `Api::V1::BaseController` declares
+   `rescue_from ActiveRecord::RecordNotFound, with: :render_not_found`,
+   rendering `:not_found` with `{ message: "Not found" }` (a generic
+   body, not echoing the identifier). Declare it after
+   `rescue_from StandardError` for the same ordering reason; its order
+   relative to the `UnsupportedParamError` handler does not matter
+   (neither exception subclasses the other). `ItemPricesController#history`
+   is the canonical case.
+5. **Unhandled/infra-level failures** — a single `rescue_from
    StandardError` on `Api::V1::BaseController`, catching anything that
    escapes an action un-rescued (a lost DB connection, any other
    unexpected runtime error — never a specific, named exception class).
@@ -180,23 +201,21 @@ Four failure shapes:
    `Rails.logger.error` is the only thing standing between this and a
    silently lost failure.
 
-Shape 4 is a different category from the `MUST` rule above against a
+Shape 5 is a different category from the `MUST` rule above against a
 defensive per-action rescue/branch for something that can't fail: that
-rule targets a *speculative* branch for a *specific* exception class
-with no live trigger in today's code (e.g. `ActiveRecord::RecordNotFound`
-— no `find`/`find_by!` call exists anywhere in `Api::V1::`, only
-`find_by`, so there is deliberately no `rescue_from` for it). The
-`StandardError` catch-all is the opposite case: one single, global
-handler for failures that are *never* "a condition that can't occur" —
-unexpected infrastructure failures are unpredictable by definition, not
-a branch added speculatively for a condition the code can't actually hit.
-It never shadows an existing explicit branch: `InventoriesController`'s
-`Steam::Client` failure path still renders its own `:bad_request`
-directly, since that's a handled `response.success? == false`, not a
-raised exception — `rescue_from` only ever fires for whatever reaches it
-un-rescued. Shape 3 is different again: it is a live, expected failure
-of a caller-supplied closed-enum param, raised deep in the action and
-rendered once at the base controller; it is not a speculative guard.
+rule targets a *speculative* branch for a specific exception class with
+no live trigger. The `StandardError` catch-all is the opposite case: one
+single, global handler for failures that are *never* "a condition that
+can't occur" — unexpected infrastructure failures are unpredictable by
+definition, not a branch added speculatively for a condition the code
+can't actually hit. It never shadows an existing explicit branch:
+`InventoriesController`'s `Steam::Client` failure path still renders its
+own `:bad_request` directly, since that's a handled
+`response.success? == false`, not a raised exception — `rescue_from`
+only ever fires for whatever reaches it un-rescued. Shapes 3 and 4 are
+different again: both are live, expected failures of caller input,
+raised deep in the query/action and rendered once at the base
+controller; neither is a speculative guard.
 
 ## Interaction With Other Layers
 
@@ -218,11 +237,14 @@ render json: { ... }, status: :some_symbol
   namespace-neutral common ancestor.
 - `app_fetcher/app/controllers/api/v1/base_controller.rb` — player
   bridge-token auth, the `StandardError` catch-all, and the
-  `UnsupportedParamError` handler.
+  `UnsupportedParamError` / `RecordNotFound` handlers.
 - `app_fetcher/lib/api/v1/unsupported_param_error.rb` — the V1
   closed-enum validation error.
-- `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
-- `app_fetcher/app/controllers/api/v1/item_prices_controller.rb`
+- `app_fetcher/app/controllers/api/v1/inventories_controller.rb` —
+  read-only inventory envelope rendered through `InventorySerializer`.
+- `app_fetcher/app/controllers/api/v1/item_prices_controller.rb` —
+  `#history` is the canonical `find_by!` + 30-day cache + history-query
+  branch.
 - `app_fetcher/config/routes.rb`
 - `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
   `app_fetcher/spec/requests/api/v1/item_prices_spec.rb`

@@ -72,7 +72,7 @@ exists.
 | Model (`app/models/**`) | Unit | `Item`, `PriceLog` |
 | Query object (`app/queries/**`, excluding `appliers/`/`options/`) | Unit | `ItemCatalogQuery` |
 | Query applier (`app/queries/appliers/**`) | Unit | `Appliers::SortApplier` |
-| Query option enum (`app/queries/options/**`) | Unit | `Options::ItemSortOption` |
+| Query option enum (`app/queries/options/**`) | Unit | `Options::ItemSortOption`, `Options::DateRange` |
 | Serializer (`app/serializers/**`) | Unit | `ItemCatalogSerializer` |
 | Action (`app/actions/**`, `app_core`) | Unit | — |
 | Plain `lib/` class | Unit | `Steam::BridgeToken` |

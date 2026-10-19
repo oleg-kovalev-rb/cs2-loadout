@@ -41,12 +41,6 @@ a change's scope just because an unrelated file is flagged here.
   `redline_recent`, etc.) stay loaded and referenced by their current
   specs; don't add new fixture rows here — use a factory instead. See
   `agent/adr/fetcher/rspec-testing-strategy.md`.
-- `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
-  `price_histories_spec.rb` — `inventories_spec.rb` hand-writes a
-  `WebMock` `stub_request` body for a Steam API call at the request
-  level; `rspec-conventions.md` now requires a VCR cassette at that
-  level (unit specs keep using `WebMock` directly). Not migrated here;
-  migrate the next time either file is otherwise touched.
 - `app_fetcher/sorbet/rbi/gems/connection_pool@3.0.2.rbi` — an empty
   Tapioca stub ("THIS IS AN EMPTY RBI FILE"): `sidekiq` loads
   `connection_pool` transitively before Tapioca's require pass, so Tapioca

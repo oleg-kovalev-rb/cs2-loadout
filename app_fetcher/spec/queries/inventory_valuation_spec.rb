@@ -107,7 +107,7 @@ RSpec.describe InventoryValuation do
       create(:inventory_value_log, steam_id: steam_id, log_date: 2.days.ago.to_date, total_value_cents: 1000, **complete_counts)
       create(:inventory_value_log, steam_id: steam_id, log_date: Date.current, total_value_cents: 100, **complete_counts)
 
-      series = described_class.series(steam_id, PricePeriod::SevenDays, current: described_class.current(inventory))
+      series = described_class.series(steam_id, Options::DateRange::Last7Days, current: described_class.current(inventory))
 
       aggregate_failures do
         expect(series.points.size).to eq(2)
@@ -127,7 +127,7 @@ RSpec.describe InventoryValuation do
       create(:inventory_value_log, steam_id: steam_id, log_date: 10.days.ago.to_date, total_value_cents: 50, **complete_counts)
       create(:inventory_value_log, steam_id: steam_id, log_date: 2.days.ago.to_date, total_value_cents: 100, **complete_counts)
 
-      series = described_class.series(steam_id, PricePeriod::SevenDays, current: described_class.current(inventory))
+      series = described_class.series(steam_id, Options::DateRange::Last7Days, current: described_class.current(inventory))
 
       aggregate_failures do
         expect(series.points.map(&:total_value_cents)).to eq([ 100, 0 ])
@@ -141,7 +141,7 @@ RSpec.describe InventoryValuation do
       ])
       create(:inventory_value_log, steam_id: steam_id, log_date: 2.days.ago.to_date, total_value_cents: 1000, **partial_counts)
 
-      series = described_class.series(steam_id, PricePeriod::SevenDays, current: described_class.current(inventory))
+      series = described_class.series(steam_id, Options::DateRange::Last7Days, current: described_class.current(inventory))
 
       expect(series.change_partial).to be(true)
     end
@@ -151,7 +151,7 @@ RSpec.describe InventoryValuation do
         create(:item, current_price_cents: 200)
       ])
 
-      series = described_class.series(steam_id, PricePeriod::SevenDays, current: described_class.current(inventory))
+      series = described_class.series(steam_id, Options::DateRange::Last7Days, current: described_class.current(inventory))
 
       aggregate_failures do
         expect(series.points.size).to eq(1)
@@ -183,7 +183,7 @@ RSpec.describe InventoryValuation do
 
   describe ".page" do
     it "returns a nil current and empty series for an unknown steam_id" do
-      page = described_class.page("unknown", PricePeriod::SevenDays)
+      page = described_class.page("unknown", Options::DateRange::Last7Days)
 
       aggregate_failures do
         expect(page.current).to be_nil
@@ -195,7 +195,7 @@ RSpec.describe InventoryValuation do
     it "returns the current snapshot and series for an existing inventory" do
       create(:user_inventory, steam_id: steam_id, items: [ create(:item, current_price_cents: 200) ])
 
-      page = described_class.page(steam_id, PricePeriod::SevenDays)
+      page = described_class.page(steam_id, Options::DateRange::Last7Days)
 
       aggregate_failures do
         expect(page.current).not_to be_nil

@@ -25,6 +25,16 @@ class InventoryValuation
     String
   )
 
+  SUPPORTED_RANGES = T.let(
+    [
+      Options::DateRange::Last7Days,
+      Options::DateRange::Last30Days,
+      Options::DateRange::LastYear,
+      Options::DateRange::AllTime
+    ].freeze,
+    T::Array[Options::DateRange]
+  )
+
   AGGREGATE_EXPRESSIONS = T.let(
     [
       TOTAL_EXPRESSION,
@@ -99,23 +109,26 @@ class InventoryValuation
       snapshot_from_row(T.unsafe(row) || [ 0, 0, 0, 0, nil ])
     end
 
-    sig { params(steam_id: String, period: PricePeriod, current: Snapshot).returns(Series) }
-    def series(steam_id, period, current:)
-      logs = InventoryValueLog.where(steam_id: steam_id).for_period(period).order(:log_date).to_a
+    sig { params(steam_id: String, range: Options::DateRange, current: Snapshot).returns(Series) }
+    def series(steam_id, range, current:)
+      scope = InventoryValueLog.where(steam_id: steam_id)
+      cutoff = range.since_date
+      scope = scope.where(log_date: cutoff..) if cutoff
 
+      logs = scope.order(:log_date).to_a
       points = logs.reject { |log| log.log_date == Date.current }.map { |log| point_from_log(log) }
       points << live_point(current)
 
       series_from_points(points)
     end
 
-    sig { params(steam_id: String, period: PricePeriod).returns(Page) }
-    def page(steam_id, period)
+    sig { params(steam_id: String, range: Options::DateRange).returns(Page) }
+    def page(steam_id, range)
       user_inventory = UserInventory.find_by(steam_id: steam_id)
       return Page.new(current: nil, series: empty_series(T.let([], T::Array[Point]))) if user_inventory.nil?
 
       snapshot = current(user_inventory)
-      Page.new(current: snapshot, series: series(steam_id, period, current: snapshot))
+      Page.new(current: snapshot, series: series(steam_id, range, current: snapshot))
     end
 
     sig { params(steam_ids: T::Array[String], since_date: Date).returns(T::Hash[String, InventoryValueLog]) }

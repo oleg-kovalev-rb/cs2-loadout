@@ -157,7 +157,7 @@ RSpec.describe InventoryDetailQuery do
         page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
         aggregate_failures do
-          expect(page.period).to eq(PricePeriod::SevenDays)
+          expect(page.range).to eq(Options::DateRange::Last7Days)
           expect(page.history.size).to eq(1)
           expect(page.history.first.total_value_cents).to eq(2000)
           expect(page.change_cents).to eq(0)

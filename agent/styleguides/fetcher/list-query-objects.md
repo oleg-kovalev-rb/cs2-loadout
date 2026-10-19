@@ -82,6 +82,15 @@ or a bare list of already-shaped records.
   single embedded paginated/sorted sub-collection within that one
   resource (e.g. `InventoryDetailQuery`'s `top_items`), on top of
   whatever bespoke scalar aggregates the resource needs.
+- **`app/queries/<resource>_history_query.rb`** (flat root, e.g.
+  `ItemPriceHistoryQuery`, `InventoryValueHistoryQuery`) — a
+  time-series read for one resource: resolves the `Options::DateRange`
+  param, applies the range's cutoff to the queried log model, and
+  returns a `Page` struct of points (plus the resolved `range`). Named
+  `<Resource>HistoryQuery` because it is neither a filtered page of
+  resources (`CatalogQuery`) nor a single-resource detail
+  (`DetailQuery`). It never reads a response-payload cache; the
+  controller decides whether to use a cache at all.
 - **`app/queries/<concern>.rb`** (flat root, e.g.
   `InventoryValuation`) — a shared, read-only calculation over
   already-persisted data whose result is consumed by more than one query
@@ -123,6 +132,12 @@ or a bare list of already-shaped records.
   when no catalog/detail/concern-query class fits. The controller still
   owns every read, cache call, and enqueue; the serializer owns only the
   final hash.
+- **`app/serializers/<resource>_serializer.rb`** (flat root, e.g.
+  `InventorySerializer`) — the same pure shaping for a resource whose
+  only endpoint renders one simple envelope around an already-fetched
+  collection (`{ items_count, items }`). Use it instead of leaving that
+  envelope inline in the controller; do not create a catalog/detail
+  query class solely to justify it.
 
 ## Interface
 
@@ -155,16 +170,21 @@ or a bare list of already-shaped records.
   this applier only resolves, validates, and dispatches, so `enum_class`
   must be an `Options::*` sort enum (or another enum whose members
   implement `#apply(scope)`), never a plain value enum such as
-  `PricePeriod`.
-- **Period params (`PricePeriod`)** are resolved by
-  `PricePeriod.resolve(raw_value, supported:, default:)` →
-  `T.nilable(PricePeriod)`, not by `Appliers::SortApplier`. Each model
-  owns the periods it can serve (`InventoryValueLog::SUPPORTED_PERIODS`
-  without `24h`, `PriceLog::SUPPORTED_PERIODS` with every period) and a
-  `scope :for_period` that applies `#since`/`#since_date`
-  (`PricePeriod::All` has no cutoff). The caller decides how to report
-  an unsupported value: `InventoryDetailQuery` raises
-  `Api::Public::UnsupportedParamError`; `Api::V1` actions raise
+  `Options::DateRange`.
+- **Period params (`Options::DateRange`)** are resolved by a
+  per-call `Options::DateRange::Param`, not by `Appliers::SortApplier`.
+  `Options::DateRange < T::Enum` owns the tag vocabulary
+  (`24h`/`7d`/`30d`/`1y`/`all`) and the cutoff conversion (`#duration`,
+  `#since`, `#since_date`; `AllTime` has no cutoff).
+  `Options::DateRange::Param.new(allowed_ranges:, default:,
+  error_class:).parse(raw)` returns a `DateRange` member or raises
+  `error_class` with `"Unsupported period: <raw>"`; blank input
+  resolves to `default`, and a recognized-but-disallowed member (e.g.
+  `24h` for daily inventory values) is an error, never a silent
+  fallback. Each query object constructs its own `Param` inside `.call`
+  — there is no shared param constant. The caller chooses the error
+  class: `InventoryDetailQuery` uses
+  `Api::Public::UnsupportedParamError`; V1 query objects use
   `Api::V1::UnsupportedParamError`, which `Api::V1::BaseController`
   renders as `:bad_request` (no inline render branch in the action).
 - **`Appliers::FilterApplier.call(scope, params, enum_class:)`** →
@@ -210,9 +230,11 @@ or a bare list of already-shaped records.
 - `Appliers::*` own generic resolution/clamping/dispatch mechanics —
   never resource-specific logic, never which fields exist for a given
   resource.
-- Model `for_period` scopes own the period cutoff SQL; `PricePeriod`
-  owns cutoff conversion and the supported/default vocabulary, not the
-  query itself.
+- `Options::DateRange` owns cutoff conversion and the range vocabulary;
+  the query object that owns the endpoint applies that cutoff to its
+  model (`where(log_date: range.since_date..)` or
+  `where(created_at: range.since..)`). Models do not declare supported
+  ranges, period constants, or `for_period` scopes.
 - `<Resource>CatalogQuery` owns every database/cache read needed to
   answer "what does this page need" — including resource-specific
   aggregates and enrichment lookups (e.g. `Item`'s price-change counts,
@@ -270,9 +292,10 @@ re-shape its result — compose the structs at the call site instead.
   new closed-enum query param in this layer.
 - `Appliers::SortApplier`/`Appliers::FilterApplier` must never reference
   a specific model, scope, or `Options::*` class by name.
-- A period param must resolve through `PricePeriod.resolve`
-  against the queried model's `SUPPORTED_PERIODS`; never route it through
-  `Appliers::SortApplier`.
+- A period param must resolve through `Options::DateRange::Param#parse`
+  with an explicit `allowed_ranges:`/`default:`/`error_class:`; never
+  route it through `Appliers::SortApplier`, and never give a model a
+  `SUPPORTED_PERIODS` constant or a `for_period` scope.
 - `<Resource>CatalogQuery.call` must never reference an
   `app/caching/` response-payload cache (e.g. `ItemCatalogCache`) or
   `ActionController`/HTTP types beyond accepting `ActionController::Parameters`
@@ -326,10 +349,10 @@ itself — both propagate to the controller's base class:
 
 1. An unrecognized closed-enum value, raised as `Api::Public::
    UnsupportedParamError` from `Appliers::SortApplier` for sort params, or
-   by the query object after `PricePeriod.resolve` returns nil for a
-   period param. (In principle an `Options::*` value's own `#apply`
-   may raise it too if a future resource needs a closed-enum-shaped
-   filter — the mechanism is the same.)
+   by `Options::DateRange::Param#parse` for a period param (the query
+   object passes that error class in). (In principle an `Options::*`
+   value's own `#apply` may raise it too if a future resource needs a
+   closed-enum-shaped filter — the mechanism is the same.)
 2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
    record, raised as `ActiveRecord::RecordNotFound` by its bang finder
    (never returned as `nil` — see Rules).
@@ -375,7 +398,7 @@ Api::Public::<X>Controller#show
     ↓ (on miss)
 <Resource>DetailQuery.call(identifier, params)
     ↓ Model.find_by!(identifier)  → raises ActiveRecord::RecordNotFound, or continues
-    ↓ PricePeriod.resolve(...)  — period param, or raises
+    ↓ Options::DateRange::Param#parse(...)  — period param, or raises
     ↓ Appliers::SortApplier.call(...) / Appliers::Pagination#apply(...)  — for one embedded sub-collection, if any
     ↓ model scopes, app/caching/ data caches
     → <Resource>DetailQuery::Page (T::Struct)
@@ -401,9 +424,12 @@ Specific to this layer:
   (no obligation to build a throwaway test-only enum). `SortApplier`
   specs assert the relation's ordering (and the raised error), not a
   resolved enum value.
-- Period scopes (`Model.for_period`) are model-level specs: assert
-  cutoff inclusion/exclusion and that `PricePeriod::All` applies no
-  cutoff.
+- `Options::DateRange` is a unit spec under `spec/queries/options/`:
+  assert each member's `#duration`/`#since`/`#since_date`, and
+  `Param#parse`'s blank-default, allowed, disallowed, and unknown cases
+  with the exact error class/message. Range cutoffs are tested on the
+  owning query object (`spec/queries/`), asserting inclusion/exclusion
+  and that `AllTime` applies no cutoff — never on a model scope.
 - `<Resource>CatalogQuery` specs hit the database for real (it's a query
   object) but must never stub or reference `app/caching/`'s
   response-payload cache — that cache does not exist from this class's
@@ -438,10 +464,17 @@ Specific to this layer:
   `Options::ItemFilterOption`/`Appliers::Pagination`/
   `Appliers::SortApplier`/`Appliers::FilterApplier`
   (`agent/plans/item-catalog-query-refactor.md`).
-- `InventoryDetailQuery`/`InventoryDetailSerializer`,
-  `InventoryCatalogQuery`, and `PricePeriod` + model `for_period` scopes
-  (`agent/plans/public-inventory-endpoints.md`,
+- `InventoryDetailQuery`/`InventoryDetailSerializer` and
+  `InventoryCatalogQuery` (`agent/plans/public-inventory-endpoints.md`,
   `agent/plans/fix-query-param-applier-consistency.md`).
+- `Options::DateRange` + `Options::DateRange::Param`, with cutoff
+  applied by the owning query object
+  (`agent/plans/fetcher-api-cleanup-and-date-range.md`).
+- `InventoryValueHistoryQuery`/`ItemPriceHistoryQuery` — the
+  `<Resource>HistoryQuery` shape, returning `Page` structs of points
+  (`agent/plans/fetcher-api-cleanup-and-date-range.md`).
+- `InventorySerializer` — the `<Resource>Serializer` envelope case
+  (`agent/plans/fetcher-api-cleanup-and-date-range.md`).
 - `InventoryValuation` — the shared concern query
   (`agent/plans/inventory-valuation-consistency.md`).
 - `InventoryValuationSerializer` — the `<Concern>Serializer` case,

@@ -29,16 +29,17 @@ writing:
 
 - **Already live**: inventory persistence (`user_inventories`/
   `user_inventory_items`), `UserInventorySyncService`, the weekly sync
-  scheduler, `POST /api/v1/inventories/refresh`, `InventoryValueLog`'s
-  self-seeding, all price caching (`ItemPriceCache`/`PriceHistoryCache`)
-  — see `agent/plans/user-inventory-persistence.md`,
+  scheduler, `InventoryValueLog` writes from the nightly
+  `InventoryValueUpdateWorker`, all price caching
+  (`ItemPriceCache`/`PriceHistoryCache`) — see
+  `agent/plans/user-inventory-persistence.md`,
   `agent/plans/inventory-value-history.md`,
   `agent/plans/fetcher-price-caching.md`.
 - **Pending implementation** (`agent/plans/dashboard-api-redesign.md`,
   status `styleguide-checked`): `GET /api/v1/item_prices/dynamics`,
   `GET /api/v1/item_prices/trend`, `GET /api/v1/item_prices/:name/history`,
   `period` support on `inventory_values`, price fields dropped from
-  `inventories/me`/`inventories/refresh`, `ItemTrendCache`, and all the
+  `inventories/me`, `ItemTrendCache`, and all the
   `app_core` hook/component rewiring described below. `POST
   /api/v1/price_histories` is still the live history endpoint until
   that plan ships; this document describes its replacement.
@@ -136,21 +137,17 @@ deliberately deferred, not built now).
 
 **5. The portfolio chart.** `usePortfolioHistory` calls
 `GET /api/v1/inventory_values?period=30d` (the tile's default range).
-Backend reads `InventoryValueLog` — one row per day per `steam_id`. A
-genuinely new user (zero rows) gets an empty array back, and the
-controller self-seeds synchronously: it calls
-`InventoryValueRecordingService`, which sums today's owned items'
-`current_price_cents` and writes the first row only when the inventory is
-synced and every `marketable` item has a price. While the inventory is
-missing or still estimating, the service deliberately writes nothing and
-returns the empty list. The chart is empty on the first load and fills
-in from the next request once prices complete, or from the next nightly
-`InventoryValueScheduler` run — the two triggers are independent (see
-Risks in `user-inventory-persistence.md`), but the nightly run covers
-every `UserInventory`, so a first seed missed during a dashboard visit is
-backfilled the next night. Returning users just get their history,
-filtered to the requested period (`7d`/`30d`/`1y`/`all` — note there's no
-`24h` option; `InventoryValueLog` is daily-granularity by design).
+Backend reads `InventoryValueLog` — one row per day per `steam_id` — and
+always appends a live point computed from the current owned items, so
+the tile shows today's value immediately even on a brand-new account.
+The endpoint is a pure read: it never writes a row. A genuinely new user
+(zero stored rows) gets the single live point and
+`change.available: false`; the first stored row appears after the next
+nightly `InventoryValueUpdateWorker` run, which covers every
+`UserInventory`. The chart fills in day by day after that. Returning
+users get their history filtered to the requested period
+(`7d`/`30d`/`1y`/`all` — note there's no `24h` option;
+`InventoryValueLog` is daily-granularity by design).
 
 **6. Clicking an item.** The hero chart switches to item-detail mode and
 shows a loading state — no attempt to reuse the sparkline's 5-point
@@ -187,40 +184,34 @@ looking.**
   days, enqueues `UserInventorySyncWorker` → the same
   `UserInventorySyncService.call` the cold-start path uses. A user's
   *inventory composition* (not price) is at most a week stale unless
-  they hit the manual refresh button or revisit after a trade.
+  they revisit after `UserInventoryCache` expires (the cold-start path
+  re-syncs) — there is no manual refresh endpoint.
 - `InventoryValueScheduler` (daily): fans out `InventoryValueUpdateWorker`
   to every `steam_id` in `user_inventories`, including one that has no
-  `InventoryValueLog` row yet — so a first seed missed during a dashboard
-  visit is backfilled on the next night. Pure DB read/sum/upsert, no
-  Steam call (price freshness already comes from `PriceScheduler`
-  independently).
-
-**8. Manual refresh.** `POST /api/v1/inventories/refresh` (rate-limited,
-once/day per `steam_id`) re-runs `UserInventorySyncService.call`
-immediately — the user's lever against the weekly sync's staleness
-window. Ships on the backend; no `app_core` UI button exists yet (an
-explicit, separate future task).
+  `InventoryValueLog` row yet — so every user's first stored row is
+  written on the first nightly run after their inventory is synced.
+  Pure DB read/sum/upsert, no Steam call (price freshness already comes
+  from `PriceScheduler` independently).
 
 ## Endpoint Reference
 
 | Endpoint | Auth | Params | Backend data source | Response shape |
 |---|---|---|---|---|
-| `GET /api/v1/inventories/me` | bridge token | none | `UserInventoryCache.fetch` → `UserInventorySyncService` on miss | `{items_count, items: [{market_hash_name, metadata}]}` |
-| `POST /api/v1/inventories/refresh` | bridge token | none | `UserInventorySyncService.call` (rate-limited 1/day) | same as `show` |
+| `GET /api/v1/inventories/me` | bridge token | none | `UserInventoryCache.fetch` → `UserInventorySyncService` on miss | `{items_count, items: [{market_hash_name, price_unavailable, metadata}]}` |
 | `GET /api/v1/item_prices/dynamics` | bridge token | none | `UserInventoryCache.fetch` → `ItemPriceCache.fetch_for`; `pending_count` from `Item.awaiting_price` | `{prices: {name: {current_price_cents, change_24h_cents, change_24h_percent}}, pending_count: N}` |
 | `GET /api/v1/item_prices/trend` | bridge token | none | `UserInventoryCache.fetch` → `ItemTrendCache.fetch_for` | `{name: [{at, price_cents, volume}]}` (≤5 pts, 7d) |
-| `GET /api/v1/item_prices/:market_hash_name/history` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `30d`) | `PriceHistoryCache` (default) or direct `PriceLog` query | `[{at, price_cents, volume}]` |
-| `GET /api/v1/inventory_values` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `all`) | `InventoryValueLog` (self-seeding) | `[{date, total_value_cents}]` |
+| `GET /api/v1/item_prices/:market_hash_name/history` | bridge token | `period` (`24h`\|`7d`\|`30d`\|`1y`\|`all`, default `30d`) | `PriceHistoryCache` (explicit `30d`) or `ItemPriceHistoryQuery` over `PriceLog` | `[{at, price_cents, volume}]`; unknown item → `404 {message: "Not found"}` |
+| `GET /api/v1/inventory_values` | bridge token | `period` (`7d`\|`30d`\|`1y`\|`all`, default `all`) | `InventoryValueLog` + live `InventoryValuation` (read-only) | `{current, history: [{at, total_value_cents, ...}], change}` |
 
 ## Data & Caching Map
 
 | Data | Source of truth | Cache | Invalidated by |
 |---|---|---|---|
-| What a user owns | `user_inventories`/`user_inventory_items` (Postgres, FK to `items`) | `UserInventoryCache` (single-key read-through, 15 min safety TTL) | `UserInventorySyncService` (cold start, refresh, weekly sync) |
+| What a user owns | `user_inventories`/`user_inventory_items` (Postgres, FK to `items`) | `UserInventoryCache` (single-key read-through, 15 min safety TTL) | `UserInventorySyncService` (cold start, weekly sync) |
 | An item's current price | `items.current_price_cents`/`change_24h_cents` | `ItemPriceCache` (bulk read-through, 15 min safety TTL) | `PriceUpdateWorker` (point invalidation, on success) |
 | An item's 30-day history | `price_logs` | `PriceHistoryCache` (bulk read-through, 15 min safety TTL) | `PriceUpdateWorker` |
 | An item's 7-day/5-point trend | `price_logs` (downsampled) | `ItemTrendCache` (bulk read-through, 15 min safety TTL) | `PriceUpdateWorker` |
-| Daily portfolio value | `inventory_value_logs` | — (read live, one row/day) | n/a (self-seeded, nightly-updated) |
+| Daily portfolio value | `inventory_value_logs` (plus the live valuation appended on read) | — (one row/day) | n/a (nightly-written by `InventoryValueUpdateWorker`) |
 
 **The one correctness rule worth remembering**: `UserInventoryCache`
 answers "what does this user own," never "what is it worth right now" —

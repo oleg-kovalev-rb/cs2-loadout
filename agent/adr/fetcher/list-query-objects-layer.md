@@ -35,7 +35,8 @@ that ADR actually decided.
 
 A closely related, narrower pattern already exists, undocumented:
 `app_fetcher/app/models/price_period.rb` (`PricePeriod < T::Enum`, a
-`case self` method with an `else T.absurd(self)` exhaustiveness guard),
+`case self` method with an `else T.absurd(self)` exhaustiveness guard;
+since replaced by `Options::DateRange` — see the 2026-10-20 update),
 used inline by `ItemPricesController#history` and
 `InventoryValuesController` to validate a closed-enum query param. It
 demonstrates the right *mechanism* (a `T::Enum` where each value carries
@@ -317,10 +318,27 @@ single, consistent answer.
   not owned by this layer — its location (`lib/api/public/`) and the
   base-controller `rescue_from` that catches it are governed by
   `public-api-controllers.md`, not restated here.
-- `ItemPricesController#history` / `InventoryValuesController` and their
-  existing inline `PricePeriod` usage are not migrated to
-  `Appliers::SortApplier` by this decision — left as they are; a future,
-  separate decision if that migration is ever wanted.
+- `ItemPricesController#history` / `InventoryValuesController` are not
+  migrated to `Appliers::SortApplier` by this decision — their period
+  param is a range, not a sort field. See the 2026-10-20 update below
+  for where that range handling now lives.
+
+## Update (2026-10-20): `Options::DateRange` and History Queries
+
+`Options::DateRange` (`app/queries/options/date_range.rb`) replaces the
+former model-level `PricePeriod` enum. It owns the closed range
+vocabulary and cutoff conversion; the nested
+`Options::DateRange::Param#parse(allowed_ranges:, default:,
+error_class:)` validates a per-call allow-list and raises the caller's
+namespace error on an unknown or disallowed value. Models no longer
+declare `SUPPORTED_PERIODS` or `for_period` scopes — the owning query
+object applies the cutoff.
+
+Two `<Resource>HistoryQuery` classes (`InventoryValueHistoryQuery`,
+`ItemPriceHistoryQuery`) resolve the range and return `Page` structs of
+points. They never read `PriceHistoryCache`; the controller keeps the
+explicit 30-day cache branch. `InventorySerializer` covers the simple
+`inventories/me` envelope.
 
 ## Related
 

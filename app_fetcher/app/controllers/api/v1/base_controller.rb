@@ -10,6 +10,7 @@ module Api
       before_action :authenticate_bridge_token!
       rescue_from StandardError, with: :render_internal_server_error
       rescue_from Api::V1::UnsupportedParamError, with: :render_unsupported_param_error
+      rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
 
       private
 
@@ -39,6 +40,11 @@ module Api
       sig { params(exception: Api::V1::UnsupportedParamError).void }
       def render_unsupported_param_error(exception)
         render json: { message: exception.message }, status: :bad_request
+      end
+
+      sig { params(_exception: ActiveRecord::RecordNotFound).void }
+      def render_not_found(_exception)
+        render json: { message: "Not found" }, status: :not_found
       end
 
       sig { params(exception: StandardError).void }
