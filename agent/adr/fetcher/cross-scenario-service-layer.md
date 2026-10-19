@@ -56,7 +56,7 @@ after their request completes) doesn't hold.
 > **Amended 2026-10-19:** the "two or more Scenarios" membership
 > criterion stated in this section is superseded — a cohesive
 > single-Scenario operation may also be a service. Everything else here
-> (the layer's existence, its naming, the `.call`/`ServiceResult`
+> (the layer's existence, its naming, the `.call`/`ApplicationService::Result`
 > contract, and the controller-persistence carve-out) still stands. See
 > the Amendment section at the end of this ADR.
 
@@ -102,7 +102,7 @@ not merely stylistically different.)
 above — `UserInventorySyncService`'s nested `Result`, and
 `InventoryValueRecordingService` returning the written record — no longer
 describe the layer. All `app/services/` classes now return a single
-shared `ServiceResult[Payload]` value object; see
+shared `ApplicationService::Result[Payload]` value object; see
 `agent/adr/fetcher/service-result-contract.md` and
 `agent/styleguides/fetcher/services.md`. The `.call` naming/entry-point
 mandate below still holds; only the return-shape guidance is superseded.
@@ -346,7 +346,7 @@ caller a reason to keep mixed responsibilities inline.
 
 The rest of this ADR is unchanged: the layer still exists for
 application-layer orchestration; classes remain flat, top-level
-`<Noun>Service`; `.call` returns `ServiceResult[Payload]`; and the
+`<Noun>Service`; `.call` returns `ApplicationService::Result[Payload]`; and the
 controller-persistence carve-out still applies only to the named call
 sites.
 
@@ -358,7 +358,7 @@ sites.
 - "No better existing home" is a hard precondition: parser, builder,
   query object, caching, and model are checked first. `app/services/` is
   not a substitute for placing logic in the layer that owns it.
-- The single-`.call`/`ServiceResult[Payload]` interface, naming, and
+- The single-`.call`/`ApplicationService::Result[Payload]` interface, naming, and
   dependency rules in `services.md` are unchanged.
 - The controller-synchronous-persistence rule is unchanged: a controller
   may call a read-only/computing service, but may persist synchronously
@@ -377,7 +377,7 @@ sites.
   worker with mixed responsibilities; it also conflicts with
   `architecture-layers.md` and shipped code.
 - **Drop the layer and use `app_core`-style `app/actions/`.** Rejected:
-  the layer's `.call`/`ServiceResult` contract and worker/controller
+  the layer's `.call`/`ApplicationService::Result` contract and worker/controller
   sharing remain useful, and a worker has no request scope.
 - **Keep reuse as a SHOULD signal only.** Rejected in favour of removing
   it from the criteria entirely: a SHOULD still reads as a positional

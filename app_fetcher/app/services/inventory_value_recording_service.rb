@@ -1,6 +1,6 @@
 # typed: strict
 
-class InventoryValueRecordingService
+class InventoryValueRecordingService < ApplicationService
   extend T::Sig
 
   BOOTSTRAP_MAX_WAIT = T.let(48.hours, ActiveSupport::Duration)
@@ -8,7 +8,7 @@ class InventoryValueRecordingService
   class << self
     extend T::Sig
 
-    sig { params(steam_id: String).returns(ServiceResult[InventoryValueLog]) }
+    sig { params(steam_id: String).returns(ApplicationService::Result[InventoryValueLog]) }
     def call(steam_id)
       user_inventory = UserInventory.find_by(steam_id: steam_id)
       return skipped if user_inventory.nil?
@@ -23,15 +23,10 @@ class InventoryValueRecordingService
       )
 
       log = InventoryValueLog.find_by!(steam_id: steam_id, log_date: Date.current)
-      ServiceResult[InventoryValueLog].new(status: ServiceResult::Status::Ok, data: log, error: nil)
+      success(log)
     end
 
     private
-
-    sig { returns(ServiceResult[InventoryValueLog]) }
-    def skipped
-      ServiceResult[InventoryValueLog].new(status: ServiceResult::Status::Skipped, data: nil, error: nil)
-    end
 
     sig { params(user_inventory: UserInventory, snapshot: InventoryValueQuery::ValueSnapshot).returns(T::Boolean) }
     def waiting_for_first_prices?(user_inventory, snapshot)

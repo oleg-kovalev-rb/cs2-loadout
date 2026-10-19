@@ -1,6 +1,6 @@
 # typed: strict
 
-class PriceWarmupService
+class PriceWarmupService < ApplicationService
   extend T::Sig
 
   WARMUP_CAP = T.let(20, Integer)
@@ -10,7 +10,7 @@ class PriceWarmupService
   class << self
     extend T::Sig
 
-    sig { params(items: T::Array[Item]).returns(ServiceResult[T::Array[Integer]]) }
+    sig { params(items: T::Array[Item]).returns(ApplicationService::Result[T::Array[Integer]]) }
     def call(items)
       enqueued_ids = T.let([], T::Array[Integer])
 
@@ -21,11 +21,7 @@ class PriceWarmupService
         enqueued_ids << item.id
       end
 
-      ServiceResult[T::Array[Integer]].new(
-        status: ServiceResult::Status::Ok,
-        data: enqueued_ids,
-        error: nil
-      )
+      success(enqueued_ids)
     end
 
     private

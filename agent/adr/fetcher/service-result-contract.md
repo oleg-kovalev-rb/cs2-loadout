@@ -57,36 +57,38 @@ Two constraints shape the solution:
 ## Decision
 
 Every `app/services/` class exposes exactly one public method, `.call`,
-returning a single shared value object: `ServiceResult[Payload]`.
+returning a single shared value object: `ApplicationService::Result[Payload]`.
 
-`ServiceResult` is a top-level `T::Struct` in
-`app_fetcher/app/services/service_result.rb` (the layer's own shared
-value object, living with the layer), modeled directly on
-`Steam::Response`:
+`ApplicationService::Result` is a `T::Struct` nested inside
+`app_fetcher/app/services/application_service.rb` (the layer's own
+shared value object, living with the base that builds it), modeled
+directly on `Steam::Response`:
 
-- `extend T::Generic`, `Payload = type_member`;
+- `extend T::Generic`, `Payload = type_member(:out)` (covariant as of
+  the 2026-10-20 amendment below);
 - `const :status, Status` — a `T::Enum` with exactly three members:
-  - `Ok` — the service did its job; `data` carries the result;
+  - `Success` — the service did its job; `data` carries the result;
   - `Skipped` — a precondition was not met, so the service deliberately
     did nothing; `data` is `nil`, `error` is `nil`;
-  - `Failed` — the service could not do its job; `error` explains why;
+  - `Failure` — the service could not do its job; `error` explains why;
 - `const :data, T.nilable(Payload)`, `const :error, T.nilable(String)`;
-- predicates `success?` (`Ok`), `skipped?` (`Skipped`), `failed?`
-  (`Failed`).
+- predicates `success?` (`Success`), `skipped?` (`Skipped`), `failed?`
+  (`Failure`).
 
-Constructed at the call site as
-`ServiceResult[Payload].new(status:, data:, error:)` — the same idiom
-`Steam::Response[...].new(...)` already uses.
+Constructed through the private `ApplicationService` helpers
+(`success`/`failure`/`skipped`); see the 2026-10-20 amendment below for
+why the original call-site `ApplicationService::Result[Payload].new(...)`
+idiom moved behind a base class.
 
 All three current services migrate:
 
-- `UserInventorySyncService` → `Failed(error:)` on a Steam failure,
-  `Ok(data: <items>)` otherwise (its nested `Result` is removed).
-- `PriceUpdateService` → `Ok(data: <the updated Item>)`; callers stop
+- `UserInventorySyncService` → `Failure(error:)` on a Steam failure,
+  `Success(data: <items>)` otherwise (its nested `Result` is removed).
+- `PriceUpdateService` → `Success(data: <the updated Item>)`; callers stop
   reading the mutated argument and read `result.data` instead. It has no
-  `Failed` path (bang writes still raise).
+  `Failure` path (bang writes still raise).
 - `InventoryValueRecordingService` → `Skipped` when the gate is closed
-  (no `UserInventory`, or an unpriced `marketable` item), `Ok(data: <the
+  (no `UserInventory`, or an unpriced `marketable` item), `Success(data: <the
   log>)` otherwise.
 
 Callers branch on `status` via the predicates — never on `data.nil?` to
@@ -96,6 +98,56 @@ shape" position of
 `PriceUpdateService`-returns-void reasoning in
 `agent/styleguides/fetcher/architecture-layers.md`'s Canonical
 Implementations.
+
+## Amendment (2026-10-20): Construction Through `ApplicationService`
+
+The outcome contract above is unchanged; the construction idiom moved
+behind the base class and `Payload` became covariant. This also resolves
+the "revisit extracting a shared base-service/Result abstraction"
+question left open in the Context section.
+
+Every `app_fetcher/app/services/` service now inherits
+`ApplicationService`
+(`app_fetcher/app/services/application_service.rb`). The value object is
+nested there as `ApplicationService::Result`; there is no top-level
+`ServiceResult` constant or separate file. The base defines three
+private singleton helpers:
+
+- `success(payload)` → `Success`, carrying `payload`, `error: nil`;
+- `failure(error)` → `Failure`, `data: nil`, non-nil `error`;
+- `skipped` → `Skipped`, `data` and `error` both nil.
+
+`ApplicationService::Result::Payload` is declared covariant
+(`type_member(:out)`). `success` is generic over the payload
+(`type_parameters(:Payload)` / `T.type_parameter(:Payload)`), so the
+payload is inferred from its argument and a mismatched payload is a
+`srb tc` error at the call site. `failure`/`skipped` carry no payload
+and return `ApplicationService::Result[T.noreturn]`; covariance makes
+that a subtype of every concrete
+`ApplicationService::Result[Payload]`, so each service's `.call` keeps
+declaring its concrete payload with no per-service type declaration.
+
+Inside the helpers, construction uses
+`ApplicationService::Result[T.untyped]` because runtime generics are
+erased — naming the type parameter in the method body
+(`ApplicationService::Result[T.type_parameter(:Payload)]`) would call
+`T.type_parameter` outside a `sig` and raise. The helper `sig` carries
+the real type; this is the sanctioned `T.untyped` exception documented
+in `agent/styleguides/ruby-sorbet.md`.
+
+`ApplicationService` owns construction only: no orchestration, no
+business logic, no per-service carve-outs. The result's statuses and
+predicates are unchanged apart from the covariant `Payload`.
+Direct `ApplicationService::Result[Payload].new(status:, data:, error:)`
+construction is now confined to `ApplicationService` (and the
+value-object spec).
+
+Motivation: all four services repeated the same verbose
+`ApplicationService::Result[...].new(status:, data:, error:)` call for
+every outcome, and the per-service `Skipped` branch had already started
+to hide that construction behind a local helper. A typed base helper
+removes the repetition without adding a second result shape or changing
+any caller's branching.
 
 ## Alternatives Considered
 
@@ -120,7 +172,7 @@ new gate as `success: true` with a `nil` payload.
 
 Rejected because:
 
-- `Ok(nil)` is ambiguous — it cannot be distinguished from "ran and
+- `Success(nil)` is ambiguous — it cannot be distinguished from "ran and
   produced no payload" without an out-of-band convention, so the
   convention buys nothing over a plain `nil` return;
 - `ruby-sorbet.md` already prefers a `T::Enum` over a `Hash`/flag set for
@@ -144,7 +196,7 @@ Rejected because:
 
 ### Alternative: per-service subclasses of a shared base result
 
-`class UserInventorySyncService::Result < ServiceResult` with its own
+`class UserInventorySyncService::Result < ApplicationService::Result` with its own
 typed fields.
 
 Rejected — not on style grounds but because it is impossible:
@@ -171,9 +223,9 @@ reliance on in-place mutation makes the worker's data flow explicit.
 ### Positive
 
 - One predictable contract for the whole layer: every `.call` returns a
-  `ServiceResult`, branchable via `success?`/`skipped?`/`failed?`.
+  `ApplicationService::Result`, branchable via `success?`/`skipped?`/`failed?`.
 - The new "deliberately did nothing" outcome has a first-class name
-  (`Skipped`) instead of an overloaded `nil`/`Ok(nil)`.
+  (`Skipped`) instead of an overloaded `nil`/`Success(nil)`.
 - Removes reliance on in-place mutation for `PriceUpdateService`'s
   result.
 - Gives future services a settled answer to "what do I return?" — the
@@ -183,8 +235,8 @@ reliance on in-place mutation makes the worker's data flow explicit.
 
 - Touches all three existing services and their callers/specs, not just
   the one the current bug requires.
-- `ServiceResult`'s generic construction
-  (`ServiceResult[Payload].new(...)`) is slightly more verbose than a
+- `ApplicationService::Result`'s generic construction
+  (`ApplicationService::Result[Payload].new(...)`) is slightly more verbose than a
   per-service struct.
 - A `Result` for a service with no failure/no-op branch
   (`PriceUpdateService`) is, in isolation, ceremony — accepted for
@@ -193,31 +245,31 @@ reliance on in-place mutation makes the worker's data flow explicit.
 ### Risks
 
 - A future contributor could add a fourth ad-hoc result shape by
-  copy-pasting a service instead of reusing `ServiceResult`; the
+  copy-pasting a service instead of reusing `ApplicationService::Result`; the
   styleguide's MUST rules are the guard.
-- The `Skipped`/`Ok` distinction could be misused to encode ordinary
+- The `Skipped`/`Success` distinction could be misused to encode ordinary
   business branching ("nothing to do right now") where a failure or a
   domain value would be more honest; `Skipped` is reserved for a
   precondition the service deliberately declines to act on.
 
 ## Implementation Constraints
 
-- `ServiceResult` lives at
-  `app_fetcher/app/services/service_result.rb`, top-level (not under a
-  `Services::` module — the layer is flat), an exception to the layer's
-  `<Noun>Service` file naming (it is the layer's value object, not a
-  service).
-- It is a `T::Struct` using `extend T::Generic` with `Payload =
-  type_member`, mirroring `Steam::Response`; it must not be subclassed.
-- `Status` is a `T::Enum` with exactly `Ok`, `Skipped`, `Failed`; no
+- `ApplicationService::Result` is nested inside
+  `app_fetcher/app/services/application_service.rb` (not a separate
+  `service_result.rb`, and not under a `Services::` module — the layer
+  is flat).
+- It is a `T::Struct` using `extend T::Generic` with
+  `Payload = type_member(:out)`, mirroring `Steam::Response`; it must not
+  be subclassed.
+- `Status` is a `T::Enum` with exactly `Success`, `Skipped`, `Failure`; no
   other statuses without a new decision.
-- `Skipped` never carries `error`; `Failed` always carries a non-nil
-  `error`; `Ok` carries the payload. Callers must not infer outcome from
+- `Skipped` never carries `error`; `Failure` always carries a non-nil
+  `error`; `Success` carries the payload. Callers must not infer outcome from
   `data.nil?`.
-- Every `app/services/` class's `.call` returns `ServiceResult[...]`;
+- Every `app/services/` class's `.call` returns `ApplicationService::Result[...]`;
   there is no `void`/bare-record/nested-`Result` return any more.
-- A service that raises (bang writes) does not need a `Failed` branch —
-  `Failed` is for *expected* outcomes the service chooses to return, not
+- A service that raises (bang writes) does not need a `Failure` branch —
+  `Failure` is for *expected* outcomes the service chooses to return, not
   a replacement for exceptions.
 - Replacing the nested `UserInventorySyncService::Result` and the
   `PriceUpdateService`-returns-`void` note is required, not optional —

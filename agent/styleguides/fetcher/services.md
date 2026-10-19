@@ -1,5 +1,5 @@
 ---
-description: app_fetcher's app/services/ layer — what a service owns, when it is warranted (responsibility/SRP, not caller count), its flat top-level naming and single .call entry point, and the uniform ServiceResult[Payload] return contract (Ok/Skipped/Failed) every service uses.
+description: app_fetcher's app/services/ layer — what a service owns, when it is warranted (responsibility/SRP, not caller count), its flat top-level naming and single .call entry point, the shared ApplicationService base with its success/failure/skipped helpers, and the uniform ApplicationService::Result[Payload] return contract (Success/Skipped/Failure) every service uses.
 ---
 
 # Services (`app/services/`)
@@ -72,10 +72,20 @@ Choosing the right home:
   every other `app_fetcher` application-layer class follows (parsers,
   builders, workers, schedulers, caching), even when the class calls
   `Steam::Client`.
-- One class per sequence; no shared base class.
-- `ServiceResult` (`app/services/service_result.rb`) is the single,
-  deliberate exception to the `<Noun>Service` file/class naming: it is
-  the layer's shared value object, not a service.
+- One class per sequence, inheriting `ApplicationService`
+  (`app/services/application_service.rb`). The base supplies the private
+  result-construction helpers (`success`/`failure`/`skipped`) and
+  nothing else — no business logic, no shared orchestration.
+- No per-service payload type declaration is needed.
+  `ApplicationService::Result`'s `Payload` is covariant
+  (`type_member(:out)`), and the base's helpers infer the payload from
+  `success`'s argument or return the payload-less
+  `ApplicationService::Result[T.noreturn]` for `failure`/`skipped`.
+- `ApplicationService::Result` is the layer's shared value object, not a
+  service. It is nested inside `application_service.rb`
+  (`class ApplicationService::Result < T::Struct`); keep it there and do
+  not add an `app/services/application_service/` directory — Zeitwerk
+  would then expect a file per nested constant.
 - Callers are workers, and controllers for:
   - the named synchronous-persistence call sites in
     `cross-scenario-service-layer.md` (plus `admin-api-controllers.md`'s
@@ -91,18 +101,37 @@ Choosing the right home:
 ## Interface
 
 - **One public class method**: `self.call(...)`. No other public methods.
-- `sig` returns `ServiceResult[Payload]` (see Rules) — never `void`, never
-  a bare model instance, never a nested per-service `Result`.
-- `ServiceResult[Payload]` is a top-level `T::Struct` (modeled on
-  `Steam::Response`): a `Status` `T::Enum` (`Ok`/`Skipped`/`Failed`),
-  `data: T.nilable(Payload)`, `error: T.nilable(String)`, and the
-  predicates `success?`/`skipped?`/`failed?`.
-- Construct it at the call site as
-  `ServiceResult[Payload].new(status:, data:, error:)`, the same idiom as
-  `Steam::Response[Payload].new(...)`.
-- `ServiceResult` must not be subclassed (sorbet-runtime forbids
-  subclassing a `T::Struct`); the generic `Payload` is how one shared
-  result type carries different payloads.
+- `sig` returns `ApplicationService::Result[Payload]` (see Rules) —
+  never `void`, never a bare model instance, never a nested per-service
+  `Result`. Write the constant fully qualified in a service: Sorbet does
+  not resolve a nested constant unqualified through the superclass chain.
+- `ApplicationService::Result[Payload]` is a nested `T::Struct` (modeled
+  on `Steam::Response`): a `Status` `T::Enum`
+  (`Success`/`Skipped`/`Failure`), `data: T.nilable(Payload)`,
+  `error: T.nilable(String)`, and the predicates
+  `success?`/`skipped?`/`failed?`.
+- Build it through the inherited private helpers — `success(payload)`,
+  `failure(error)`, `skipped` — never by calling
+  `ApplicationService::Result[...].new(...)` inside a service. `success`
+  carries the payload; `failure` requires a non-nil error; `skipped`
+  takes no arguments.
+- `success` is generic over the payload and infers it from its argument,
+  so a mismatched payload is a `srb tc` error at the call site.
+  `failure`/`skipped` carry no payload and return
+  `ApplicationService::Result[T.noreturn]`; because `Payload` is
+  covariant, that is a subtype of every
+  `ApplicationService::Result[Payload]`, and a service's `.call` can keep
+  declaring its concrete payload.
+- `ApplicationService` is the layer's only shared base class. It owns
+  result construction, not behavior; its helpers are private, so a
+  service's public surface remains exactly one method, `.call`. The
+  helpers construct `ApplicationService::Result[T.untyped]` internally
+  because runtime generics are erased (see `ruby-sorbet.md`'s exception
+  for this boundary); the helper `sig` is what carries the real payload
+  type.
+- `ApplicationService::Result` must not be subclassed (sorbet-runtime
+  forbids subclassing a `T::Struct`); the covariant generic `Payload` is
+  how one shared result type carries different payloads.
 
 ## Responsibilities
 
@@ -134,17 +163,20 @@ object, or a serializer, and must not reach up into controllers.
 ### MUST
 
 - Expose a single `self.call` entry point.
-- Return `ServiceResult[Payload]` from `.call`. There is no other allowed
+- Inherit from `ApplicationService`.
+- Build results only with the inherited `success`/`failure`/`skipped`
+  helpers.
+- Return `ApplicationService::Result[Payload]` from `.call`. There is no other allowed
   return shape.
 - Use exactly the three statuses:
-  - `Ok` when the service did its job — `data` carries the produced
+  - `Success` when the service did its job — `data` carries the produced
     result (the written record, the resolved list, the updated model);
     `error` is `nil`.
   - `Skipped` when a **precondition the service itself owns** is not met,
     so it deliberately performed no write/action — `data` and `error` are
     both `nil`. `Skipped` is not a failure and not a success-with-no-data;
     it is the honest "nothing to do yet".
-  - `Failed` when the service could not do its job for an **expected**
+  - `Failure` when the service could not do its job for an **expected**
     reason (e.g. a failed external call it chose to return rather than
     raise) — `error` is a non-nil explanation.
 - Branch on the outcome via `success?`/`skipped?`/`failed?` at the call
@@ -162,26 +194,31 @@ object, or a serializer, and must not reach up into controllers.
 
 ### MUST NOT
 
-- Don't add a nested per-service `Result` struct — reuse `ServiceResult`.
+- Don't add a nested per-service `Result` struct — reuse `ApplicationService::Result`.
+- Don't construct `ApplicationService::Result[...].new(...)` inside a service; that
+  construction belongs to `ApplicationService`'s helpers (and the
+  value-object spec).
+- Don't add behavior or another helper to `ApplicationService` for a
+  single service's needs; keep it construction-only.
 - Don't return `void` or a bare model instance from `.call`.
-- Don't use `Skipped` for a failure (that is `Failed`) or for routine
+- Don't use `Skipped` for a failure (that is `Failure`) or for routine
   business branching where a domain value would be clearer — reserve it
   for a precondition the service deliberately declines to act on.
-- Don't subclass `ServiceResult`.
+- Don't subclass `ApplicationService::Result`.
 - Don't let a caller assume a service ran successfully without checking
   `status`.
 
 ## Error Handling
 
 - Expected, enumerable failure (e.g. a `Steam::Client` response that is
-  not `success?`) → return `Failed(error: <response.error>)`; log a
-  `[ClassName] ...` warning where the caller already does, per
-  `background-jobs.md`.
-- Unexpected failure → let it raise (bang writes keep raising). `Failed`
+  not `success?`) → return `failure(T.must(<response.error>))` (the
+  helper requires a non-nil error); log a `[ClassName] ...` warning
+  where the caller already does, per `background-jobs.md`.
+- Unexpected failure → let it raise (bang writes keep raising). `Failure`
   is for outcomes the service chooses to return, not a replacement for
   exceptions, and does not engage Sidekiq `retry:` the way a raised
   exception does.
-- Unmet precondition → `Skipped`. A caller that needs to try again later
+- Unmet precondition → `skipped`. A caller that needs to try again later
   treats `Skipped` as "retry on a future request/run", not as an error.
 
 ## Interaction With Other Layers
@@ -191,14 +228,14 @@ Api::V1::<X>Controller#action   (Scenario 1)
     ↓  .call(...)   — synchronous, inline, before rendering
 Service.call
     ↓  Steam::Client / Caching / parsers / Models
-    ⇢ returns ServiceResult[Payload]
+    ⇢ returns ApplicationService::Result[Payload]
 
 <X>UpdateWorker#perform         (Scenario 3)
     ↓  .call(...)   — identical call
 ```
 
 Both Scenarios call the identical `.call` and branch on the same
-`ServiceResult`. A single-Scenario service has only one of these edges;
+`ApplicationService::Result`. A single-Scenario service has only one of these edges;
 its call shape and return contract are unchanged. A controller may call
 a service either for one of the named synchronous-persistence sites in
 `cross-scenario-service-layer.md` or for a cohesive side-effect
@@ -222,10 +259,10 @@ stubbing) are governed by `agent/styleguides/rspec-conventions.md` and
 ## Canonical Implementations
 
 - `app_fetcher/app/services/user_inventory_sync_service.rb` —
-  `Ok`/`Failed` (a real external-failure branch).
+  `Success`/`Failure` (a real external-failure branch).
 - `app_fetcher/app/services/inventory_value_recording_service.rb` —
-  `Ok`/`Skipped` (a precondition-gated write).
-- `app_fetcher/app/services/price_update_service.rb` — `Ok` only; no
+  `Success`/`Skipped` (a precondition-gated write).
+- `app_fetcher/app/services/price_update_service.rb` — `Success` only; no
   failure/mutation-only shape any more. Also the canonical
   **single-Scenario SRP extraction**: one caller (`PriceUpdateWorker`),
   extracted to keep `perform` as orchestration glue.
@@ -233,8 +270,11 @@ stubbing) are governed by `agent/styleguides/rspec-conventions.md` and
   `PriceWarmupService` — the canonical controller-called side-effect
   service: nil-price filter, 20-item cap, 90-second `Rails.cache`
   dedup, and `PriceUpdateWorker.perform_async`, returning
-  `ServiceResult[T::Array[Integer]]` with the enqueued item ids.
-- `app_fetcher/app/services/service_result.rb` — the shared result type.
+  `ApplicationService::Result[T::Array[Integer]]` with the enqueued item ids.
+- `app_fetcher/app/services/application_service.rb` — the whole shared
+  machinery in one file: nested `ApplicationService::Result` (the
+  covariant value object) plus the private generic `success` and the
+  payload-less `failure`/`skipped` constructors every service inherits.
 
 ## Related ADR
 

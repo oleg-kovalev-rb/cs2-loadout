@@ -11,7 +11,7 @@ RSpec.describe PriceWarmupService do
     Item.new(id: id, market_hash_name: "item-#{id}", current_price_cents: current_price_cents)
   end
 
-  it "enqueues only unpriced items and returns Ok with their ids" do
+  it "enqueues only unpriced items and returns Success with their ids" do
     result = call
 
     aggregate_failures do
@@ -21,7 +21,7 @@ RSpec.describe PriceWarmupService do
     end
   end
 
-  it "returns Ok with an empty array when nothing is eligible" do
+  it "returns Success with an empty array when nothing is eligible" do
     result = described_class.call([ priced_item ])
 
     aggregate_failures do
