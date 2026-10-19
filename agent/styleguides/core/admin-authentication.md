@@ -156,13 +156,13 @@ One-directional, per `rails-layering.md`:
   protected.
 - The login form's failure path (`Admin::SessionsController#create`,
   `format.html`) passes its error as an instance variable the `#new` view
-  renders inline, not via Rails `flash` — this codebase sets `flash[:notice]`/
-  `flash[:alert]` elsewhere (`SessionsController#callback`/`#destroy`) but
-  no layout currently renders `flash` anywhere (confirmed drift, logged in
-  `fix_me.md`, not fixed here — out of scope for this stack). Depending on
-  `flash` here would silently produce the same never-displayed message;
-  an explicit `@error` local sidesteps that pre-existing gap rather than
-  building on top of it.
+  renders inline, not via Rails `flash`, even though the application
+  layout now renders flash app-wide (see `erb-interaction-patterns.md`).
+  This failure re-renders `#new` in the same request with
+  `:unprocessable_content`, so the error belongs next to the form rather
+  than surviving a redirect. Use flash for messages that accompany a
+  redirect (the Steam `SessionsController#callback`/`#destroy` flows),
+  not for same-request validation re-renders.
 - Downcase `AdminUser#email` before validation/save (e.g. a
   `before_validation` callback) so uniqueness is effectively
   case-insensitive without a database-level `citext`/functional index.
