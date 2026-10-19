@@ -160,6 +160,15 @@ RSpec.describe "GET /api/v1/inventory_values", type: :request do
         expect(JSON.parse(response.body)["message"]).to be_present
       end
 
+      it "24h is unsupported because the portfolio history is daily" do
+        get "/api/v1/inventory_values?period=24h", headers: headers
+
+        aggregate_failures do
+          expect(response).to have_http_status(:bad_request)
+          expect(JSON.parse(response.body)["message"]).to eq("Unsupported period: 24h")
+        end
+      end
+
       it "does not recompute today's row when a narrow period excludes every existing entry" do
         get "/api/v1/inventory_values?period=7d", headers: headers
 

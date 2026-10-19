@@ -97,8 +97,13 @@ gain real custom logic.
   value — branch on that, don't rescue `KeyError` from `.deserialize`).
   Reuse the same enum class across multiple controllers/endpoints that
   share the same tag vocabulary, even if each endpoint only accepts a
-  subset of members — declare that subset as the endpoint's own
-  `ALLOWED_PERIODS`-style array rather than forking the enum.
+  subset of members — declare that subset on the model that owns the
+  rows (`InventoryValueLog::SUPPORTED_PERIODS`,
+  `PriceLog::SUPPORTED_PERIODS`) rather than forking the enum or
+  re-declaring it per controller. Resolve a period param through
+  `PricePeriod.resolve(raw_value, supported:, default:)`, which returns
+  nil for an unknown or unsupported value so each caller can choose its
+  own failure shape.
 - Private class methods are declared inside `class << self; extend
   T::Sig; private; ...; end` (see `PriceLogBuilder`), not
   `private_class_method`.
@@ -135,23 +140,13 @@ Sanctioned deviations from the rules above. Each entry names the rule it
 excepts and the concrete case that justifies it. Add a case here rather
 than widening a `MUST`/`MUST NOT` into a one-off.
 
-- **Generic `T.type_parameter` for "one of several `T::Enum` subclasses".**
-  When a method must return the concrete enum subclass it resolved while
-  staying resource-agnostic, type it with a `T.type_parameter(:X)` inferred
-  from a concrete argument (typically `default:`) instead of the bare
-  `T::Enum`. Use neither a hand-enumerated `T.any(...)` union — which names
-  every concrete class, something resource-agnostic `Appliers::*` code may
-  not do — nor a forced shared interface, since the members don't share a
-  method (`Options::ItemSortOption#apply` vs. `PricePeriod#duration`).
-  Constrain it with `T.all(T.type_parameter(:X), T::Enum)` when the body
-  uses `T::Enum`'s own API (e.g. `#serialize`). See
-  `Appliers::SortApplier.call`.
 - **`T.unsafe` at a generic-deserialization boundary.** The one place the
-  "don't reach for `T.untyped`" MUST NOT doesn't cover is a generic method
-  whose body can't name its own type parameter: `try_deserialize` returns
-  `T.nilable(T::Enum)` and `T.type_parameter` can't appear in a method body,
-  so the resolved value comes back through a single localized `T.unsafe`.
-  Not a licence to use `T.unsafe` anywhere else.
+  "don't reach for `T.untyped`" MUST NOT doesn't cover is a resource-agnostic
+  applier whose body cannot name the concrete enum: `try_deserialize`
+  returns `T.nilable(T::Enum)`, and the resource-specific `#apply(scope)`
+  lives on the resolved member's subclass, so the dispatch goes through a
+  single localized `T.unsafe(option)`. Not a licence to use `T.unsafe`
+  anywhere else. See `Appliers::SortApplier.call`.
 - **Hand-written gem RBI when Tapioca emits an unusable stub.** The
   "don't hand-write an RBI shim for something `tapioca` already generates"
   MUST has one carve-out: when the generated file is an empty stub (the
@@ -171,7 +166,7 @@ than widening a `MUST`/`MUST NOT` into a one-off.
   with `T::Sig::WithoutRuntime.sig { ... }` — same static checking, no
   runtime check — rather than falling back to `ActiveRecord::Relation` +
   `T.unsafe`, which would hide the scope methods and give up the static
-  guarantee. See `Options::ItemFilterField#apply`.
+  guarantee. See `Options::ItemFilterOption#apply`.
 
 ## Error Handling
 
@@ -189,11 +184,12 @@ method needs to be guarded.
 - `app_core/app/actions/steam/login_user.rb`,
   `app_core/app/models/user.rb`
 - `app_fetcher/app/models/price_period.rb` — the `T::Enum` pattern for a
-  closed set of API-param tags
+  closed set of API-param tags, plus `#since`/`#since_date` and
+  `.resolve`
 - `app_fetcher/app/models/item.rb` + `app_fetcher/sorbet/rbi/dsl/item.rbi`
   — the `tapioca dsl` regeneration workflow for a model that gained a new
   `scope`
-- `app_fetcher/app/queries/appliers/sort_applier.rb` — the generic
-  `T.type_parameter` resolver (see Exceptions)
+- `app_fetcher/app/queries/appliers/sort_applier.rb` — the scope-in/
+  scope-out sort dispatcher (see Exceptions for the localized `T.unsafe`)
 - `app_fetcher/sorbet/rbi/shims/ffi_shim.rbi` — the minimal `# typed:
   false` gem shim (see Exceptions)

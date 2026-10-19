@@ -11,7 +11,7 @@ RSpec.describe Appliers::FilterApplier do
       result = described_class.call(
         scope,
         ActionController::Parameters.new(category: [ "Rifles" ], rarity: [ "Classified" ]),
-        enum_class: Options::ItemFilterField
+        enum_class: Options::ItemFilterOption
       )
 
       expect(result.to_a).to eq([ match ])
@@ -21,7 +21,7 @@ RSpec.describe Appliers::FilterApplier do
       item = create(:item)
       scope = Item.where(id: [ item.id ])
 
-      result = described_class.call(scope, ActionController::Parameters.new, enum_class: Options::ItemFilterField)
+      result = described_class.call(scope, ActionController::Parameters.new, enum_class: Options::ItemFilterOption)
 
       expect(result.to_a).to eq([ item ])
     end

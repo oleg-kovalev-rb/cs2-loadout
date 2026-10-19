@@ -88,8 +88,8 @@ own query object.
   specific `Options::*` member by name.
 - **`app/queries/options/`** → `Options::` namespace. One `T::Enum`
   subclass per resource per concern (e.g. `Options::ItemSortOption`,
-  `Options::ItemFilterField`), named `<Resource><Concern>` —
-  `SortOption` / `FilterField`.
+  `Options::ItemFilterOption`), named `<Resource><Concern>` —
+  `SortOption` / `FilterOption`.
 - **`app/serializers/<resource>_catalog_serializer.rb`** (flat root,
   e.g. `ItemCatalogSerializer`) — one per resource/endpoint, pure
   function style, same flat-root convention as `app/services/`/
@@ -121,20 +121,25 @@ own query object.
   Dependencies below. `min`/`max` stay fixed constants shared by every
   caller; only the default is overridable. Instance methods `#page`,
   `#per_page`, `#offset`, `#total_pages(total_count)`.
-- **`Appliers::SortApplier.call(raw_value, enum_class:, default:,
-  param_name: "sort")`** → a resolved `T::Enum` member (never nilable).
-  Raises `Api::Public::UnsupportedParamError` on an unrecognized,
-  present value — absence always resolves to `default`, never an error.
-  `enum_class` may be *any* closed-enum `T::Enum` a param needs to
-  resolve against, not only an `Options::*` sort enum whose members
-  implement `#apply(scope)` — this applier's own mechanism
-  (`try_deserialize` + raise + overridable `param_name:`) never actually
-  depends on `#apply` existing; what the resolved member is used for
-  afterward is entirely up to the call site. `PricePeriod`
-  (`app_fetcher/app/models/price_period.rb`, used for a `range`-style
-  param) is the precedent for this broader use: a plain `T::Enum` outside
-  `Options::*` entirely, with its own `#duration` instance method instead
-  of `#apply`, resolved through this same applier unchanged.
+- **`Appliers::SortApplier.call(scope, params, enum_class:, default:,
+  param_name: "sort")`** → the sorted `ActiveRecord::Relation`. Reads
+  `params[param_name]`; absence resolves to `default`, a present
+  unrecognized value raises `Api::Public::UnsupportedParamError`. The
+  resolved enum member's own `#apply(scope)` performs the ordering —
+  this applier only resolves, validates, and dispatches, so `enum_class`
+  must be an `Options::*` sort enum (or another enum whose members
+  implement `#apply(scope)`), never a plain value enum such as
+  `PricePeriod`.
+- **Period/range params (`PricePeriod`)** are resolved by
+  `PricePeriod.resolve(raw_value, supported:, default:)` →
+  `T.nilable(PricePeriod)`, not by `Appliers::SortApplier`. Each model
+  owns the periods it can serve (`InventoryValueLog::SUPPORTED_PERIODS`
+  without `24h`, `PriceLog::SUPPORTED_PERIODS` with every period) and a
+  `scope :for_period` that applies `#since`/`#since_date`
+  (`PricePeriod::All` has no cutoff). The caller decides how to report
+  an unsupported value: `InventoryDetailQuery` raises
+  `Api::Public::UnsupportedParamError`; `Api::V1` controllers keep their
+  inline `:bad_request` branch.
 - **`Appliers::FilterApplier.call(scope, params, enum_class:)`** →
   `ActiveRecord::Relation`, by reducing `enum_class.values` over the
   scope.
@@ -170,6 +175,9 @@ own query object.
 - `Appliers::*` own generic resolution/clamping/dispatch mechanics —
   never resource-specific logic, never which fields exist for a given
   resource.
+- Model `for_period` scopes own the period cutoff SQL; `PricePeriod`
+  owns cutoff conversion and the supported/default vocabulary, not the
+  query itself.
 - `<Resource>CatalogQuery` owns every database/cache read needed to
   answer "what does this page need" — including resource-specific
   aggregates and enrichment lookups (e.g. `Item`'s price-change counts,
@@ -221,6 +229,9 @@ re-shape its result — compose the structs at the call site instead.
   new closed-enum query param in this layer.
 - `Appliers::SortApplier`/`Appliers::FilterApplier` must never reference
   a specific model, scope, or `Options::*` class by name.
+- A period/range param must resolve through `PricePeriod.resolve`
+  against the queried model's `SUPPORTED_PERIODS`; never route it through
+  `Appliers::SortApplier`.
 - `<Resource>CatalogQuery.call` must never reference an
   `app/caching/` response-payload cache (e.g. `ItemCatalogCache`) or
   `ActionController`/HTTP types beyond accepting `ActionController::Parameters`
@@ -269,9 +280,11 @@ This layer produces two failure modes, neither of which it catches
 itself — both propagate to the controller's base class:
 
 1. An unrecognized closed-enum value, raised as `Api::Public::
-   UnsupportedParamError` from `Appliers::SortApplier` (or, in principle,
-   from an `Options::*` value's own `#apply` if a future resource ever
-   needs a closed-enum-shaped filter — the mechanism is the same).
+   UnsupportedParamError` from `Appliers::SortApplier` for sort params, or
+   by the query object after `PricePeriod.resolve` returns nil for a
+   period/range param. (In principle an `Options::*` value's own `#apply`
+   may raise it too if a future resource needs a closed-enum-shaped
+   filter — the mechanism is the same.)
 2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
    record, raised as `ActiveRecord::RecordNotFound` by its bang finder
    (never returned as `nil` — see Rules).
@@ -287,8 +300,9 @@ Api::Public::<X>Controller#index
     ↓ ItemCatalogCache.read(params)  — cache check, controller's job
     ↓ (on miss)
 <Resource>CatalogQuery.call(params)
-    ↓ Appliers::SortApplier.call(...) → Options::<Resource>SortOption member (or raises)
-    ↓ Appliers::FilterApplier.call(...) → Options::<Resource>FilterField.values.reduce(...)
+    ↓ Appliers::SortApplier.call(scope, params, ...) → relation (or raises)
+    ↓ Appliers::FilterApplier.call(...) → Options::<Resource>FilterOption.values.reduce(...)
+    ↓ Appliers::Pagination#apply(scope) → relation limited/offset
     ↓ model scopes, app/caching/ data caches (e.g. ItemTrendCache)
     → <Resource>CatalogQuery::Page (T::Struct)
 <Resource>CatalogSerializer.call(page) → response hash
@@ -311,7 +325,8 @@ Api::Public::<X>Controller#show
     ↓ (on miss)
 <Resource>DetailQuery.call(identifier, params)
     ↓ Model.find_by!(identifier)  → raises ActiveRecord::RecordNotFound, or continues
-    ↓ Appliers::SortApplier.call(...) / Appliers::Pagination.new(...)  — for one embedded sub-collection, if any
+    ↓ PricePeriod.resolve(...)  — period/range param, or raises
+    ↓ Appliers::SortApplier.call(...) / Appliers::Pagination#apply(...)  — for one embedded sub-collection, if any
     ↓ model scopes, app/caching/ data caches
     → <Resource>DetailQuery::Page (T::Struct)
 <Resource>DetailSerializer.call(page) → response hash
@@ -333,7 +348,12 @@ Specific to this layer:
 - `Appliers::*` specs should not require a specific resource's
   `Options::*` class to prove genericity — exercising them against
   whichever concrete `Options::*` class already exists is acceptable
-  (no obligation to build a throwaway test-only enum).
+  (no obligation to build a throwaway test-only enum). `SortApplier`
+  specs assert the relation's ordering (and the raised error), not a
+  resolved enum value.
+- Period scopes (`Model.for_period`) are model-level specs: assert
+  cutoff inclusion/exclusion and that `PricePeriod::All` applies no
+  cutoff.
 - `<Resource>CatalogQuery` specs hit the database for real (it's a query
   object) but must never stub or reference `app/caching/`'s
   response-payload cache — that cache does not exist from this class's
@@ -357,24 +377,16 @@ Specific to this layer:
 
 ## Canonical Implementations
 
-None yet — `ItemCatalogQuery`/`ItemCatalogSerializer`/
-`Options::ItemSortOption`/`Options::ItemFilterField`/`Appliers::Pagination`/
-`Appliers::SortApplier`/`Appliers::FilterApplier`
-(`agent/plans/item-catalog-query-refactor.md`) are this layer's first
-members. Update this section once that plan is implemented.
-
-The detail shape (`<Resource>DetailQuery`/`<Resource>DetailSerializer`),
-`Appliers::SortApplier`'s generalized use against a non-`Options::*`
-enum (`PricePeriod`, for a `range`-style param), and
-`Appliers::Pagination`'s `default_per_page:` keyword also have no
-implementation yet — `InventoryDetailQuery`/`InventoryDetailSerializer`
-and `InventoryCatalogQuery` (`agent/plans/public-inventory-endpoints.md`)
-will be their first examples. Update this section once that plan is
-implemented.
-
-A shared concern query has no implementation yet — `InventoryValuation`
-(`agent/plans/inventory-valuation-consistency.md`) will be its first.
-Update this section once that plan is implemented.
+- `ItemCatalogQuery`/`ItemCatalogSerializer`/`Options::ItemSortOption`/
+  `Options::ItemFilterOption`/`Appliers::Pagination`/
+  `Appliers::SortApplier`/`Appliers::FilterApplier`
+  (`agent/plans/item-catalog-query-refactor.md`).
+- `InventoryDetailQuery`/`InventoryDetailSerializer`,
+  `InventoryCatalogQuery`, and `PricePeriod` + model `for_period` scopes
+  (`agent/plans/public-inventory-endpoints.md`,
+  `agent/plans/fix-query-param-applier-consistency.md`).
+- `InventoryValuation` — the shared concern query
+  (`agent/plans/inventory-valuation-consistency.md`).
 
 ## Related ADR
 

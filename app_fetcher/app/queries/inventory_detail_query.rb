@@ -45,13 +45,11 @@ class InventoryDetailQuery
     def call(steam_id, params)
       user_inventory = UserInventory.find_by!(steam_id: steam_id)
 
-      range = Appliers::SortApplier.call(
-        params[:range], enum_class: PricePeriod, default: PricePeriod::SevenDays, param_name: "range"
+      range = PricePeriod.resolve(
+        params[:range], supported: InventoryValueLog::SUPPORTED_PERIODS, default: PricePeriod::SevenDays
       )
-      items_sort_option = Appliers::SortApplier.call(
-        params[:items_sort], enum_class: Options::ItemSortOption, default: Options::ItemSortOption::PriceDesc,
-        param_name: "items_sort"
-      )
+      raise Api::Public::UnsupportedParamError, "Unsupported range: #{params[:range]}" unless range
+
       top_items_pagination = Appliers::Pagination.new(
         params[:items_page], params[:items_per_page], default_per_page: DEFAULT_TOP_ITEMS_PER_PAGE
       )
@@ -61,7 +59,15 @@ class InventoryDetailQuery
       items_count = valuation.items_count
       total_value_cents = valuation.total_value_cents
 
-      top_items = top_items_pagination.apply(items_sort_option.apply(user_inventory.items)).to_a
+      top_items = top_items_pagination.apply(
+        Appliers::SortApplier.call(
+          user_inventory.items,
+          params,
+          enum_class: Options::ItemSortOption,
+          default: Options::ItemSortOption::PriceDesc,
+          param_name: "items_sort"
+        )
+      ).to_a
 
       Page.new(
         steam_id: steam_id,

@@ -5,16 +5,13 @@ module Api
     class InventoryValuesController < ApplicationController
       extend T::Sig
 
-      ALLOWED_PERIODS = T.let(
-        [ PricePeriod::SevenDays, PricePeriod::ThirtyDays, PricePeriod::OneYear, PricePeriod::All ].freeze,
-        T::Array[PricePeriod]
-      )
-
       sig { void }
       def index
-        period = PricePeriod.try_deserialize(params[:period].presence || "all")
+        period = PricePeriod.resolve(
+          params[:period], supported: InventoryValueLog::SUPPORTED_PERIODS, default: PricePeriod::All
+        )
 
-        unless period && ALLOWED_PERIODS.include?(period)
+        unless period
           render json: { message: "Unsupported period: #{params[:period]}" }, status: :bad_request
           return
         end

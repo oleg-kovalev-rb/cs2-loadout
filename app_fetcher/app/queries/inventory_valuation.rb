@@ -101,9 +101,7 @@ class InventoryValuation
 
     sig { params(steam_id: String, period: PricePeriod, current: Snapshot).returns(Series) }
     def series(steam_id, period, current:)
-      since = period.duration&.ago&.to_date
-      logs = InventoryValueLog.where(steam_id: steam_id).order(:log_date).to_a
-      logs = logs.select { |log| log.log_date >= since } if since
+      logs = InventoryValueLog.where(steam_id: steam_id).for_period(period).order(:log_date).to_a
 
       points = logs.reject { |log| log.log_date == Date.current }.map { |log| point_from_log(log) }
       points << live_point(current)

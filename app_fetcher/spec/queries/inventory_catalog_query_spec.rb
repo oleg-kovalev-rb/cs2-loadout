@@ -181,6 +181,23 @@ RSpec.describe InventoryCatalogQuery do
 
         expect(page.pagination.per_page).to eq(100)
       end
+
+      it "offsets to the requested page" do
+        low = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: low, item: create(:item, current_price_cents: 100))
+        mid = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: mid, item: create(:item, current_price_cents: 200))
+        high = create(:user_inventory)
+        create(:user_inventory_item, user_inventory: high, item: create(:item, current_price_cents: 300))
+
+        first_page = described_class.call(ActionController::Parameters.new(per_page: "1"))
+        second_page = described_class.call(ActionController::Parameters.new(page: "2", per_page: "1"))
+
+        aggregate_failures do
+          expect(first_page.inventories.map(&:steam_id)).to eq([ high.steam_id ])
+          expect(second_page.inventories.map(&:steam_id)).to eq([ mid.steam_id ])
+        end
+      end
     end
   end
 end

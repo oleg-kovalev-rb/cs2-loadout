@@ -7,10 +7,6 @@ module Api
 
       WARMUP_CAP = T.let(20, Integer)
       WARMUP_DEDUP_TTL = T.let(90.seconds, ActiveSupport::Duration)
-      ALLOWED_PERIODS = T.let(
-        [ PricePeriod::TwentyFourHours, PricePeriod::SevenDays, PricePeriod::ThirtyDays, PricePeriod::OneYear, PricePeriod::All ].freeze,
-        T::Array[PricePeriod]
-      )
 
       sig { void }
       def dynamics
@@ -46,9 +42,11 @@ module Api
 
       sig { void }
       def history
-        period = PricePeriod.try_deserialize(params[:period].presence || "30d")
+        period = PricePeriod.resolve(
+          params[:period], supported: PriceLog::SUPPORTED_PERIODS, default: PricePeriod::ThirtyDays
+        )
 
-        unless period && ALLOWED_PERIODS.include?(period)
+        unless period
           render json: { message: "Unsupported period: #{params[:period]}" }, status: :bad_request
           return
         end
@@ -63,8 +61,7 @@ module Api
         points = if period == PricePeriod::ThirtyDays
           PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name] || []
         else
-          since = period.duration&.ago
-          PriceLog.where(item_id: item.id, created_at: since..).order(:created_at).map do |log|
+          PriceLog.where(item_id: item.id).for_period(period).order(:created_at).map do |log|
             { at: log.created_at.iso8601, price_cents: log.lowest_price_cents, volume: log.volume }
           end
         end

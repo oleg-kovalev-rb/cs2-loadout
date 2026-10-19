@@ -41,17 +41,16 @@ class InventoryCatalogQuery
 
     sig { params(params: ActionController::Parameters).returns(Page) }
     def call(params)
-      sort_option = Appliers::SortApplier.call(
-        params[:sort], enum_class: Options::InventorySortOption, default: Options::InventorySortOption::ValueDesc
-      )
       pagination = Appliers::Pagination.new(params[:page], params[:per_page], default_per_page: DEFAULT_PER_PAGE)
 
-      scope = sort_option.apply(
-        UserInventory.left_joins(user_inventory_items: :item).group("user_inventories.id")
+      scope = Appliers::SortApplier.call(
+        UserInventory.left_joins(user_inventory_items: :item).group("user_inventories.id"),
+        params,
+        enum_class: Options::InventorySortOption,
+        default: Options::InventorySortOption::ValueDesc
       )
 
-      rows = scope.limit(pagination.per_page).offset(pagination.offset)
-                  .pluck(*AGGREGATE_COLUMNS.map { |column| Arel.sql(column) })
+      rows = pagination.apply(scope).pluck(AGGREGATE_COLUMNS.map { |column| Arel.sql(column) })
       rarity_counts_by_id = rarity_counts_for(rows.map { |row| row[0] })
       baselines = InventoryValuation.baseline_for(
         T.cast(rows.map { |row| row[1] }, T::Array[String]),

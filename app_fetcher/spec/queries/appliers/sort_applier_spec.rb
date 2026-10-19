@@ -2,30 +2,64 @@ require "rails_helper"
 
 RSpec.describe Appliers::SortApplier do
   describe ".call" do
-    it "resolves to the default when the raw value is absent" do
-      result = described_class.call(nil, enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc)
+    let!(:cheap) { create(:item, current_price_cents: 100) }
+    let!(:expensive) { create(:item, current_price_cents: 900) }
+    let(:scope) { Item.where(id: [ cheap.id, expensive.id ]) }
 
-      expect(result).to eq(Options::ItemSortOption::ChangeDesc)
+    it "applies the default ordering when the param is absent" do
+      result = described_class.call(
+        scope,
+        ActionController::Parameters.new,
+        enum_class: Options::ItemSortOption,
+        default: Options::ItemSortOption::PriceDesc
+      )
+
+      expect(result.to_a).to eq([ expensive, cheap ])
     end
 
-    it "resolves to the matching enum member for a recognized value" do
-      result = described_class.call("price_desc", enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc)
+    it "applies the ordering for a recognized value" do
+      result = described_class.call(
+        scope,
+        ActionController::Parameters.new(sort: "price_asc"),
+        enum_class: Options::ItemSortOption,
+        default: Options::ItemSortOption::PriceDesc
+      )
 
-      expect(result).to eq(Options::ItemSortOption::PriceDesc)
+      expect(result.to_a).to eq([ cheap, expensive ])
+    end
+
+    it "returns a relation" do
+      result = described_class.call(
+        scope,
+        ActionController::Parameters.new,
+        enum_class: Options::ItemSortOption,
+        default: Options::ItemSortOption::PriceDesc
+      )
+
+      expect(result).to be_a(ActiveRecord::Relation)
     end
 
     it "raises Api::Public::UnsupportedParamError for an unrecognized value" do
       expect {
-        described_class.call("bogus", enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc)
+        described_class.call(
+          scope,
+          ActionController::Parameters.new(sort: "bogus"),
+          enum_class: Options::ItemSortOption,
+          default: Options::ItemSortOption::PriceDesc
+        )
       }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported sort: bogus")
     end
 
     it "uses the given param_name in the error message" do
       expect {
         described_class.call(
-          "bogus", enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc, param_name: "period"
+          scope,
+          ActionController::Parameters.new(items_sort: "bogus"),
+          enum_class: Options::ItemSortOption,
+          default: Options::ItemSortOption::PriceDesc,
+          param_name: "items_sort"
         )
-      }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported period: bogus")
+      }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported items_sort: bogus")
     end
   end
 end
