@@ -74,7 +74,7 @@ class ItemParser
         market_hash_name:,
         metadata: {
           weapon_type: nil,
-          condition: nil,
+          condition:,
           item_name: clean_name,
           stattrak:,
           souvenir:,
