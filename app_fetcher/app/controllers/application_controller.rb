@@ -25,8 +25,11 @@ class ApplicationController < ActionController::API
     end
 
     payload, = JWT.decode(token, ENV.fetch("APP_BRIDGE_JWT_SECRET"), true, algorithm: "HS256")
-    @current_steam_id = T.let(payload.fetch("steam_id"), T.nilable(String))
-  rescue JWT::ExpiredSignature, JWT::DecodeError, JWT::VerificationError
+    steam_id = payload.fetch("steam_id")
+    raise JWT::DecodeError, "Invalid steam_id claim" unless steam_id.is_a?(String)
+
+    @current_steam_id = T.let(steam_id, T.nilable(String))
+  rescue JWT::ExpiredSignature, JWT::DecodeError, JWT::VerificationError, KeyError
     render json: { message: "Invalid bridge token" }, status: :unauthorized
   end
 
