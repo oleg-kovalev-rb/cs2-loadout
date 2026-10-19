@@ -26,7 +26,7 @@ RSpec.describe PriceUpdateService do
         end
       end
 
-      it "returns an Ok ServiceResult carrying the updated Item" do
+      it "returns an ApplicationService::Result with a Success status carrying the updated Item" do
         result = described_class.call(item, price_data)
 
         aggregate_failures do

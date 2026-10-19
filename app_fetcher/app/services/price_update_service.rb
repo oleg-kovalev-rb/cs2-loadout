@@ -1,12 +1,12 @@
 # typed: strict
 
-class PriceUpdateService
+class PriceUpdateService < ApplicationService
   extend T::Sig
 
   class << self
     extend T::Sig
 
-    sig { params(item: Item, price_data: Steam::Response::Data::ItemPriceData).returns(ServiceResult[Item]) }
+    sig { params(item: Item, price_data: Steam::Response::Data::ItemPriceData).returns(ApplicationService::Result[Item]) }
     def call(item, price_data)
       price_log = PriceLogBuilder.build(item.id, price_data)
 
@@ -28,7 +28,7 @@ class PriceUpdateService
         )
       end
 
-      ServiceResult[Item].new(status: ServiceResult::Status::Ok, data: item, error: nil)
+      success(item)
     end
   end
 end

@@ -1,19 +1,15 @@
 # typed: strict
 
-class UserInventorySyncService
+class UserInventorySyncService < ApplicationService
   extend T::Sig
 
   class << self
     extend T::Sig
 
-    sig { params(steam_id: String).returns(ServiceResult[T::Array[Item]]) }
+    sig { params(steam_id: String).returns(ApplicationService::Result[T::Array[Item]]) }
     def call(steam_id)
       response = Steam::Client.new.fetch_user_inventory(steam_id)
-      unless response.success?
-        return ServiceResult[T::Array[Item]].new(
-          status: ServiceResult::Status::Failed, data: nil, error: response.error
-        )
-      end
+      return failure(T.must(response.error)) unless response.success?
 
       data = T.must(response.data)
       Rails.logger.warn("[UserInventorySyncService] steam_id=#{steam_id} inventory truncated (more_items)") if data.more_items
@@ -42,7 +38,7 @@ class UserInventorySyncService
       UserInventory.sync!(steam_id, all_items.map(&:id))
       UserInventoryCache.invalidate(steam_id)
 
-      ServiceResult[T::Array[Item]].new(status: ServiceResult::Status::Ok, data: all_items, error: nil)
+      success(all_items)
     end
   end
 end

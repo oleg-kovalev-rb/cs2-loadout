@@ -166,6 +166,18 @@ than widening a `MUST`/`MUST NOT` into a one-off.
   runtime check — rather than falling back to `ActiveRecord::Relation` +
   `T.unsafe`, which would hide the scope methods and give up the static
   guarantee. See `Options::ItemFilterOption#apply`.
+- **`T.untyped` at generic result construction.** In
+  `ApplicationService`'s `success`/`failure`/`skipped`, the concrete
+  payload type exists only statically; naming it in the method body
+  (`ApplicationService::Result[T.type_parameter(:Payload)]`) would call
+  `T.type_parameter` outside a `sig` and raise at runtime. The helpers
+  therefore construct `ApplicationService::Result[T.untyped]` and let
+  their `sig` carry the real type (`T.type_parameter(:Payload)` for
+  `success`, `T.noreturn` for the payload-less outcomes). Confined to
+  `app_fetcher/app/services/application_service.rb`; not a licence for
+  `T.untyped` elsewhere. See
+  `agent/adr/fetcher/service-result-contract.md`'s 2026-10-20
+  amendment.
 
 ## Error Handling
 

@@ -110,8 +110,11 @@ Models (app/models/, write)
   directly and persist models; unlike every other Scenario-1 rule, it
   may be called synchronously, inline, from a controller action before
   rendering — but only for the specific call sites that ADR names, not
-  as a general permission. Its full rules — including the uniform
-  `ServiceResult[Payload]` return contract every `.call` uses — live in
+  as a general permission. Every service inherits `ApplicationService`
+  (`app/services/application_service.rb`), which supplies the private
+  `success`/`failure`/`skipped` result helpers and holds no business
+  logic. Its full rules — including the uniform `ApplicationService::Result[Payload]`
+  return contract every `.call` uses — live in
   `agent/styleguides/fetcher/services.md`.
 - **Query objects** (`app/queries/`, flat, one `<Resource>ListQuery`
   per resource, plus `app/queries/appliers/` → `Appliers::` and
@@ -245,6 +248,13 @@ available for a future, similar case — it just no longer describes what
   `app_fetcher/app/workers/user_inventory_sync_worker.rb`
 - `app_fetcher/app/schedulers/price_scheduler.rb`
 - `app_fetcher/app/controllers/api/v1/inventories_controller.rb`
+- `app_fetcher/app/services/application_service.rb` —
+  `ApplicationService`, the services layer's only shared base class.
+  It holds the layer's shared machinery in one file: nested
+  `ApplicationService::Result` (the covariant value object) plus the
+  private generic `success` and the payload-less `failure`/`skipped`
+  result constructors every service inherits. Construction-only — no
+  business logic lives here.
 - `app_fetcher/app/services/user_inventory_sync_service.rb` —
   `UserInventorySyncService`, called from
   `InventoriesController#show`'s cold-start branch (Scenario 1) and
@@ -254,8 +264,8 @@ available for a future, similar case — it just no longer describes what
   `InventoryValueUpdateWorker` (Scenario 3) only; the read endpoint no
   longer seeds, so the nightly worker is the sole writer. A
   precondition-gated write —
-  it returns `ServiceResult::Skipped` (writing nothing) when the
-  inventory is not yet fully priced, else `Ok(data: <the log>)`. See
+  it returns `ApplicationService::Result::Skipped` (writing nothing) when
+  the inventory is not yet fully priced, else `Success(data: <the log>)`. See
   `agent/styleguides/fetcher/services.md` and
   `agent/adr/fetcher/service-result-contract.md`.
 - `app_fetcher/app/services/price_update_service.rb` —
@@ -263,8 +273,8 @@ available for a future, similar case — it just no longer describes what
   a single-Scenario service extracted for SRP — keeps `perform` as thin
   orchestration glue by moving the 24h-change calculation and DB
   transaction out of the worker. `.call` returns
-  `ServiceResult[Item]` (`Ok(data: <the updated Item>)`); it has no
-  `Failed` branch (its writes are bang methods that raise), and the
+  `ApplicationService::Result[Item]` (`Success(data: <the updated Item>)`); it
+  has no `Failure` branch (its writes are bang methods that raise), and the
   caller reads the result off `result.data` rather than the mutated
   argument (see `agent/styleguides/fetcher/services.md`).
 - `app_fetcher/app/services/price_warmup_service.rb` —
@@ -273,8 +283,8 @@ available for a future, similar case — it just no longer describes what
   single-Scenario side-effect service: filters nil-price items, caps at
   20, deduplicates the enqueue with a 90-second `Rails.cache` write,
   and enqueues `PriceUpdateWorker`; returns
-  `ServiceResult[T::Array[Integer]]` (`Ok(data: <enqueued ids>)`) and
-  persists nothing.
+  `ApplicationService::Result[T::Array[Integer]]`
+  (`Success(data: <enqueued ids>)`) and persists nothing.
 - Query objects / Appliers / Options / Serializers: none implemented
   yet — `app_fetcher/app/queries/item_catalog_query.rb` and siblings
   (`agent/plans/item-catalog-query-refactor.md`) will be this layer's
