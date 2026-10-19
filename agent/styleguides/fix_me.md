@@ -41,24 +41,6 @@ a change's scope just because an unrelated file is flagged here.
   `redline_recent`, etc.) stay loaded and referenced by their current
   specs; don't add new fixture rows here — use a factory instead. See
   `agent/adr/fetcher/rspec-testing-strategy.md`.
-- `app_fetcher/sorbet/rbi/gems/connection_pool@3.0.2.rbi` — an empty
-  Tapioca stub ("THIS IS AN EMPTY RBI FILE"): `sidekiq` loads
-  `connection_pool` transitively before Tapioca's require pass, so Tapioca
-  can't attribute any constant to it. `bin/tapioca gem connection_pool`
-  can't repair it either — `bin/tapioca gem` currently aborts on
-  `solid_cache` resolving the `cache` connection before Rails loads its
-  database config. The sanctioned workaround is the hand-written
-  `sorbet/rbi/shims/connection_pool.rbi` plus listing the gem in
-  `sorbet/tapioca/config.yml`'s `gem.exclude`; see
-  `agent/styleguides/ruby-sorbet.md` → Exceptions.
-- `app_fetcher/bin/ci` (and `app_fetcher/config/ci.rb`) — `bin/ci` requires
-  `active_support/continuous_integration`, which doesn't exist in this
-  app's Rails 7.2 bundle, so the local "run everything" entry point aborts
-  with a `LoadError` before any step runs. `ci-and-coverage.md` expects
-  `bin/ci` to mirror the CI checks (which CI runs as explicit
-  `rubocop`/`srb tc`/`rspec` commands, not through `bin/ci`). Found while
-  implementing the Sorbet fix; not fixed here, since that change only
-  needed the individual steps.
 
 ## `app_core`
 
@@ -73,7 +55,3 @@ a change's scope just because an unrelated file is flagged here.
   boilerplate — `app_fetcher`'s controllers prove `strict` works fine on
   controllers, so this isn't a justified exception, just drift. See
   `agent/styleguides/ruby-sorbet.md`.
-- `app_core/spec/fixtures/users.yml` — Rails fixture; same deviation and
-  same rationale as the `app_fetcher` fixtures entry above. Existing
-  `users(:one)` reference stays as-is; new scenarios use a `FactoryBot`
-  factory instead.

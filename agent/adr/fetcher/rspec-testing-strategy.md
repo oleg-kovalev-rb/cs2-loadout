@@ -4,6 +4,15 @@
 
 Accepted
 
+> **Current suite note (2026-10-20):** the Context and Consequences below
+> describe the suite as it was when this decision was made. It has since
+> grown well beyond that baseline: both apps now have extensive unit and
+> request coverage, `FactoryBot` is installed in both, and `app_fetcher`
+> request specs use VCR cassettes. `price_histories_spec.rb` has been
+> replaced by `item_prices_spec.rb`, and
+> `app_core/spec/controllers/dashboards_controller_spec.rb` no longer
+> exists. The decision itself is unchanged.
+
 ## Context
 
 Both `app_fetcher` and `app_core` use RSpec as their only hand-written

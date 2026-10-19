@@ -95,10 +95,8 @@ JSON.
 - After `#success?` returns true, narrow `#data` once into a local
   (`data = T.must(response.data)`) and read fields off the local — never
   call the nilable `#data` accessor again for each field. See
-  `PriceUpdateWorker#perform`; the four separate `response.data` reads in
-  `app/services/user_inventory_sync_service.rb` are the deviation this
-  rule exists to prevent (and are logged in
-  `agent/styleguides/fix_me.md`).
+  `PriceUpdateWorker#perform` and `UserInventorySyncService.call` for the
+  pattern this rule requires.
 - Branch on a **semantic predicate** (`#success?`, `#not_found?`, ...),
   never on `#status` (or its numeric value), at a call site. A raw
   HTTP-status check in a worker is exactly what
