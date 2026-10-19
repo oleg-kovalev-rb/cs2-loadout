@@ -1,6 +1,25 @@
 require "rails_helper"
 
 RSpec.describe "Sessions", type: :request do
+  describe "POST /session" do
+    it "redirects to Steam OpenID with the callback and realm" do
+      post session_path
+
+      redirect = URI.parse(response.location)
+      params = URI.decode_www_form(redirect.query).to_h
+
+      aggregate_failures do
+        expect(response).to have_http_status(:redirect)
+        expect("#{redirect.scheme}://#{redirect.host}#{redirect.path}").to eq(Steam::Authenticator::STEAM_OPENID_URL)
+        expect(params["openid.mode"]).to eq("checkid_setup")
+        expect(params["openid.return_to"]).to eq(callback_session_url)
+        expect(params["openid.realm"]).to eq(root_url)
+        expect(params["openid.identity"]).to eq(Steam::Authenticator::IDENTIFIER_SELECT)
+        expect(params["openid.claimed_id"]).to eq(Steam::Authenticator::IDENTIFIER_SELECT)
+      end
+    end
+  end
+
   describe "GET /session/callback" do
     context "when Steam login succeeds" do
       let(:user) { create(:user, nickname: "Oleg") }

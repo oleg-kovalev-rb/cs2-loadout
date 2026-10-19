@@ -280,9 +280,7 @@ setup to justify it, not as a blanket rule for every spec file.
   specs cover the same ground (including rendered-view assertions, with
   no `render_views` call needed) while exercising the real Rack
   middleware/session stack a controller spec bypasses — see the Related
-  ADR. `app_core/spec/controllers/dashboards_controller_spec.rb`
-  predates this convention and is a known deviation, not a second
-  precedent to extend (see `agent/styleguides/fix_me.md`).
+  ADR.
 - Don't mock away the one external call/write that is the actual subject
   of a spec (e.g. don't stub `STREAM_REDIS_POOL` in `PriceUpdateWorker`'s
   spec) — see Stubbing vs Exercising and the Related ADR for why that
@@ -341,31 +339,26 @@ to resolve away.
 ## Canonical Implementations
 
 - Unit: `app_core/spec/lib/steam/bridge_token_spec.rb` (pure class, no
-  Rails `type:`, no external I/O)
-- Request: `app_fetcher/spec/requests/api/v1/inventories_spec.rb`,
-  `app_fetcher/spec/requests/api/v1/price_histories_spec.rb`. `app_core`
-  has no canonical request spec yet — its one existing controller spec
-  (`spec/controllers/dashboards_controller_spec.rb`) predates this
-  convention and uses `type: :controller`; see `fix_me.md`. The next
-  `app_core` controller spec written or rewritten should be the first
-  `type: :request` example.
+  Rails `type:`, no external I/O);
+  `app_fetcher/spec/lib/steam/client_spec.rb` (external boundary driven
+  through WebMock).
+- Request: `app_fetcher/spec/requests/api/v1/inventories_spec.rb`
+  (VCR cassettes) and `app_core/spec/requests/sessions_spec.rb`.
 - System: none yet — the first one should follow this guide and the
   Related ADR rather than improvise a new pattern.
 - FactoryBot factory: `app_fetcher/spec/factories/items.rb`,
-  `app_fetcher/spec/factories/price_logs.rb` (`factory_bot_rails` added
-  to `app_fetcher`'s Gemfile `test` group). `app_core` has none yet —
-  `factory_bot_rails` still needs adding to its Gemfile before its first
-  factory. VCR cassette: none yet in either app — no request spec has
-  needed one so far; `vcr` still needs adding to a Gemfile's `test`
-  group before the first cassette (see the Related ADR's Implementation
-  Constraints). `inventories_spec.rb`/`price_histories_spec.rb`
-  (hand-written `WebMock` stubs) and `items.yml`/`price_logs.yml`/
-  `users.yml` (fixtures) are the pre-existing, not-yet-migrated baseline
-  — see `fix_me.md`.
+  `app_fetcher/spec/factories/price_logs.rb`,
+  `app_core/spec/factories/users.rb`,
+  `app_core/spec/factories/admin_users.rb`. VCR cassette:
+  `app_fetcher/spec/cassettes/api_v1_inventories/cold_start.yml`
+  (`vcr` is in `app_fetcher`'s Gemfile `test` group; `app_core` has no
+  cassette yet). `app_fetcher/spec/fixtures/items.yml` and
+  `price_logs.yml` remain loaded for existing worker specs — see
+  `fix_me.md`.
 - Example Structure (`let`/`before`/named `subject`):
   `app_fetcher/spec/workers/price_update_worker_spec.rb` — combines all
   three with an explicit `aggregate_failures` block around its
-  assertions; also `items_list_update_worker_spec.rb`,
+  assertions; also `inventory_value_update_worker_spec.rb`,
   `spec/schedulers/price_scheduler_spec.rb`.
 
 ## Related ADR

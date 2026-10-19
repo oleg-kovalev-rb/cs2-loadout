@@ -82,10 +82,12 @@ caller (`InventoriesController`).
 
 ## Testing
 
-There's no dedicated unit spec for `Steam::Client`/`Steam::Response`
-today. Coverage is indirect, through the request specs in
-`spec/requests/api/v1/` (e.g. `inventories_spec.rb`), which stub the real
-Steam endpoint with WebMock and assert on the controller's JSON response.
+`spec/lib/steam/client_spec.rb` is the dedicated unit spec for
+`Steam::Client`. It stubs the real Steam hosts with WebMock and covers the
+success, not-found, HTTP 429, other-status, transport-error, and malformed
+JSON branches; the local rate-limit branch drives the real `Prop` limiter.
+Request specs under `spec/requests/api/v1/` additionally cover the client
+through VCR cassettes at the controller boundary.
 
 ## See also
 
