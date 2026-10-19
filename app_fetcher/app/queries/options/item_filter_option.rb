@@ -1,7 +1,7 @@
 # typed: strict
 
 module Options
-  class ItemFilterField < T::Enum
+  class ItemFilterOption < T::Enum
     extend T::Sig
 
     enums do

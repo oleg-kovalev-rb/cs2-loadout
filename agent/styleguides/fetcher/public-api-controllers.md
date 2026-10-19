@@ -84,19 +84,20 @@ distinct param shapes, each with its own validation posture:
   empty-array-equivalent result for that criterion, same as any other
   value that happens to match nothing). Never validate these against a
   known-values list; there isn't one to validate against.
-- **Closed-enum params** (e.g. `sort`): a small, fixed set of accepted
-  values this codebase does enumerate (mirrors
-  `ItemPricesController#history`'s existing `period` param — see its
-  `ALLOWED_PERIODS` pattern). An unrecognized value **is** an error:
-  `render json: { message: "Unsupported <param_name>: <value>" },
-  status: :bad_request`, same shape as `history`'s own "Unsupported
-  period" message. For a list endpoint built on
-  `agent/styleguides/fetcher/list-query-objects.md`'s query-objects
-  layer, this same validation is resolved and raised by
-  `Appliers::SortApplier` (or an `Options::*` value's own `#apply`),
-  not an inline per-action guard clause — see that file's Interface
-  section and this file's own Error Handling section below for the
-  resulting response shape, which is identical either way.
+- **Closed-enum params** (e.g. `sort`, `period`, `range`): a small, fixed
+  set of accepted values this codebase does enumerate. An unrecognized
+  value **is** an error: `render json: { message: "Unsupported
+  <param_name>: <value>" }, status: :bad_request`. Sort params are
+  resolved and raised by `Appliers::SortApplier` (or an `Options::*`
+  value's own `#apply`) in the query-objects layer. Period/range params
+  are resolved by `PricePeriod.resolve` against the queried model's
+  `SUPPORTED_PERIODS` (`InventoryValueLog` without `24h`, `PriceLog` with
+  every period); a query object raises `Api::Public::
+  UnsupportedParamError` on nil, while an `Api::V1` action keeps its own
+  inline `:bad_request` branch. See
+  `agent/styleguides/fetcher/list-query-objects.md`'s Interface section
+  and this file's own Error Handling section below for the resulting
+  response shape, which is identical either way.
 - **Boolean params** (e.g. `stattrak`): compare the raw string against
   exactly `"true"` to mean "apply this filter." Any other value,
   including `"false"`, and absence, all mean "don't apply this filter"
@@ -201,16 +202,18 @@ Four shapes, minus the auth-failure shape `internal-api-controllers.md`
 has (there is no auth to fail):
 
 1. **Explicit per-action failure branch** — a closed-enum param
-   (`sort`) with an unrecognized value, validated inline in the
-   controller action itself: `:bad_request` with
+   (`sort`, `period`, `range`) with an unrecognized value, validated
+   inline in the controller action itself: `:bad_request` with
    `{ message: "Unsupported <param>: <value>" }`. Used by any action not
    built on the query-objects layer (e.g. `ItemPricesController#history`'s
-   `PricePeriod`/`ALLOWED_PERIODS` pattern, in `Api::V1::`).
+   `PricePeriod`/`SUPPORTED_PERIODS` pattern, in `Api::V1::`).
 2. **Raised from the query-objects layer, caught centrally** — for a
    list endpoint built on `agent/styleguides/fetcher/list-query-objects.md`,
-   the same closed-enum validation is performed by `Appliers::SortApplier`
-   (or an `Options::*` value's own `#apply`), which raises
-   `Api::Public::UnsupportedParamError` (`lib/api/public/unsupported_param_error.rb`)
+   sort validation is performed by `Appliers::SortApplier` (or an
+   `Options::*` value's own `#apply`), and period/range validation is
+   performed by the query object after `PricePeriod.resolve` returns nil.
+   Both raise `Api::Public::UnsupportedParamError`
+   (`lib/api/public/unsupported_param_error.rb`)
    instead of returning an error for the controller to branch on.
    `Api::Public::ApplicationController` declares
    `rescue_from Api::Public::UnsupportedParamError, with:

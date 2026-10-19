@@ -11,6 +11,24 @@ class PricePeriod < T::Enum
     All = new("all")
   end
 
+  class << self
+    extend T::Sig
+
+    sig do
+      params(
+        raw_value: T.untyped,
+        supported: T::Array[PricePeriod],
+        default: PricePeriod
+      ).returns(T.nilable(PricePeriod))
+    end
+    def resolve(raw_value, supported:, default:)
+      period = try_deserialize(raw_value.presence || default.serialize)
+      return nil unless period
+
+      supported.include?(period) ? period : nil
+    end
+  end
+
   sig { returns(T.nilable(ActiveSupport::Duration)) }
   def duration
     case self
@@ -21,5 +39,15 @@ class PricePeriod < T::Enum
     when All then nil
     else T.absurd(self)
     end
+  end
+
+  sig { returns(T.nilable(ActiveSupport::TimeWithZone)) }
+  def since
+    duration&.ago
+  end
+
+  sig { returns(T.nilable(Date)) }
+  def since_date
+    since&.to_date
   end
 end

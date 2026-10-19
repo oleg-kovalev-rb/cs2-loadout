@@ -22,12 +22,9 @@ class ItemCatalogQuery
 
     sig { params(params: ActionController::Parameters).returns(Page) }
     def call(params)
-      sort_option = Appliers::SortApplier.call(
-        params[:sort], enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc
-      )
       pagination = Appliers::Pagination.new(params[:page], params[:per_page])
 
-      scope = Appliers::FilterApplier.call(Item.marketable, params, enum_class: Options::ItemFilterField)
+      scope = Appliers::FilterApplier.call(Item.marketable, params, enum_class: Options::ItemFilterOption)
 
       total_count, gaining_count, losing_count = scope.pluck(
         Arel.sql("COUNT(*)"),
@@ -35,7 +32,11 @@ class ItemCatalogQuery
         Arel.sql("COUNT(*) FILTER (WHERE change_24h_cents < 0)")
       ).first
 
-      page_items = pagination.apply(sort_option.apply(scope)).to_a
+      scope = Appliers::SortApplier.call(
+        scope, params, enum_class: Options::ItemSortOption, default: Options::ItemSortOption::ChangeDesc
+      )
+
+      page_items = pagination.apply(scope).to_a
 
       Page.new(
         items: page_items,

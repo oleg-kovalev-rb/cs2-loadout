@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Options::ItemFilterField do
+RSpec.describe Options::ItemFilterOption do
   describe "#apply" do
     describe "Category" do
       it "filters to matching categories when present" do

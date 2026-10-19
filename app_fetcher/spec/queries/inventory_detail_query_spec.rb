@@ -215,6 +215,26 @@ RSpec.describe InventoryDetailQuery do
         expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "bogus")) }
           .to raise_error(Api::Public::UnsupportedParamError, "Unsupported range: bogus")
       end
+
+      it "rejects 24h because inventory value logs are daily" do
+        user_inventory = create(:user_inventory)
+
+        expect { described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "24h")) }
+          .to raise_error(Api::Public::UnsupportedParamError, "Unsupported range: 24h")
+      end
+
+      it "keeps total_value_cents from the live valuation regardless of the selected range" do
+        user_inventory = create(:user_inventory, items: [ create(:item, current_price_cents: 2000) ])
+        create(:inventory_value_log, steam_id: user_inventory.steam_id, log_date: 10.days.ago.to_date,
+                                      total_value_cents: 1000)
+
+        page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new(range: "7d"))
+
+        aggregate_failures do
+          expect(page.total_value_cents).to eq(2000)
+          expect(page.history.size).to eq(1)
+        end
+      end
     end
 
     describe "top_items" do

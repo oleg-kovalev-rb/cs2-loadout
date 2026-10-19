@@ -3,6 +3,16 @@
 class InventoryValueLog < ApplicationRecord
   extend T::Sig
 
+  SUPPORTED_PERIODS = T.let(
+    [ PricePeriod::SevenDays, PricePeriod::ThirtyDays, PricePeriod::OneYear, PricePeriod::All ].freeze,
+    T::Array[PricePeriod]
+  )
+
+  scope :for_period, ->(period) {
+    cutoff = period.since_date
+    cutoff ? where(log_date: cutoff..) : all
+  }
+
   validates :steam_id, presence: true
   validates :log_date, presence: true, uniqueness: { scope: :steam_id }
   validates :total_value_cents, presence: true, numericality: { greater_than_or_equal_to: 0 }

@@ -320,6 +320,15 @@ RSpec.describe "Api::Public::Inventories", type: :request do
           expect(JSON.parse(response.body)["message"]).to eq("Unsupported range: bogus")
         end
       end
+
+      it "rejects range=24h because the portfolio history is daily" do
+        get "/api/public/inventories/#{inventory.steam_id}", params: { range: "24h" }
+
+        aggregate_failures do
+          expect(response).to have_http_status(:bad_request)
+          expect(JSON.parse(response.body)["message"]).to eq("Unsupported range: 24h")
+        end
+      end
     end
 
     context "items_sort" do
