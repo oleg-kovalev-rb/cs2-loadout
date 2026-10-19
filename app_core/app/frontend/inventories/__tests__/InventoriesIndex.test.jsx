@@ -122,6 +122,34 @@ describe('InventoriesIndex', () => {
     )
   })
 
+  test('paginates with the 1-based API page without translation', async () => {
+    const fetchMock = vi.fn().mockImplementation((url) => {
+      if (String(url).startsWith('/inventories/profiles')) {
+        return jsonResponse({ profiles: {} })
+      }
+      const pageNumber = Number(new URL(url).searchParams.get('page'))
+      return jsonResponse(
+        page({
+          meta: { page: pageNumber, per_page: 24, total_count: 48, total_pages: 2 },
+        }),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+
+    render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))
+
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('page=2'), expect.anything()),
+    )
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+  })
+
   test('an empty catalog renders the empty state instead of a card grid', async () => {
     vi.stubGlobal(
       'fetch',

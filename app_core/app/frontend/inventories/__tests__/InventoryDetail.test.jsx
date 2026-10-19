@@ -203,6 +203,37 @@ describe('InventoryDetail', () => {
     )
   })
 
+  test('paginating the top items uses the 1-based items page directly', async () => {
+    const fetchMock = vi.fn().mockImplementation((url) => {
+      const pageNumber = Number(new URL(url).searchParams.get('items_page'))
+      return jsonResponse(
+        detailPayload({
+          top_items: {
+            ...detailPayload().top_items,
+            meta: { page: pageNumber, per_page: 12, total_count: 24, total_pages: 2 },
+          },
+        }),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+
+    render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
+    await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
+
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining('items_page=2'),
+        expect.anything(),
+      ),
+    )
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+  })
+
   test('priciest_item: null renders a graceful "no priced items" note instead of crashing', async () => {
     vi.stubGlobal(
       'fetch',

@@ -1,7 +1,7 @@
 import { Sparkline } from '../../shared/components/Sparkline'
 import { trendDirection } from '../../shared/utils/trend'
 import { fmtPrice, conditionAbbr } from '../../shared/utils/format'
-import { rarityColor } from '../utils/format'
+import { rarityColor } from '../utils/rarity'
 
 function ItemCard({ item }) {
   const hasPrice = item.currentPriceCents != null

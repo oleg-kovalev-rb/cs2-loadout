@@ -135,6 +135,30 @@ describe('ItemsTile (filter -> sort -> paginate integration)', () => {
     expect(screen.getByText('1–2 of 2')).toBeInTheDocument()
   })
 
+  test('pages through a longer list with 1-based page numbers', async () => {
+    const user = userEvent.setup()
+    const pagedItems = Array.from({ length: PAGE_SIZE + 2 }, (_, index) => ({
+      ...items[0],
+      marketHashName: `AK-47 | Paged ${index} (FT)`,
+      itemName: `Paged ${index}`,
+      currentPriceCents: 10_000 - index,
+      change24hPercent: 1,
+      trendPoints: [],
+    }))
+
+    render(<Harness items={pagedItems} />)
+
+    expect(screen.getByText('1–8 of 10')).toBeInTheDocument()
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(within(screen.getAllByRole('listitem')[0]).getByText(/Paged 0/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
+
+    expect(screen.getByText('9–10 of 10')).toBeInTheDocument()
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(within(screen.getAllByRole('listitem')[0]).getByText(/Paged 8/)).toBeInTheDocument()
+  })
+
   test('selecting an item highlights its row', async () => {
     const user = userEvent.setup()
     render(<Harness />)

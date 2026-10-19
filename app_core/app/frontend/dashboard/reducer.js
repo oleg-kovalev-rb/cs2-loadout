@@ -7,7 +7,7 @@ export const initialState = {
   selectedItem: null,
   sort: 'price_desc',
   filters: { weapons: new Set(), conditions: new Set(), stattrakOnly: false },
-  page: 0,
+  page: 1,
   openDropdown: null, // 'sort' | 'filter' | null
 }
 
@@ -37,7 +37,7 @@ export function dashboardReducer(state, action) {
       return { ...state, mode: 'portfolio', selectedItem: null }
 
     case 'SORT_CHANGED':
-      return { ...state, sort: action.sort, page: 0, openDropdown: null }
+      return { ...state, sort: action.sort, page: 1, openDropdown: null }
 
     case 'WEAPON_FILTER_TOGGLED':
       return {
@@ -46,7 +46,7 @@ export function dashboardReducer(state, action) {
           ...state.filters,
           weapons: toggleSetMember(state.filters.weapons, action.value),
         },
-        page: 0,
+        page: 1,
       }
 
     case 'CONDITION_FILTER_TOGGLED':
@@ -56,18 +56,18 @@ export function dashboardReducer(state, action) {
           ...state.filters,
           conditions: toggleSetMember(state.filters.conditions, action.value),
         },
-        page: 0,
+        page: 1,
       }
 
     case 'STATTRAK_FILTER_TOGGLED':
       return {
         ...state,
         filters: { ...state.filters, stattrakOnly: !state.filters.stattrakOnly },
-        page: 0,
+        page: 1,
       }
 
     case 'FILTERS_CLEARED':
-      return { ...state, filters: initialState.filters, page: 0 }
+      return { ...state, filters: initialState.filters, page: 1 }
 
     case 'PAGE_CHANGED':
       return { ...state, page: action.page }

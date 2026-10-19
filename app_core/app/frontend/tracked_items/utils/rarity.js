@@ -1,8 +1,3 @@
-// Keyed by the exact rarity strings the public items catalog returns
-// (Item#rarity, straight from Steam — see ItemCatalogSerializer).
-// "Extraordinary" (gloves) and "Contraband" share the gold color with the
-// fetcher's RarityTier gold bucket. The catalog doesn't expose that tier
-// itself, so a knife's raw "Covert" tag still maps to Covert here.
 const RARITY_COLORS = {
   'Consumer Grade': '#b0c3d9',
   'Industrial Grade': '#5e98d9',

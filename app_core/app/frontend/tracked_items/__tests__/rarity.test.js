@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { rarityColor } from '../utils/format'
+import { rarityColor } from '../utils/rarity'
 
 describe('rarityColor', () => {
   test.each([
