@@ -28,8 +28,14 @@ class ApplicationController
     include ::ActionController::Base::HelperMethods
     include ::ApplicationHelper
 
+    sig { returns(T.nilable(::Demo::SessionStore::Session)) }
+    def current_demo; end
+
     sig { returns(T.nilable(::User)) }
     def current_user; end
+
+    sig { returns(T.nilable(::String)) }
+    def demo_bridge_token; end
   end
 
   class HelperProxy < ::ActionView::Base

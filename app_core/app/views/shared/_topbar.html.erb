@@ -12,7 +12,17 @@
     <%= link_to "Inventories", inventories_path, class: "nav-tab#{' is-active' if active_tab == :inventories}" %>
   </nav>
 
-  <% if current_user %>
+  <% if current_demo %>
+    <div class="profile-group">
+      <span class="profile-chip">
+        <span class="avatar" aria-hidden="true">D</span>
+        <span class="profile-name">My account</span>
+        <span class="badge badge-demo">Demo</span>
+      </span>
+      <%= button_to "Exit demo", demo_session_path, method: :delete,
+            data: { turbo: false }, class: "profile-signout demo-exit" %>
+    </div>
+  <% elsif current_user %>
     <div class="profile-group">
       <span class="profile-chip">
         <% if current_user.avatar_url.present? %>

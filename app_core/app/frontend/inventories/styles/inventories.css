@@ -73,6 +73,14 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
+.dash-root .inv-card-demo {
+  position: sticky;
+  top: 16px;
+  z-index: 2;
+}
+.dash-root .inv-id .badge-demo {
+  align-self: flex-start;
+}
 .dash-root .inv-card {
   display: flex;
   flex-direction: column;

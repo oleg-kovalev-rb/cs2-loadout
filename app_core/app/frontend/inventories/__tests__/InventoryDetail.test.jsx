@@ -295,3 +295,27 @@ describe('InventoryDetail', () => {
     )
   })
 })
+
+describe('InventoryDetail in demo mode', () => {
+  test('renders the demo label and badge', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => jsonResponse(detailPayload())),
+    )
+
+    render(
+      <InventoryDetail
+        fetcherUrl="http://fetcher.test"
+        steamId="demo"
+        profile={{ nickname: 'My account' }}
+        demo
+        demoToken="demo-token"
+        apiBase="/api/demo"
+      />,
+    )
+
+    await waitFor(() => expect(screen.getByText(/Demo inventory/)).toBeInTheDocument())
+    expect(screen.getByText('Demo')).toHaveClass('badge-demo')
+    expect(screen.getByText('My account')).toBeInTheDocument()
+  })
+})

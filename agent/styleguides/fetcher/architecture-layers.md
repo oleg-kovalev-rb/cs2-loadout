@@ -90,8 +90,12 @@ Models (app/models/, write)
   workers via `.perform_async`. Never call `Steam::Client` — a
   scheduler's own run does no I/O; only the jobs it enqueues do, and
   only later.
-- **Controllers** (`app/controllers/api/v1/`): Scenario 1's entry
-  point — see `agent/styleguides/fetcher/internal-api-controllers.md`.
+- **Controllers** (`app/controllers/api/v1/`, plus the sibling
+  `api/public/`, `api/admin/`, and `api/demo/` namespaces): Scenario 1's
+  entry point. V1 conventions live in
+  `agent/styleguides/fetcher/internal-api-controllers.md`, Public in
+  `public-api-controllers.md`, Admin in `admin-api-controllers.md`, and
+  Demo in `demo-api.md`.
 - **Services** (`app/services/`, flat, top-level, named
   `<Noun>Service` — e.g. `UserInventorySyncService` — not namespaced
   under `Steam::` even when calling `Steam::Client`, like every other
@@ -133,6 +137,16 @@ Models (app/models/, write)
   `agent/styleguides/fetcher/list-query-objects.md` and
   `agent/adr/fetcher/list-query-objects-layer.md` for the full
   structure, interface, and rules — not restated here.
+- **Demo read model** (`app/queries/demo/`, `Demo::Dataset` and
+  `Demo::ItemPool`): a read-only demo-specific collaborator used by
+  `Api::Demo::` controllers. It samples real `Item` rows from the YAML
+  pool, reuses real price/trend caches, and assembles the existing
+  list/detail serializers’ structs. It is deliberately not an
+  `ApplicationService` (no writes/`Result` contract) and not a
+  `app/queries/` endpoint query (no persisted demo resource). The only
+  demo writer is the `demo:seed_items` rake task, which creates ordinary
+  `Item` rows through `ItemParser` and enqueues `PriceUpdateWorker`. See
+  `agent/styleguides/fetcher/demo-api.md`.
 
 ## Responsibilities
 
@@ -179,6 +193,14 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   `Appliers::*` depend on nothing resource-specific. Serializers depend
   only on the data already fetched by a query object. See
   `list-query-objects.md` for the full dependency rules.
+- Demo controllers (`Api::Demo::`) depend on the demo base controller’s
+  token check and `Demo::Dataset`; they never write and never touch
+  `steam_id`/`UserInventory`. `Demo::Dataset` may depend on `Item`
+  reads, the existing price/trend caches, `Demo::ItemPool`, the existing
+  query structs, `Options::*`, and `Appliers::*` — never on
+  controllers or services. `Demo::ItemPool` only reads
+  `config/demo_items.yml`. The `demo:seed_items` task may depend on
+  `Demo::ItemPool`, `ItemParser`, `Item`, and `PriceUpdateWorker`.
 
 ## Rules
 
@@ -192,7 +214,11 @@ One-directional, per `rails-layering.md`. Concretely for this app:
 - Only a worker persists parsed/built data, inside a transaction when
   more than one write must stay consistent (see `background-jobs.md`) —
   except the narrow, named exception in
-  `agent/adr/fetcher/cross-scenario-service-layer.md`.
+  `agent/adr/fetcher/cross-scenario-service-layer.md`, and the
+  `demo:seed_items` task’s ordinary `Item` upsert.
+- Keep `Api::Demo::`/`Demo::Dataset` read-only: no `UserInventory`,
+  `UserInventoryItem`, or `InventoryValueLog` writes, and no fake
+  `steam_id`. See `demo-api.md`.
 
 ### SHOULD
 
@@ -228,6 +254,20 @@ Api::V1::InventoriesController#show
 Api::V1::ItemPricesController#dynamics
     → PriceWarmupService.call(items)  (nil-price filter, cap 20,
         Rails.cache dedup, enqueue — no persistence)
+        ⇢ PriceUpdateWorker.perform_async(item.id)
+
+Api::Demo::InventoriesController#show/#summary/#detail
+    → Demo::Dataset.new(seed: demo_seed)
+        → Demo::ItemPool.market_hash_names
+        → Item reads (real catalog/prices)
+        → ItemTrendCache / PriceHistoryCache (real market data)
+        → InventoryListQuery::InventorySummary /
+          InventoryDetailQuery::InventoryDetails structs
+    → existing InventoryListSerializer / InventoryDetailSerializer
+    (read-only; no UserInventory/InventoryValueLog writes)
+
+demo:seed_items
+    → Demo::ItemPool.entries → ItemParser.parse → Item upsert
         ⇢ PriceUpdateWorker.perform_async(item.id)
 ```
 
@@ -286,6 +326,12 @@ available for a future, similar case — it just no longer describes what
   and enqueues `PriceUpdateWorker`; returns
   `ApplicationService::Result[T::Array[Integer]]`
   (`Success(data: <enqueued ids>)`) and persists nothing.
+- Demo: `app_fetcher/app/controllers/api/demo/base_controller.rb`,
+  `app_fetcher/app/controllers/api/demo/inventories_controller.rb`,
+  `app_fetcher/app/queries/demo/dataset.rb`,
+  `app_fetcher/app/queries/demo/item_pool.rb`,
+  `app_fetcher/config/demo_items.yml`, `app_fetcher/lib/tasks/demo.rake` —
+  see `agent/styleguides/fetcher/demo-api.md`.
 - Query objects / Appliers / Options / Serializers: none implemented
   yet — `app_fetcher/app/queries/item_catalog_query.rb` and siblings
   (`agent/plans/item-catalog-query-refactor.md`) will be this layer's

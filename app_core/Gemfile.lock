@@ -276,6 +276,10 @@ GEM
       prism (>= 1.6.0)
       rbs (>= 4.0.0)
       tsort
+    redis (5.4.1)
+      redis-client (>= 0.22.0)
+    redis-client (0.31.0)
+      connection_pool
     regexp_parser (2.11.3)
     reline (0.7.0)
       io-console (~> 0.5)
@@ -436,6 +440,7 @@ DEPENDENCIES
   brakeman
   bundler-audit
   capybara
+  connection_pool
   debug
   factory_bot_rails
   image_processing (~> 1.2)
@@ -448,6 +453,7 @@ DEPENDENCIES
   propshaft
   puma (>= 5.0)
   rails (~> 7.2.0)
+  redis (~> 5.0)
   rspec-rails
   rubocop-rails-omakase
   simplecov

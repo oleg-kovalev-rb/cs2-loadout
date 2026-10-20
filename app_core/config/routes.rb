@@ -17,6 +17,9 @@ Rails.application.routes.draw do
   resource :session, only: %i[create destroy] do
     get :callback
   end
+  resource :demo_session, only: %i[create destroy]
+
+  get "demo/inventory", to: "demo/inventories#show", as: :demo_inventory
 
   get "inventories/profiles", to: "inventories#profiles"
   resources :inventories, only: %i[index show], param: :steam_id

@@ -19,6 +19,12 @@ module GeneratedPathHelpersModule
   def callback_session_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def demo_inventory_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def demo_session_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def inventories_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }

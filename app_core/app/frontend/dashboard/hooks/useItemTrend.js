@@ -16,7 +16,7 @@ function mapTrend(raw) {
 // (after the skeleton resolves) so UserInventoryCache is guaranteed to
 // already have a row for this steam_id. Not sent to the backend; trend
 // takes no params.
-export function useItemTrend(fetcherUrl, bridgeToken, names) {
+export function useItemTrend(fetcherUrl, bridgeToken, names, apiBase = '/api/v1') {
   const [trendByName, setTrendByName] = useState({})
   const [status, setStatus] = useState('pending')
 
@@ -26,7 +26,7 @@ export function useItemTrend(fetcherUrl, bridgeToken, names) {
     let cancelled = false
 
     async function load() {
-      const response = await fetch(`${fetcherUrl}/api/v1/item_prices/trend`, {
+      const response = await fetch(`${fetcherUrl}${apiBase}/item_prices/trend`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` },
       })
       if (!response.ok) throw new Error(`Request to item_prices/trend failed: ${response.status}`)
@@ -44,7 +44,7 @@ export function useItemTrend(fetcherUrl, bridgeToken, names) {
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, bridgeToken, names])
+  }, [fetcherUrl, bridgeToken, names, apiBase])
 
   return { trendByName, status }
 }

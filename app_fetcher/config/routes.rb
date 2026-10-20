@@ -23,6 +23,17 @@ Rails.application.routes.draw do
       get "inventories/:steam_id", to: "inventories#show"
     end
 
+    namespace :demo do
+      get "inventories", to: "inventories#show"
+      get "inventories/me", to: "inventories#show"
+      get "inventory_summary", to: "inventories#summary"
+      get "inventory_detail", to: "inventories#detail"
+      get "inventory_values", to: "inventory_values#index"
+      get "item_prices/dynamics", to: "item_prices#dynamics"
+      get "item_prices/trend", to: "item_prices#trend"
+      get "item_prices/:market_hash_name/history", to: "item_prices#history"
+    end
+
     namespace :admin do
       get "price_logs", to: "price_logs#index"
       get "inventory_value_logs", to: "inventory_value_logs#index"

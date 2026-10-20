@@ -176,3 +176,58 @@ describe('InventoriesIndex', () => {
     expect(screen.getByPlaceholderText(/coming soon/i)).toBeDisabled()
   })
 })
+
+describe('InventoriesIndex in demo mode', () => {
+  const demoSummary = {
+    steam_id: 'demo',
+    total_value_cents: 250000,
+    change_24h_cents: 5000,
+    change_24h_percent: 2.0,
+    items_count: 20,
+    rarity_breakdown: [{ tier: 'covert', count: 20, percent: 100.0 }],
+    last_synced_at: '2026-10-20T15:30:45Z',
+  }
+
+  test('renders the demo card first and keeps the public list unauthenticated', async () => {
+    const fetchMock = vi.fn().mockImplementation((url) => {
+      if (String(url).startsWith('/inventories/profiles')) return jsonResponse({ profiles: {} })
+      if (String(url).includes('/api/demo/inventory_summary')) return jsonResponse(demoSummary)
+      return jsonResponse(page())
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<InventoriesIndex fetcherUrl="http://fetcher.test" demo demoToken="demo-token" />)
+
+    await waitFor(() => expect(screen.getByText('My account')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('#2')).toBeInTheDocument())
+
+    const demoCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/api/demo/inventory_summary'),
+    )
+    const publicCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/api/public/inventories'),
+    )
+    const demoCard = screen.getByRole('link', { name: /My account/ })
+
+    expect(demoCall?.[1].headers.Authorization).toBe('Bearer demo-token')
+    expect(publicCall?.[1].headers?.Authorization).toBeUndefined()
+    expect(demoCard).toHaveAttribute('href', '/demo/inventory')
+    expect(demoCard).toHaveClass('inv-card-demo')
+    expect(screen.getAllByRole('link')[0]).toBe(demoCard)
+    expect(screen.getAllByText('Demo').length).toBeGreaterThan(0)
+    expect(screen.getByText('#1')).toBeInTheDocument()
+    expect(screen.getByText('#2')).toBeInTheDocument()
+  })
+
+  test('does not fetch the demo summary when demo mode is off', async () => {
+    const fetchMock = mockFetch()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<InventoriesIndex fetcherUrl="http://fetcher.test" />)
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))
+
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/api/demo/inventory_summary')),
+    ).toBe(false)
+  })
+})

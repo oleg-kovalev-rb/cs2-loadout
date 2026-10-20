@@ -19,6 +19,12 @@ module GeneratedUrlHelpersModule
   def callback_session_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def demo_inventory_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def demo_session_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def inventories_profiles_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }

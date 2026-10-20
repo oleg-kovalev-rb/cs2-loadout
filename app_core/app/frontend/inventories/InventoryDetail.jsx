@@ -10,13 +10,23 @@ import { InventoryNotFound } from './components/InventoryNotFound'
 import { fmtUSD, fmtPrice, centsToUSD, fmtDateTime } from '../shared/utils/format'
 import { TOP_ITEMS_PER_PAGE } from './constants'
 
-export function InventoryDetail({ fetcherUrl, steamId, profile }) {
+export function InventoryDetail({
+  fetcherUrl,
+  steamId,
+  profile,
+  demo = false,
+  demoToken = null,
+  apiBase = '/api/public',
+}) {
   const [state, dispatch] = useReducer(detailReducer, initialDetailState)
   const { data, status } = useInventoryDetail(fetcherUrl, steamId, {
     period: state.period,
     sort: state.sort,
     page: state.page,
     perPage: TOP_ITEMS_PER_PAGE,
+    demo,
+    demoToken,
+    apiBase,
   })
 
   if (status === 'loading') return <InventoryDetailSkeleton />
@@ -46,9 +56,11 @@ export function InventoryDetail({ fetcherUrl, steamId, profile }) {
         <div>
           <div className="profile-head-name">
             <span>{name}</span>
+            {demo && <span className="badge badge-demo">Demo</span>}
           </div>
           <p className="profile-head-sub">
-            Public inventory &middot; synced {fmtDateTime(new Date(data.lastSyncedAt).getTime())}
+            {demo ? 'Demo inventory' : 'Public inventory'} &middot; synced{' '}
+            {fmtDateTime(new Date(data.lastSyncedAt).getTime())}
           </p>
         </div>
       </div>

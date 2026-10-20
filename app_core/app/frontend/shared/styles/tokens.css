@@ -227,6 +227,41 @@ html {
   font-weight: 600;
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 6px;
+  border-radius: 999px;
+}
+
+.badge-demo {
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.14);
+  border: 1px solid rgba(255, 193, 7, 0.28);
+}
+
+.dash-root .profile-signout.demo-exit {
+  width: auto;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dash-root .profile-signout.demo-exit:hover {
+  color: var(--text);
+}
+
 .dash-root .profile-signout {
   cursor: pointer;
   display: flex;

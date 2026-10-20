@@ -1,11 +1,11 @@
-<% content_for :title, current_user ? "Dashboard — CS2 Loadout" : "CS2 Loadout" %>
+<% content_for :title, current_user ? "Dashboard — CS2 Loadout" : (current_demo ? "Demo dashboard — CS2 Loadout" : "CS2 Loadout") %>
 
 <div class="dash-root">
   <div class="bg-fx" aria-hidden="true"></div>
 
   <%= render "shared/topbar", active_tab: :portfolio %>
 
-  <% if current_user %>
+  <% if current_user || current_demo %>
     <div
       id="dashboard-root"
       data-bridge-token="<%= @bridge_token %>"
@@ -25,7 +25,10 @@
         <%= button_to session_path, method: :post, data: { turbo: false }, class: "signin-cta" do %>
           Sign in through Steam
         <% end %>
+        <%= button_to "Try a demo account", demo_session_path, method: :post,
+              data: { turbo: false }, class: "signin-cta signin-cta-demo" %>
         <span class="signin-note">We only read your public inventory &mdash; nothing is posted on your behalf.</span>
+        <span class="signin-note">The demo is read-only and disappears after 12 hours.</span>
       </div>
     </div>
   <% end %>

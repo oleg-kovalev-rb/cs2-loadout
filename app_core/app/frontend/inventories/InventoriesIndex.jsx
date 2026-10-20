@@ -2,17 +2,19 @@ import { useReducer } from 'react'
 import { catalogReducer, initialCatalogState } from './reducer'
 import { useInventoryCatalog } from './hooks/useInventoryCatalog'
 import { useInventoryProfiles } from './hooks/useInventoryProfiles'
+import { useDemoInventory } from './hooks/useDemoInventory'
 import { InventoriesToolbar } from './components/InventoriesToolbar'
 import { InventoryGrid } from './components/InventoryGrid'
 import { Pagination } from '../shared/components/Pagination'
 import { INVENTORIES_PER_PAGE } from './constants'
 
-export function InventoriesIndex({ fetcherUrl }) {
+export function InventoriesIndex({ fetcherUrl, demo = false, demoToken }) {
   const [state, dispatch] = useReducer(catalogReducer, initialCatalogState)
   const { inventories, meta, status } = useInventoryCatalog(fetcherUrl, {
     page: state.page,
     sort: state.sort,
   })
+  const demoInventory = useDemoInventory(fetcherUrl, demo, demoToken)
   // app_core-owned enrichment for the page's steam_ids; non-fatal (an
   // empty map just means every card falls back to steam_id + a letter).
   const profiles = useInventoryProfiles(inventories.map((inventory) => inventory.steamId))
@@ -48,7 +50,12 @@ export function InventoriesIndex({ fetcherUrl }) {
         onSortChange={(sort) => dispatch({ type: 'SORT_CHANGED', sort })}
       />
 
-      <InventoryGrid inventories={inventories} meta={meta} profiles={profiles} />
+      <InventoryGrid
+        inventories={inventories}
+        meta={meta}
+        profiles={profiles}
+        demoInventory={demo ? demoInventory : null}
+      />
 
       <Pagination
         page={state.page}

@@ -19,8 +19,6 @@ class InventoryListSerializer
       }
     end
 
-    private
-
     sig { params(summary: InventoryListQuery::InventorySummary).returns(T::Hash[Symbol, T.untyped]) }
     def inventory_json(summary)
       snapshot = summary.snapshot

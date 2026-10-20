@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export function useItemHistory(fetcherUrl, bridgeToken, marketHashName, period) {
+export function useItemHistory(
+  fetcherUrl,
+  bridgeToken,
+  marketHashName,
+  period,
+  apiBase = '/api/v1',
+) {
   const [series, setSeries] = useState([])
   const [status, setStatus] = useState('pending')
 
@@ -15,7 +21,7 @@ export function useItemHistory(fetcherUrl, bridgeToken, marketHashName, period) 
     setStatus('pending')
 
     async function load() {
-      const url = `${fetcherUrl}/api/v1/item_prices/${encodeURIComponent(marketHashName)}/history?period=${period}`
+      const url = `${fetcherUrl}${apiBase}/item_prices/${encodeURIComponent(marketHashName)}/history?period=${period}`
       const response = await fetch(url, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` },
       })
@@ -36,7 +42,7 @@ export function useItemHistory(fetcherUrl, bridgeToken, marketHashName, period) 
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, bridgeToken, marketHashName, period])
+  }, [fetcherUrl, bridgeToken, marketHashName, period, apiBase])
 
   return { series, status }
 }

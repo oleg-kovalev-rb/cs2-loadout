@@ -10,8 +10,8 @@ import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { PortfolioTile } from './components/PortfolioTile'
 import { ItemsTile } from './components/ItemsTile'
 
-export function Dashboard({ fetcherUrl, bridgeToken }) {
-  const { data, status, error } = useDashboardData(fetcherUrl, bridgeToken)
+export function Dashboard({ fetcherUrl, bridgeToken, apiBase = '/api/v1' }) {
+  const { data, status, error } = useDashboardData(fetcherUrl, bridgeToken, apiBase)
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
   // The full skeleton name list — stable across re-renders as long as the
@@ -27,8 +27,8 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
     pricesByName,
     status: pricesStatus,
     error: pricesError,
-  } = useItemPrices(fetcherUrl, bridgeToken, coverageNames)
-  const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names)
+  } = useItemPrices(fetcherUrl, bridgeToken, coverageNames, apiBase)
+  const { trendByName } = useItemTrend(fetcherUrl, bridgeToken, names, apiBase)
 
   const items = useMemo(() => {
     if (!data) return []
@@ -41,12 +41,18 @@ export function Dashboard({ fetcherUrl, bridgeToken }) {
 
   // The backend owns "current value + completeness"; this hook retries on its
   // own bounded schedule while the valuation is still incomplete.
-  const portfolioHistory = usePortfolioHistory(fetcherUrl, bridgeToken, state.portfolioPeriod)
+  const portfolioHistory = usePortfolioHistory(
+    fetcherUrl,
+    bridgeToken,
+    state.portfolioPeriod,
+    apiBase,
+  )
   const itemHistory = useItemHistory(
     fetcherUrl,
     bridgeToken,
     state.selectedItem?.marketHashName ?? null,
     state.itemPeriod,
+    apiBase,
   )
 
   if (status === 'loading') {

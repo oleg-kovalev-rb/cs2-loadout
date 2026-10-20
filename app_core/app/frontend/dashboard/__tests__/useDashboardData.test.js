@@ -84,3 +84,25 @@ describe('useDashboardData', () => {
     expect(result.current.data.items).toEqual([])
   })
 })
+
+describe('useDashboardData in demo mode', () => {
+  test('uses the provided api base and demo token', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse({ items_count: 0, items: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() =>
+      useDashboardData('http://fetcher.test', 'demo-token', '/api/demo'),
+    )
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://fetcher.test/api/demo/inventories/me',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer demo-token' }),
+      }),
+    )
+  })
+})

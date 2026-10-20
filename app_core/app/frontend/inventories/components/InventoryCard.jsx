@@ -8,10 +8,11 @@ import { rarityPercentages } from '../utils/rarity'
 // enrichment carve-out). app_fetcher's public inventories response
 // deliberately carries neither, so `profile` is optional and the card
 // falls back to steam_id + a letter-circle avatar.
-export function InventoryCard({ inventory, rank, profile }) {
+export function InventoryCard({ inventory, rank, profile, badge, href }) {
   const direction = trendDirection(inventory.change24hPercent)
   const name = profile?.nickname || inventory.steamId
   const initial = name.charAt(0).toUpperCase()
+  const link = href || `/inventories/${inventory.steamId}`
   const showDelta =
     direction !== 'flat' && inventory.changeAvailable !== false && !inventory.changePartial
   const showPartial = inventory.complete === false
@@ -24,9 +25,9 @@ export function InventoryCard({ inventory, rank, profile }) {
     : undefined
 
   return (
-    <a className="inv-card" href={`/inventories/${inventory.steamId}`}>
+    <a className={`inv-card${badge ? ' inv-card-demo' : ''}`} href={link}>
       <div className="inv-card-top">
-        <span className="inv-rank tabular">#{rank}</span>
+        {rank != null && <span className="inv-rank tabular">#{rank}</span>}
         {profile?.avatarUrl ? (
           <img className="inv-avatar" src={profile.avatarUrl} alt="" />
         ) : (
@@ -36,6 +37,7 @@ export function InventoryCard({ inventory, rank, profile }) {
         )}
         <span className="inv-id">
           <span className="inv-name">{name}</span>
+          {badge && <span className="badge badge-demo">{badge}</span>}
         </span>
       </div>
       <div className="inv-value-row">

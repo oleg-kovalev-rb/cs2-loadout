@@ -1,6 +1,7 @@
 gem:
   exclude:
     - selenium-webdriver
+    - connection_pool
   # Add your `gem` command parameters here:
   #
   # exclude:

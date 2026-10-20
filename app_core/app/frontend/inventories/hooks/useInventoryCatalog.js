@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchJson } from '../../shared/utils/fetchJson'
 import { INVENTORIES_PER_PAGE } from '../constants'
 
-function mapInventory(raw) {
+export function mapInventory(raw) {
   return {
     steamId: raw.steam_id,
     totalValueCents: raw.total_value_cents,

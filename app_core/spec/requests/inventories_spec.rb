@@ -106,3 +106,30 @@ RSpec.describe "shared topbar nav tabs", type: :request do
     expect(response.body).to match(%r{<a[^>]+class="nav-tab is-active"[^>]*>\s*Inventories\s*</a>})
   end
 end
+
+RSpec.describe "Demo mode on public inventories pages", type: :request, demo_redis: true do
+  before { start_demo }
+
+  it "keeps the public list and adds the demo flag, token, and badge" do
+    get inventories_path
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-demo="true"')
+      expect(response.body).to match(/data-demo-token="[^"]+"/)
+      expect(response.body).to include("My account")
+      expect(response.body).to include("badge-demo")
+      expect(response.body).not_to include("data-bridge-token")
+    end
+  end
+
+  it "keeps the public inventory detail page on the public data path" do
+    get inventory_path("76561198000000000")
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-demo="true"')
+      expect(response.body).not_to include("data-demo-inventory")
+    end
+  end
+end

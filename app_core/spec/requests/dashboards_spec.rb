@@ -71,3 +71,30 @@ RSpec.describe "GET /", type: :request do
     end
   end
 end
+
+RSpec.describe "GET / in demo mode", type: :request, demo_redis: true do
+  before { start_demo }
+
+  it "renders the demo dashboard with the demo badge and token" do
+    get root_path
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-demo="true"')
+      expect(response.body).to match(/data-demo-token="[^"]+"/)
+      expect(response.body).to include("My account")
+      expect(response.body).to include("Exit demo")
+      expect(response.body).to include("badge-demo")
+      expect(response.headers["Cache-Control"]).to include("private", "no-store")
+    end
+  end
+
+  it "does not mint a non-empty Steam player token" do
+    get root_path
+
+    aggregate_failures do
+      expect(response.body).not_to match(/data-bridge-token="[^"]+"/)
+      expect(response.body).not_to include("Sign in through Steam")
+    end
+  end
+end

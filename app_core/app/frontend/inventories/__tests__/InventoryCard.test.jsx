@@ -117,3 +117,21 @@ describe('InventoryCard', () => {
     expect(screen.getByText(/2\.5%/)).toHaveAttribute('title', 'Change since 2026-10-17')
   })
 })
+
+describe('InventoryCard demo variant', () => {
+  test('renders an optional badge and custom href without a rank', () => {
+    render(
+      <InventoryCard
+        inventory={baseInventory}
+        profile={{ nickname: 'My account' }}
+        badge="Demo"
+        href="/demo/inventory"
+      />,
+    )
+
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/demo/inventory')
+    expect(screen.getByRole('link')).toHaveClass('inv-card-demo')
+    expect(screen.getByText('Demo')).toHaveClass('badge-demo')
+    expect(screen.queryByText(/^#/)).not.toBeInTheDocument()
+  })
+})

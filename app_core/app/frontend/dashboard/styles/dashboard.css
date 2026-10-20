@@ -83,6 +83,14 @@
 .dash-root .signin-cta:hover {
   background: #7256f0;
 }
+.dash-root .signin-cta-demo {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.dash-root .signin-cta-demo:hover {
+  background: var(--surface-raised);
+}
 .dash-root .signin-note {
   font-size: 0.6875rem;
   color: var(--text-faint);

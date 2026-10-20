@@ -24,7 +24,7 @@ function mapItem(raw) {
 // Prices (useItemPrices), trend (useItemTrend), and portfolio/item history
 // (usePortfolioHistory/useItemHistory) are separate hooks, each gated on
 // this one having resolved first.
-export function useDashboardData(fetcherUrl, bridgeToken) {
+export function useDashboardData(fetcherUrl, bridgeToken, apiBase = '/api/v1') {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState(null)
@@ -34,7 +34,7 @@ export function useDashboardData(fetcherUrl, bridgeToken) {
     const authHeaders = { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` }
 
     async function load() {
-      const inventory = await fetchJson(`${fetcherUrl}/api/v1/inventories/me`, {
+      const inventory = await fetchJson(`${fetcherUrl}${apiBase}/inventories/me`, {
         headers: authHeaders,
       })
 
@@ -52,7 +52,7 @@ export function useDashboardData(fetcherUrl, bridgeToken) {
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, bridgeToken])
+  }, [fetcherUrl, bridgeToken, apiBase])
 
   return { data, status, error }
 }

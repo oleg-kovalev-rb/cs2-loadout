@@ -1,7 +1,7 @@
 import { InventoryCard } from './InventoryCard'
 
-export function InventoryGrid({ inventories, meta, profiles = {} }) {
-  if (inventories.length === 0) {
+export function InventoryGrid({ inventories, meta, profiles = {}, demoInventory = null }) {
+  if (inventories.length === 0 && !demoInventory) {
     return <p className="empty-state">No public inventories match this view.</p>
   }
 
@@ -9,6 +9,14 @@ export function InventoryGrid({ inventories, meta, profiles = {} }) {
 
   return (
     <div className="inv-grid">
+      {demoInventory && (
+        <InventoryCard
+          inventory={demoInventory}
+          profile={{ nickname: 'My account' }}
+          badge="Demo"
+          href="/demo/inventory"
+        />
+      )}
       {inventories.map((inventory, index) => (
         <InventoryCard
           key={inventory.steamId}

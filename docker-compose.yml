@@ -34,9 +34,11 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       REDIS_URL_STREAM: redis://redis:6379/2
+      REDIS_URL_DEMO: redis://redis:6379/3
       APP_FETCHER_PUBLIC_URL: ${APP_FETCHER_PUBLIC_URL:?set this in .env, see .env.example}
       APP_BRIDGE_JWT_SECRET: ${APP_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
       APP_ADMIN_BRIDGE_JWT_SECRET: ${APP_ADMIN_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
+      APP_DEMO_JWT_SECRET: ${APP_DEMO_JWT_SECRET:?set this in .env, see .env.example}
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
 
   app_fetcher:
@@ -56,6 +58,7 @@ services:
       APP_CORE_ORIGIN: ${APP_CORE_ORIGIN:?set this in .env, see .env.example}
       APP_BRIDGE_JWT_SECRET: ${APP_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
       APP_ADMIN_BRIDGE_JWT_SECRET: ${APP_ADMIN_BRIDGE_JWT_SECRET:?set this in .env, see .env.example}
+      APP_DEMO_JWT_SECRET: ${APP_DEMO_JWT_SECRET:?set this in .env, see .env.example}
 
   fetcher_worker:
     build: ./app_fetcher

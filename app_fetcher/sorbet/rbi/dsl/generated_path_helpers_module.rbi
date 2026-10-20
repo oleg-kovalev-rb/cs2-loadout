@@ -34,6 +34,30 @@ module GeneratedPathHelpersModule
   def api_admin_user_inventory_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventories_me_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventories_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_detail_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_summary_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_values_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_item_prices_dynamics_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_item_prices_trend_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_path(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def api_public_inventories_path(*args); end
 
   sig { params(args: T.untyped).returns(String) }

@@ -10,8 +10,8 @@ function mapPrice(raw) {
   }
 }
 
-async function fetchDynamics(fetcherUrl, bridgeToken) {
-  const response = await fetch(`${fetcherUrl}/api/v1/item_prices/dynamics`, {
+async function fetchDynamics(fetcherUrl, bridgeToken, apiBase) {
+  const response = await fetch(`${fetcherUrl}${apiBase}/item_prices/dynamics`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` },
   })
   if (!response.ok) throw new Error(`Request to item_prices/dynamics failed: ${response.status}`)
@@ -31,7 +31,7 @@ async function fetchDynamics(fetcherUrl, bridgeToken) {
 // price_unavailable, and still missing a price. Comparing response keys
 // against `names` instead would never look covered once the inventory
 // contains a non-marketable or price-unavailable item.
-export function useItemPrices(fetcherUrl, bridgeToken, names) {
+export function useItemPrices(fetcherUrl, bridgeToken, names, apiBase = '/api/v1') {
   const [pricesByName, setPricesByName] = useState({})
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState(null)
@@ -45,7 +45,7 @@ export function useItemPrices(fetcherUrl, bridgeToken, names) {
 
     async function attempt(index) {
       try {
-        const { prices, pendingCount } = await fetchDynamics(fetcherUrl, bridgeToken)
+        const { prices, pendingCount } = await fetchDynamics(fetcherUrl, bridgeToken, apiBase)
         if (cancelled) return
 
         loaded = true
@@ -72,7 +72,7 @@ export function useItemPrices(fetcherUrl, bridgeToken, names) {
       cancelled = true
       timers.forEach(clearTimeout)
     }
-  }, [fetcherUrl, bridgeToken, names])
+  }, [fetcherUrl, bridgeToken, names, apiBase])
 
   return { pricesByName, status, error }
 }

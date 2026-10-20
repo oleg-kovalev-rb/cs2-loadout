@@ -246,3 +246,31 @@ describe('useInventoryDetail', () => {
     await waitFor(() => expect(result.current.status).toBe('error'))
   })
 })
+
+describe('useInventoryDetail in demo mode', () => {
+  test('uses the demo endpoint and bearer token', async () => {
+    const fetchMock = vi.fn().mockImplementationOnce(() => jsonResponse(detailPayload()))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() =>
+      useInventoryDetail('http://fetcher.test', 'demo', {
+        period: '7d',
+        sort: 'price_desc',
+        page: 1,
+        perPage: 12,
+        demo: true,
+        demoToken: 'demo-token',
+        apiBase: '/api/demo',
+      }),
+    )
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://fetcher.test/api/demo/inventory_detail?period=7d&sort=price_desc&page=1&per_page=12',
+      expect.anything(),
+    )
+    const [, options] = fetchMock.mock.calls[0]
+    expect(options.headers.Authorization).toBe('Bearer demo-token')
+  })
+})

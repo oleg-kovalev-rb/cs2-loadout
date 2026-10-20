@@ -34,7 +34,7 @@ function mapChange(raw) {
   }
 }
 
-export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
+export function usePortfolioHistory(fetcherUrl, bridgeToken, period, apiBase = '/api/v1') {
   const [series, setSeries] = useState([])
   const [current, setCurrent] = useState(null)
   const [change, setChange] = useState(null)
@@ -47,7 +47,7 @@ export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
 
     async function attempt(index) {
       try {
-        const response = await fetch(`${fetcherUrl}/api/v1/inventory_values?period=${period}`, {
+        const response = await fetch(`${fetcherUrl}${apiBase}/inventory_values?period=${period}`, {
           headers: { Accept: 'application/json', Authorization: `Bearer ${bridgeToken}` },
         })
         if (!response.ok) throw new Error(`Request to inventory_values failed: ${response.status}`)
@@ -75,7 +75,7 @@ export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
       cancelled = true
       timers.forEach(clearTimeout)
     }
-  }, [fetcherUrl, bridgeToken, period])
+  }, [fetcherUrl, bridgeToken, period, apiBase])
 
   return { series, current, change, status }
 }

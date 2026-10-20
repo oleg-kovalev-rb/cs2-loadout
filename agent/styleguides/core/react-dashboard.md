@@ -523,6 +523,53 @@ handful of values:
   rather than a generic failure message. Don't add a new status value for
   a failure mode the UI treats identically to an existing one.
 
+## Demo Mode
+
+Demo mode is a page-level mode of the existing islands, not a separate
+island or a second dashboard. See `agent/styleguides/core/demo-mode.md`
+for the session/token side and `agent/adr/core/demo-mode.md` for why it
+exists.
+
+- **The entrypoint owns the mode decision.** `dashboard.jsx` and
+  `inventories-index.jsx` read `document.body.dataset.demo` and
+  `document.body.dataset.demoToken` once, then pass `demo`/`demoToken`
+  and an `apiBase` prop down. Hooks and components must not read
+  `document.body` or select a namespace themselves.
+- **All `app_fetcher` URLs go through `apiBase`.** A hook that hardcodes
+  `/api/v1` or `/api/public` is wrong for demo mode. `Dashboard` passes
+  `apiBase` to every one of its five data hooks; the demo page passes
+  `/api/demo`, the normal page `/api/v1`.
+- **The demo token is only attached to `Api::Demo::` calls.** A public
+  request in demo mode (`/api/public/inventories`, `/api/public/items`,
+  `/api/public/inventories/:steam_id`) still carries no `Authorization`
+  header. The body `data-demo` flag does not turn public reads into demo
+  reads.
+- **`/demo/inventory` is the only demo detail mount.** Its mount node
+  carries `data-demo-inventory="true"`; `inventory-detail.jsx` checks
+  that flag, not the body flag alone. A real `/inventories/:steam_id`
+  opened while in demo mode keeps using the public endpoint.
+- **The demo inventory card is the first, sticky card in the public
+  grid.** Pass the demo summary to `InventoryGrid` as its own item and
+  render it before the mapped public cards (with an `inv-card-demo`
+  class); never insert it into `inventories` or `meta`, and never let
+  it consume a rank or change `total_count`.
+- **The demo summary hook is additive and non-fatal.** If
+  `Api::Demo::inventory_summary` fails, the public page still renders its
+  normal catalog; the demo card simply does not appear. Do not put the
+  whole page into its load-error state because the demo card failed.
+- **Reuse components with optional props.** `InventoryCard` may take
+  optional `badge`, `href`, and nullable `rank`; `InventoryDetail` may
+  take `demo`/`apiBase`/`demoToken`. Do not fork either component for
+  demo, and do not change their existing public behavior when the props
+  are absent.
+- **Vitest must mock the two sources separately.** A demo
+  `InventoriesIndex` test asserts the demo summary request
+  (`/api/demo/inventory_summary`, Bearer demo token) *and* the public
+  list request (no auth header). A demo `InventoryDetail` test asserts
+  `/api/demo/inventory_detail`; a public-detail test asserts
+  `/api/public/inventories/:steam_id` even when the body demo flag is
+  true. `demo=false` must make no demo request at all.
+
 ## Mutations Against Nested Backend Routes
 
 A flat/global list page (`PriceLogsPage`, `InventoryValueLogsPage` — see
@@ -723,7 +770,9 @@ Every other island follows the identical shape against its own
 `app_fetcher` namespace — `Api::Admin::*` with an admin bridge token for
 `admin-panel/`, `Api::Public::*` with no auth header at all for
 `inventories/` — see `architecture-layers.md` for the concrete per-stack
-patterns.
+patterns. In demo mode the same islands switch only their
+`app_fetcher` base URL/token (`Api::Demo::*` for the dashboard and demo
+detail; public reads stay public); see Demo Mode above.
 
 ## Canonical Implementations
 
@@ -765,7 +814,11 @@ patterns.
   its non-fatal failure fallback (see State & Data Loading)
 - `app_core/app/frontend/inventories/components/InventoryCard.jsx` — an
   aggregate card delta deriving through `trendDirection` and hiding its
-  badge when flat (see Component Conventions)
+  badge when flat (see Component Conventions); also the optional
+  `badge`/`href`/`rank` extension used by the demo card (see Demo Mode)
+- `app_core/app/frontend/inventories/hooks/useDemoInventory.js` — the
+  additive demo-card hook (planned; see `agent/plans/demo-account.md`),
+  following the non-fatal enrichment-hook shape above
 - `app_core/app/frontend/inventories/utils/rarity.js` — a pure derivation
   module with no reducer/state coupling, kept island-local (not moved to
   `shared/`) since `inventories/` remains its only consumer

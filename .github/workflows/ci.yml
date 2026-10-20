@@ -15,6 +15,7 @@ env:
   # needed. See agent/styleguides/ci-and-coverage.md.
   APP_BRIDGE_JWT_SECRET: ci-bridge-secret-not-real
   APP_ADMIN_BRIDGE_JWT_SECRET: ci-admin-bridge-secret-not-real
+  APP_DEMO_JWT_SECRET: ci-demo-secret-not-real
   APP_FETCHER_PUBLIC_URL: http://localhost:3001
   APP_CORE_ORIGIN: http://localhost:3000
   COMPOSE: docker compose -f docker-compose.yml -f docker-compose.ci.yml

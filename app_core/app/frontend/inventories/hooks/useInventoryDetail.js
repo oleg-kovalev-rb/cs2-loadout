@@ -62,8 +62,11 @@ function mapDetail(raw) {
   }
 }
 
-async function fetchDetailJson(url) {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } })
+async function fetchDetailJson(url, token = null) {
+  const headers = { Accept: 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await fetch(url, { headers })
   if (response.status === 404) throw new NotFoundError()
   if (!response.ok) throw new Error(`Request to ${url} failed: ${response.status}`)
   return response.json()
@@ -75,7 +78,11 @@ async function fetchDetailJson(url) {
 // already returns one fully composed payload per request, so a single
 // hook with a flat status is correct here — no need to split loading
 // into independently-resolving stages this page doesn't have.
-export function useInventoryDetail(fetcherUrl, steamId, { period, sort, page, perPage }) {
+export function useInventoryDetail(
+  fetcherUrl,
+  steamId,
+  { period, sort, page, perPage, demo = false, demoToken = null, apiBase = '/api/public' },
+) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
 
@@ -84,8 +91,11 @@ export function useInventoryDetail(fetcherUrl, steamId, { period, sort, page, pe
     setStatus('loading')
 
     async function load() {
-      const url = `${fetcherUrl}/api/public/inventories/${steamId}?period=${period}&sort=${sort}&page=${page}&per_page=${perPage}`
-      const payload = await fetchDetailJson(url)
+      const query = `period=${period}&sort=${sort}&page=${page}&per_page=${perPage}`
+      const url = demo
+        ? `${fetcherUrl}${apiBase}/inventory_detail?${query}`
+        : `${fetcherUrl}/api/public/inventories/${steamId}?${query}`
+      const payload = await fetchDetailJson(url, demo ? demoToken : null)
 
       if (cancelled) return
       setData(mapDetail(payload))
@@ -100,7 +110,7 @@ export function useInventoryDetail(fetcherUrl, steamId, { period, sort, page, pe
     return () => {
       cancelled = true
     }
-  }, [fetcherUrl, steamId, period, sort, page, perPage])
+  }, [fetcherUrl, steamId, period, sort, page, perPage, demo, demoToken, apiBase])
 
   return { data, status }
 }

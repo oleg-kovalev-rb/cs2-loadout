@@ -1,0 +1,17 @@
+# Placeholder pool for the first demo-mode implementation. Curating the
+# full 40–50 item pool and its icon metadata is a follow-up task.
+- market_hash_name: "AK-47 | Redline (Field-Tested)"
+  rarity: "Classified"
+  category: "Rifle"
+- market_hash_name: "AWP | Asiimov (Field-Tested)"
+  rarity: "Covert"
+  category: "Sniper Rifle"
+- market_hash_name: "Glock-18 | Fade (Factory New)"
+  rarity: "Restricted"
+  category: "Pistol"
+- market_hash_name: "M4A1-S | Printstream (Field-Tested)"
+  rarity: "Covert"
+  category: "Rifle"
+- market_hash_name: "Desert Eagle | Blaze (Factory New)"
+  rarity: "Restricted"
+  category: "Pistol"

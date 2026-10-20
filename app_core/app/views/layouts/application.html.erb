@@ -25,7 +25,10 @@
     <%= yield :vite_entrypoint %>
   </head>
 
-  <body>
+  <body
+    data-demo="<%= current_demo.present? %>"
+    data-demo-token="<%= demo_bridge_token %>"
+  >
     <%= render "shared/flash" %>
     <%= yield %>
   </body>

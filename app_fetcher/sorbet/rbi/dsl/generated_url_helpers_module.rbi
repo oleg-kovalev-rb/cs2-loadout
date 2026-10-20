@@ -34,6 +34,30 @@ module GeneratedUrlHelpersModule
   def api_admin_user_inventory_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventories_me_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventories_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_detail_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_summary_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_inventory_values_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_item_prices_dynamics_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_item_prices_trend_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
+  def api_demo_url(*args); end
+
+  sig { params(args: T.untyped).returns(String) }
   def api_public_inventories_url(*args); end
 
   sig { params(args: T.untyped).returns(String) }
