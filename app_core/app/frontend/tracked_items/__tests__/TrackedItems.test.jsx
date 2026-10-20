@@ -114,9 +114,8 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    await user.click(screen.getByRole('button', { name: /filters/i }))
+    await user.click(await screen.findByRole('button', { name: /filters/i }))
     await user.click(screen.getByRole('button', { name: 'Rifles' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -132,9 +131,8 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    await user.click(screen.getByRole('button', { name: /sort:/i }))
+    await user.click(await screen.findByRole('button', { name: /sort:/i }))
     await user.click(screen.getByRole('button', { name: 'Price: low to high' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -148,10 +146,11 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    const gridButton = await screen.findByRole('button', { name: 'Grid' })
     expect(document.querySelector('.ticker-wrap')).not.toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Grid' }))
+    await user.click(gridButton)
 
     expect(document.querySelector('.grid-view')).not.toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -163,9 +162,8 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    await user.selectOptions(screen.getByLabelText(/per page/i), '40')
+    await user.selectOptions(await screen.findByLabelText(/per page/i), '40')
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     const [url] = fetchMock.mock.calls[1]
@@ -247,7 +245,6 @@ describe('TrackedItems', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<TrackedItems fetcherUrl="http://fetcher.test" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     await screen.findByText('AK-47 | Flatline', { exact: false })
 
     await user.click(screen.getByRole('button', { name: 'Grid' }))
