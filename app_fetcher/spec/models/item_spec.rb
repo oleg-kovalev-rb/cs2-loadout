@@ -27,6 +27,18 @@ RSpec.describe Item do
       expect(items_needing_price).to include(unpriced_item)
       expect(items_needing_price).not_to include(fresh_priced_item)
     end
+
+    it "keys staleness off updated_at, not price_updated_at" do
+      recently_touched = create(:item, updated_at: 5.minutes.ago, price_updated_at: 2.days.ago)
+
+      expect(items_needing_price).not_to include(recently_touched)
+    end
+
+    it "includes an old record even when its price was refreshed recently" do
+      stale_record = create(:item, updated_at: 2.hours.ago, price_updated_at: 5.minutes.ago)
+
+      expect(items_needing_price).to include(stale_record)
+    end
   end
 
   describe ".due_for_price_update" do
