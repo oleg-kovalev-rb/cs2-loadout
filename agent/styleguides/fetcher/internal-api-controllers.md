@@ -163,7 +163,8 @@ Five failure shapes:
    }`.
 3. **Raised closed-enum validation error, caught centrally** — a query
    object validates a closed-enum query param (`period`) through
-   `Options::DateRange::Param#parse`, passing
+   `Options::DateRange::Param#parse`, or a sort param through
+   `Appliers::SortApplier.call`, passing
    `Api::V1::UnsupportedParamError`
    (`lib/api/v1/unsupported_param_error.rb`) as `error_class`, instead
    of rendering inline. `Api::V1::BaseController` declares

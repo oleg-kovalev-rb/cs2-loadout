@@ -92,9 +92,10 @@ distinct param shapes, each with its own validation posture:
   value **is** an error: `render json: { message: "Unsupported
   <param_name>: <value>" }, status: :bad_request`. Sort params are
   resolved and raised by `Appliers::SortApplier` (or an `Options::*`
-  value's own `#apply`) in the query-objects layer. Period params are
-  resolved by `Options::DateRange::Param#parse` with an explicit
-  `allowed_ranges:`/`default:`/`error_class:`; a Public query object
+  value's own `#apply`) in the query-objects layer; it accepts an
+  `error_class:` keyword (default `Api::Public::UnsupportedParamError`).
+  Period params are resolved by `Options::DateRange::Param#parse` with an
+  explicit `allowed_ranges:`/`default:`/`error_class:`; a Public query object
   passes `Api::Public::UnsupportedParamError`, while a V1 query object
   passes `Api::V1::UnsupportedParamError` and lets its base controller
   render the response. See

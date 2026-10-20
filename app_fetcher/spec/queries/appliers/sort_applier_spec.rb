@@ -50,6 +50,18 @@ RSpec.describe Appliers::SortApplier do
       }.to raise_error(Api::Public::UnsupportedParamError, "Unsupported sort: bogus")
     end
 
+    it "raises the given error_class for an unrecognized value" do
+      expect {
+        described_class.call(
+          scope,
+          ActionController::Parameters.new(sort: "bogus"),
+          enum_class: Options::ItemSortOption,
+          default: Options::ItemSortOption::PriceDesc,
+          error_class: Api::V1::UnsupportedParamError
+        )
+      }.to raise_error(Api::V1::UnsupportedParamError, "Unsupported sort: bogus")
+    end
+
     it "uses the given param_name in the error message" do
       expect {
         described_class.call(
