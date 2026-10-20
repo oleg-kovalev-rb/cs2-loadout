@@ -98,9 +98,9 @@ RSpec.describe "GET /inventories/profiles", type: :request do
 end
 
 RSpec.describe "shared topbar nav tabs", type: :request do
-  it "marks Portfolio active on the dashboard and Inventories active on the inventories pages" do
+  it "marks My Inventory active on the dashboard and Inventories active on the inventories pages" do
     get root_path
-    expect(response.body).to match(%r{<a[^>]+class="nav-tab is-active"[^>]*>\s*Portfolio\s*</a>})
+    expect(response.body).to match(%r{<a[^>]+class="nav-tab is-active"[^>]*>\s*My Inventory\s*</a>})
 
     get inventories_path
     expect(response.body).to match(%r{<a[^>]+class="nav-tab is-active"[^>]*>\s*Inventories\s*</a>})

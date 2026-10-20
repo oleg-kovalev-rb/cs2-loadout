@@ -12,12 +12,12 @@ RSpec.describe "GET /tracked-items", type: :request do
       end
     end
 
-    it "shows the Tracked Items nav tab as active and Portfolio as not" do
+    it "shows the Items nav tab as active and My Inventory as not" do
       get tracked_items_path
 
       aggregate_failures do
-        expect(response.body).to match(/class="nav-tab is-active"[^>]*>\s*Tracked Items/)
-        expect(response.body).to match(/class="nav-tab"[^>]*>Portfolio/)
+        expect(response.body).to match(/class="nav-tab is-active"[^>]*>\s*Items/)
+        expect(response.body).to match(/class="nav-tab"[^>]*>My Inventory/)
       end
     end
   end
