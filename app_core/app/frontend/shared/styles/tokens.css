@@ -48,7 +48,7 @@
    .dash-root column and around .bg-fx's faded edges. */
 body {
   margin: 0;
-  background: #0c111b;
+  background: var(--bg);
 }
 
 /* Same reasoning as the body rule above — shared-shell-only. Fluid root
@@ -62,23 +62,28 @@ html {
 }
 
 :root {
-  --bg: #0c111b;
-  --surface: #141a28;
-  --surface-raised: #1c2334;
-  --surface-sunken: #0f1420;
-  --border: #262f44;
-  --border-soft: #1d2537;
-  --text: #edf0f7;
-  --text-muted: #8791ab;
-  --text-faint: #57607a;
-  --accent: #8368ff;
-  --accent-soft: rgba(131, 104, 255, 0.16);
+  --bg: #0b0c0e;
+  --surface: #151719;
+  --surface-raised: #1d2023;
+  --surface-sunken: #0f1012;
+  --border: #26292e;
+  --border-soft: #1c1e22;
+  --text: #eef0f2;
+  --text-muted: #8b9099;
+  --text-faint: #5b6069;
+  --accent: #4ea8e0;
+  --accent-soft: rgba(78, 168, 224, 0.15);
+  --accent-ink: #08131d;
+  --accent-deep: #1f4a6b;
+  --accent-hover: #3f97cd;
+  --brand: #f5a623;
+  --brand-soft: rgba(245, 166, 35, 0.16);
   --up: #3fb878;
   --up-soft: rgba(63, 184, 120, 0.14);
   --down: #f0546b;
   --down-soft: rgba(240, 84, 107, 0.14);
-  --stattrak: #e07b39;
-  --stattrak-soft: rgba(224, 123, 57, 0.16);
+  --stattrak: var(--brand);
+  --stattrak-soft: var(--brand-soft);
   --font-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
   --font-body: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -183,7 +188,7 @@ html {
   color: var(--text);
 }
 .dash-root .brand-mark span {
-  color: var(--accent);
+  color: var(--brand);
 }
 .dash-root .brand-sub {
   font-size: 0.65625rem;
@@ -205,7 +210,7 @@ html {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: linear-gradient(155deg, var(--accent), #4a3aa8);
+  background: linear-gradient(155deg, var(--accent), var(--accent-deep));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -602,11 +607,11 @@ html {
 }
 .dash-root .toolbar-btn:hover {
   color: var(--text);
-  border-color: #39435c;
+  border-color: #34383e;
 }
 .dash-root .toolbar-btn.has-active {
   color: var(--accent);
-  border-color: rgba(131, 104, 255, 0.4);
+  border-color: rgba(78, 168, 224, 0.4);
 }
 .dash-root .toolbar-btn .chev {
   flex-shrink: 0;
@@ -704,7 +709,7 @@ html {
 }
 .dash-root .mover-row.is-selected {
   background: var(--accent-soft);
-  border-color: rgba(131, 104, 255, 0.4);
+  border-color: rgba(78, 168, 224, 0.4);
 }
 
 /* Decorative fixed-height filler (ItemsTile): keeps a partial page PAGE_SIZE

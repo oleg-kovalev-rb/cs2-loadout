@@ -16,10 +16,10 @@ describe('rarityColor', () => {
   })
 
   test('falls back to a neutral color for an unrecognized rarity', () => {
-    expect(rarityColor('High Grade')).toBe('#8791ab')
+    expect(rarityColor('High Grade')).toBe('#8b9099')
   })
 
   test('falls back to the same neutral color for a missing rarity', () => {
-    expect(rarityColor(undefined)).toBe('#8791ab')
+    expect(rarityColor(undefined)).toBe('#8b9099')
   })
 })

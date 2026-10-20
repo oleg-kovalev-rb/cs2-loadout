@@ -47,7 +47,7 @@
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 11px;
-  border: 1px solid rgba(131, 104, 255, 0.4);
+  border: 1px solid rgba(78, 168, 224, 0.4);
 }
 
 .btn {
@@ -197,12 +197,12 @@
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .btn.ghost-cache {
   background: transparent;
-  border-color: rgba(224, 123, 57, 0.35);
+  border-color: rgba(245, 166, 35, 0.35);
   color: var(--stattrak);
 }
 
@@ -407,7 +407,7 @@ input[type='checkbox'] {
   font-size: 9.5px;
   font-weight: 600;
   color: var(--stattrak);
-  border: 1px solid rgba(224, 123, 57, 0.4);
+  border: 1px solid rgba(245, 166, 35, 0.4);
   background: var(--stattrak-soft);
   padding: 1px 5px;
   border-radius: 4px;
@@ -514,7 +514,7 @@ input[type='checkbox'] {
 .pg-btn.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .pg-btn:disabled {
