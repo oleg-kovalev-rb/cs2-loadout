@@ -45,9 +45,9 @@ write state is out of scope for this read-only namespace.
   generated read model.
 - `app_fetcher/app/queries/demo/item_pool.rb` — `Demo::ItemPool`, the YAML pool
   loader.
-- `app_fetcher/config/demo_items.yml` — the curated pool (a placeholder
-  set is acceptable for the first implementation; curation is a
-  follow-up).
+- `app_fetcher/config/demo_items.yml` — the curated pool: 40–50 real,
+  marketable CS2 entries, each with `market_hash_name`, `rarity`,
+  `category`, and `icon_url`.
 - `app_fetcher/lib/tasks/demo.rake` — `demo:seed_items`.
 - Routes are explicit under `namespace :api do; namespace :demo do ...`
   in `config/routes.rb`.
@@ -100,8 +100,18 @@ Endpoints and payloads:
 
 `Demo::ItemPool`:
 
-- `entries` → YAML entries with `market_hash_name`, `rarity`, `category`;
+- `entries` → YAML entries with `market_hash_name`, `rarity`, `category`,
+  and `icon_url`;
 - `market_hash_names` → `T::Array[String]`.
+
+`demo:seed_items`:
+
+- reads `Demo::ItemPool.entries`, parses each entry with `ItemParser`
+  (including `icon_url`), find-or-initializes by `market_hash_name`,
+  persists metadata, and enqueues `PriceUpdateWorker` for each row;
+- creates a new row with all parsed metadata;
+- on an existing row, fills only absent/nil metadata keys and never
+  overwrites a populated value.
 
 ## Responsibilities
 
@@ -110,7 +120,8 @@ through the existing serializers. They do not sample items, generate
 history, or query Steam. `Demo::Dataset` owns item selection, snapshot/
 history/detail assembly, rarity counting, and fallback behavior.
 `Demo::ItemPool` owns YAML loading only. `demo:seed_items` owns turning
-pool entries into real `Item` rows and enqueueing the existing price
+pool entries into real `Item` rows (including their icons), filling
+missing metadata on existing rows, and enqueueing the existing price
 worker.
 
 ## Dependencies
@@ -161,12 +172,23 @@ Steam identity.
   for `sort`, and `Appliers::Pagination` for the top-items sub-list,
   passing `Api::Demo::UnsupportedParamError` so the demo base controller
   renders `400`.
-- Keep the YAML pool entries limited to `market_hash_name`, `rarity`, and
-  `category` (optional `icon_url`); items are real catalog rows, never
-  demo-flagged.
+- Keep the checked-in pool at 40–50 unique, real, marketable CS2
+  entries; every entry carries `market_hash_name`, `rarity`, `category`,
+  and `icon_url`. Items are real catalog rows, never demo-flagged.
+- Use only `RarityTier`-recognized `rarity` labels (`Consumer Grade`,
+  `Industrial Grade`, `Mil-Spec Grade`, `Restricted`, `Classified`,
+  `Covert`, `Extraordinary`, `Contraband`) and Steam inventory Type
+  names for `category` (`Rifle`, `Sniper Rifle`, `Pistol`, `SMG`,
+  `Shotgun`, `Machinegun`, `Knife`, `Gloves`). Knife and glove names
+  keep their leading `★`, so `RarityTier.for` counts them as Gold.
+- Give every entry a real Steam CDN `icon_url` in the
+  `https://community.akamai.steamstatic.com/economy/image/...` form that
+  `UserInventorySyncService` already stores. Icons are static
+  checked-in metadata; do not fetch them during seeding or at runtime.
 - Make `demo:seed_items` idempotent: find-or-initialize by
-  `market_hash_name`, do not overwrite existing metadata, and enqueue
-  `PriceUpdateWorker` for the pool.
+  `market_hash_name`; create new rows with the parsed metadata; on an
+  existing row fill only absent/nil metadata keys and never overwrite a
+  populated value; enqueue `PriceUpdateWorker` for the pool.
 - Return `404` for an unknown item history via a bang finder and the
   base controller’s `ActiveRecord::RecordNotFound` handler.
 
@@ -178,8 +200,10 @@ Steam identity.
 - Keep `Demo::Dataset#details`’s sort/pagination on an ActiveRecord
   relation (`Item.where(id: ...)`) so the existing appliers behave
   exactly as they do for public inventories.
-- Keep the placeholder pool small but valid; the follow-up curates the
-  full 40–50 item set.
+- Keep the pool broad but stable: cover every recognized rarity tier
+  and every Steam Type category, with a mix of inexpensive skins,
+  mid-tier skins, knives, and gloves. Update the pool-contract test only
+  when intentionally changing the pool size.
 
 ### MUST NOT
 
@@ -235,17 +259,26 @@ Demo-specific expectations:
   different seed generally differs; selection caps at 20; fallback works
   when the pool is empty/unpriced; history ends at the current total;
   rarity counts match; detail honors period/sort/page.
-- `Demo::ItemPool` is a unit spec for YAML loading/names.
-- `demo:seed_items` may be verified manually or with a focused task spec;
-  at minimum verify it is idempotent and enqueues price updates with
-  `Sidekiq::Testing.fake!`.
+- `Demo::ItemPool` is an offline unit spec over the real checked-in
+  YAML: 40–50 entries, unique names, required keys, every entry has a
+  Steam CDN `icon_url`, every `rarity` resolves through `RarityTier`,
+  and every `category` is in the recognized Steam Type set. Make no
+  network requests in this spec.
+- `demo:seed_items` is a focused task spec: new rows get the icon and
+  metadata, existing rows get only missing keys backfilled, populated
+  values are preserved, repeated runs do not duplicate rows, and price
+  updates are enqueued with `Sidekiq::Testing.fake!`.
 - Serializer regression: the existing `InventoryListSerializer` list
   output is unchanged when the single-summary shaping is extracted.
 
 ## Canonical Implementations
 
-None yet — this plan creates the first implementation. The expected
-files are listed in `agent/plans/demo-account.md`.
+- `app_fetcher/app/queries/demo/item_pool.rb` +
+  `app_fetcher/config/demo_items.yml` — the curated pool and its loader.
+- `app_fetcher/lib/tasks/demo.rake` — icon pass-through and
+  fill-only-missing seeding.
+- `app_fetcher/app/queries/demo/dataset.rb` — deterministic seeded
+  selection and generated history over the pool.
 
 ## Related ADR
 

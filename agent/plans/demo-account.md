@@ -792,8 +792,9 @@ environment, so the final visual browser check remains a manual step.
 
 ## Remaining Issues
 
-- The curated 40–50 item demo pool and its real icon metadata are the
-  planned follow-up task; the checked-in pool is a placeholder.
+- The curated 40–50 item demo pool and its real icon metadata were
+  completed by `agent/plans/demo-item-pool.md`; the checked-in pool is no
+  longer a placeholder.
 - The pre-existing `react-hooks/exhaustive-deps` warning in
   `tracked_items/TrackedItems.jsx` remains (unrelated to this change).
 - A final visual browser pass over the demo card/detail layout is still
