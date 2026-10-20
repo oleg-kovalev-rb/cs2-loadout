@@ -152,6 +152,15 @@ Both files contain **references only**, never literal values:
   shared contract (JWT secrets, API shape, env).
 - Run migrations before traffic switches to the new container
   (`bin/docker-entrypoint` for the web role, or a `pre-deploy` hook).
+- Deploy production through `.github/workflows/deploy.yml`: after a green
+  `CI` run on `main`, or a manual dispatch (`setup` only for a fresh
+  server). Do not treat a laptop deploy as the normal release path.
+- Keep every production secret in GitHub Actions Secrets; the workflow
+  maps `RAILS_MASTER_KEY_FETCHER` / `RAILS_MASTER_KEY_CORE` onto
+  `RAILS_MASTER_KEY` per app step.
+- Pin the Kamal gem in the workflow to the version in `Gemfile.lock`.
+- Keep the deploy concurrency group non-cancelling, and deploy
+  `app_fetcher` before `app_core`.
 
 ### SHOULD
 
@@ -159,18 +168,24 @@ Both files contain **references only**, never literal values:
   throwaway Postgres/Redis) before the first deploy on a new server.
 - Run `bin/kamal config` after editing a deploy configuration; it catches
   unknown keys and missing secrets without SSH.
-- Keep `script/deploy` as the single entry point for releasing both apps.
+- Keep `script/deploy` available for local debugging, using the same
+  environment-variable contract as the workflow.
 - Keep `.kamal/secrets` in version control as a template; source values
   from the environment or a password manager.
+- Store the SSH host key as a secret (`SSH_KNOWN_HOSTS`) instead of
+  relying on `ssh-keyscan` once the setup settles.
 
 ### MUST NOT
 
+- Put raw secrets in `config/deploy.yml`, `.kamal/secrets`, a Dockerfile,
+  a workflow file, or the image.
+- Make a manual local deploy the primary release path.
+- Let a deploy run start from a failed CI run or from a fork.
+- Add `cancel-in-progress: true` to the production deploy workflow.
 - Publish Postgres or Redis ports on the host; apps reach accessories by
   container name over the `kamal` network.
 - Set `SOLID_QUEUE_IN_PUMA`; neither app uses Solid Queue.
 - Rely on `REDIS_URL_STREAM`'s `localhost` default in production.
-- Put raw secrets in `config/deploy.yml`, `.kamal/secrets`, a Dockerfile,
-  or the image.
 - Reuse one app's master key for the other.
 - Run more than one Sidekiq process for the `job` role (duplicate
   sidekiq-cron schedules).
@@ -181,35 +196,79 @@ Both files contain **references only**, never literal values:
 
 ### Deploy machine
 
-Kamal runs on the developer machine, not inside the app image: it needs a
-Ruby matching the Gemfile (the `ARG RUBY_VERSION` in `Dockerfile`) with
-`bundle install` completed in each app. `bin/kamal` is the entry point;
+Kamal runs on the developer machine or on the GitHub Actions runner, not
+inside the app image: it needs a Ruby matching the Gemfile (the
+`ARG RUBY_VERSION` in `Dockerfile`; the workflow uses Ruby 3.3 and the
+pinned Kamal gem). Locally, `bin/kamal` requires the app bundle;
 `script/deploy` runs both apps in the required order.
+
+### CI deployment
+
+Releases are performed by `.github/workflows/deploy.yml`, not by hand.
+
+- Triggered by the `CI` workflow completing successfully on `main`, and
+  by `workflow_dispatch` with `command: deploy|setup`.
+- Checks out the SHA CI tested, installs Ruby 3.3 + Kamal 2.11.0, writes
+  the dedicated deploy key, and runs `kamal <command>` in `app_fetcher`
+  then `app_core`.
+- All secrets come from GitHub Actions Secrets; `config/deploy.yml`
+  contains only non-secret values.
+- Automatic deploys are gated by the repository variable
+  `DEPLOY_ENABLED=true`; manual dispatch always runs. Set it only after
+  the server has been bootstrapped once.
+- The first deployment of a fresh server is the `workflow_dispatch` run
+  with `command: setup`; later pushes deploy automatically after CI.
+
+Secret names (repository → workflow):
+
+| GitHub secret | Exported as | Applies to |
+|---|---|---|
+| `SSH_PRIVATE_KEY` | `~/.ssh/id_ed25519` | workflow |
+| `KAMAL_REGISTRY_PASSWORD` | `KAMAL_REGISTRY_PASSWORD` | both |
+| `DB_PASSWORD` | `DB_PASSWORD` | both |
+| `RAILS_MASTER_KEY_FETCHER` | `RAILS_MASTER_KEY` | `app_fetcher` step |
+| `RAILS_MASTER_KEY_CORE` | `RAILS_MASTER_KEY` | `app_core` step |
+| `APP_BRIDGE_JWT_SECRET` | same | both |
+| `APP_ADMIN_BRIDGE_JWT_SECRET` | same | both |
+| `APP_DEMO_JWT_SECRET` | same | both |
+
+Repository variable, not a secret: `DEPLOY_ENABLED=true` turns on
+automatic deploys after a green `CI` run.
 
 ### First deployment (once per server)
 
-1. Ubuntu 24.04 VPS, SSH key, firewall allowing 22/80/443.
+1. Ubuntu 24.04 VPS with SSH access, firewall allowing 22/80/443, and a
+   swap file (the reference droplet is 1 vCPU / 2 GB).
 2. DNS A records for `app.<domain>` and `api.<domain>` → VPS IP
    (DNS-only, no CDN proxy, so Let's Encrypt can validate).
-3. Docker Hub account + access token; `KAMAL_REGISTRY_PASSWORD` exported.
-4. Fill the server IP in both `config/deploy.yml`, replace `<domain>`.
-5. From `app_fetcher/`: `bin/kamal setup` (installs Docker, boots proxy,
-   `db` + `redis`, deploys).
-6. From `app_core/`: `bin/kamal setup` (reuses the proxy, boots its `db`).
+3. Docker Hub account + access token; the two image repositories are
+   created on first push.
+4. Fill the server IP, domain, and Docker Hub user in both
+   `config/deploy.yml`.
+5. Authorize the dedicated CI deploy key on the server, add the eight
+   GitHub Actions secrets (see above), push `main`.
+6. GitHub → Actions → **Deploy** → *Run workflow* → `command: setup`.
+   This installs Docker, boots the proxy and accessories, and deploys
+   both apps (fetcher first). It is the first real integration test.
 7. Check `https://api.<domain>/up` and `https://app.<domain>/up`, then
-   `bin/kamal logs -f` in each app.
+   `bin/kamal logs -f` / `bin/kamal logs -r job -f` locally if needed.
+
+Manual fallback (debugging only, same env-var/secrets contract):
+`bin/kamal setup` in `app_fetcher/`, then in `app_core/`.
 
 ### Release
 
-`script/deploy` from the repo root, or `bin/kamal deploy` in one app.
+Push to `main`; after CI succeeds the **Deploy** workflow runs.
 Migrations run from the web container's entrypoint; a failing migration
-aborts the release before traffic switches.
+aborts the release before traffic switches. For a manual release,
+`script/deploy` (or `bin/kamal deploy` in one app) still works.
 
 ### Rollback
 
-`bin/kamal rollback` in the affected app. Accessory images are not rolled
-back with the app; a database migration that is not backwards-compatible
-must be released in two steps.
+`bin/kamal rollback` in the affected app (run locally, or dispatch a
+workflow with that command if one is added later). Accessory images are
+not rolled back with the app; a database migration that is not
+backwards-compatible must be released in two steps.
 
 ### Backups
 
@@ -223,6 +282,7 @@ to the host, retained for at least a week. Redis is replaceable state
 - `app_core/Dockerfile`, `app_fetcher/Dockerfile`
 - `app_core/Dockerfile.dev`, `app_fetcher/Dockerfile.dev`
 - `app_core/.kamal/secrets`, `app_fetcher/.kamal/secrets`
+- `.github/workflows/deploy.yml`
 - `script/deploy`
 - `docker-compose.yml` (the `build:` entries only)
 
@@ -230,6 +290,8 @@ to the host, retained for at least a week. Redis is replaceable state
 
 - `agent/adr/deployment-via-kamal.md` — why one VPS, two services, one
   proxy, accessories, and Docker Hub
+- `agent/adr/ci-deploy-via-github-actions.md` — why releases run in CI
+  and secrets live in GitHub Actions
 - `agent/adr/core/thin-controllers-actions-direct-fetcher-reads.md` — the
   browser-to-fetcher decision that requires a public `api.` origin
 - `agent/adr/ci-via-docker-compose.md` — why the compose/dev image must

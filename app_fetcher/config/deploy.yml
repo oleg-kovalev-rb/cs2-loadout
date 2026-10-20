@@ -1,41 +1,43 @@
 # Deployment for app_fetcher. Conventions and rationale:
 # agent/styleguides/deployment.md and agent/adr/deployment-via-kamal.md.
 #
-# Before the first `bin/kamal setup`, replace <server-ip>, <domain> and
-# <dockerhub-user>, and export the secrets referenced in .kamal/secrets.
+# Before the first `bin/kamal setup`, replace 134.209.196.226, cs2-loadout.pro and
+# olegkovalevswe, and export the secrets referenced in .kamal/secrets.
 # Deploy this app before app_core: it owns the shared Redis accessory.
 
 service: steam-fetcher
 
-image: <dockerhub-user>/steam-fetcher
+image: olegkovalevswe/steam-fetcher
 
 servers:
   web:
-    - <server-ip>
+    - 134.209.196.226
   job:
     hosts:
-      - <server-ip>
+      - 134.209.196.226
     # Exactly one Sidekiq process: sidekiq-cron must not run twice.
     cmd: bundle exec sidekiq -C config/sidekiq.yml
 
 # Shared kamal-proxy on the VPS. `app_port` matches the image's EXPOSE.
 proxy:
   ssl: true
-  host: api.<domain>
+  host: api.cs2-loadout.pro
   app_port: 3000
 
 registry:
-  username: <dockerhub-user>
+  username: olegkovalevswe
   password:
     - KAMAL_REGISTRY_PASSWORD
 
 env:
   clear:
-    APP_CORE_ORIGIN: https://app.<domain>
+    APP_CORE_ORIGIN: https://app.cs2-loadout.pro
     DB_HOST: steam-fetcher-db
     DB_USER: postgres
     REDIS_URL: redis://steam-fetcher-redis:6379/0
     REDIS_URL_STREAM: redis://steam-fetcher-redis:6379/2
+    # The droplet is 1 vCPU / 2 GB; keep the worker pool small.
+    SIDEKIQ_CONCURRENCY: 3
   secret:
     - RAILS_MASTER_KEY
     - APP_BRIDGE_JWT_SECRET
@@ -53,12 +55,12 @@ builder:
   arch: amd64
 
 # A cold first boot runs db:prepare; give it more than the default 30s.
-deploy_timeout: 60
+deploy_timeout: 120
 
 accessories:
   db:
     image: postgres:15
-    host: <server-ip>
+    host: 134.209.196.226
     env:
       clear:
         POSTGRES_DB: app_fetcher_production
@@ -69,6 +71,6 @@ accessories:
       - data:/var/lib/postgresql/data
   redis:
     image: redis:7-alpine
-    host: <server-ip>
+    host: 134.209.196.226
     directories:
       - data:/data
