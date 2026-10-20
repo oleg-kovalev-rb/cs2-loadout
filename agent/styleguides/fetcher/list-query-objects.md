@@ -199,13 +199,16 @@ or a bare list of already-shaped records.
   caller; only the default is overridable. Instance methods `#page`,
   `#per_page`, `#offset`, `#total_pages(total_count)`.
 - **`Appliers::SortApplier.call(scope, params, enum_class:, default:,
-  param_name: "sort")`** → the sorted `ActiveRecord::Relation`. Reads
-  `params[param_name]`; absence resolves to `default`, a present
-  unrecognized value raises `Api::Public::UnsupportedParamError`. The
-  resolved enum member's own `#apply(scope)` performs the ordering —
-  this applier only resolves, validates, and dispatches, so `enum_class`
-  must be an `Options::*` sort enum (or another enum whose members
-  implement `#apply(scope)`), never a plain value enum such as
+  param_name: "sort", error_class:
+  Api::Public::UnsupportedParamError)`** → the sorted
+  `ActiveRecord::Relation`. Reads `params[param_name]`; absence resolves
+  to `default`, a present unrecognized value raises `error_class`. Public
+  query objects may rely on the default; a V1 caller must pass
+  `Api::V1::UnsupportedParamError` so the controller's `rescue_from`
+  renders a `:bad_request`. The resolved enum member's own
+  `#apply(scope)` performs the ordering — this applier only resolves, validates, and dispatches, so
+  `enum_class` must be an `Options::*` sort enum (or another enum whose
+  members implement `#apply(scope)`), never a plain value enum such as
   `Options::DateRange`.
 - **Period params (`Options::DateRange`)** are resolved by a
   per-call `Options::DateRange::Param`, not by `Appliers::SortApplier`.
@@ -457,11 +460,13 @@ re-shape its result — compose the structs at the call site instead.
 This layer produces two failure modes, neither of which it catches
 itself — both propagate to the controller's base class:
 
-1. An unrecognized closed-enum value, raised as `Api::Public::
-   UnsupportedParamError` from `Appliers::SortApplier` for sort params, or
-   by `Options::DateRange::Param#parse` for a period param (the query
-   object passes that error class in). (In principle an `Options::*`
-   value's own `#apply` may raise it too if a future resource needs a
+1. An unrecognized closed-enum value, raised as the caller-selected
+   `UnsupportedParamError` from `Appliers::SortApplier` for sort params
+   (`error_class:` defaults to `Api::Public::UnsupportedParamError`; a V1
+   caller passes `Api::V1::UnsupportedParamError`), or by
+   `Options::DateRange::Param#parse` for a period param (the query object
+   passes that error class in). (In principle an `Options::*` value's own
+   `#apply` may raise it too if a future resource needs a
    closed-enum-shaped filter — the mechanism is the same.)
 2. For a `<Resource>DetailQuery`, an identifier that doesn't resolve to a
    record, raised as `ActiveRecord::RecordNotFound` by its bang finder
