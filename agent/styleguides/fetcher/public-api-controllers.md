@@ -291,18 +291,13 @@ this section only adds what's specific to this namespace.
 
 ## Canonical Implementations
 
-None yet — `Api::Public::ItemsController#index`
-(`agent/plans/item-catalog-query-refactor.md`, superseding the
-`#catalog` shape `agent/plans/public-items-catalog-endpoint.md`
-originally shipped) will be this namespace's first controller built on
-the query-objects layer, and the first to use the `rescue_from
-Api::Public::UnsupportedParamError` shape. Update this section once that
-plan is implemented.
-
-The `rescue_from ActiveRecord::RecordNotFound` shape (Error Handling,
-(4)) has no implementation yet either — `Api::Public::
-InventoriesController#show` (`agent/plans/public-inventory-endpoints.md`)
-will be its first. Update this section once that plan is implemented.
+- `Api::Public::ItemsController#index` — list endpoint on the query-objects
+  layer (`ItemListQuery` → `ItemListSerializer`), `ItemListCache`, ETag,
+  and the `rescue_from Api::Public::UnsupportedParamError` shape.
+- `Api::Public::InventoriesController#index`/`#show` — the list/detail
+  pair (`InventoryListQuery`/`InventoryDetailQuery`), their caches, and
+  the `rescue_from ActiveRecord::RecordNotFound` shape on `#show`
+  (`agent/plans/public-inventory-endpoints.md`).
 
 ## Related ADR
 

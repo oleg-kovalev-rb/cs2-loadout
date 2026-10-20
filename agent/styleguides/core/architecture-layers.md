@@ -282,8 +282,9 @@ GET /dashboard
     → renders shared/_topbar partial (active tab: portfolio) + page with
       token + APP_FETCHER_PUBLIC_URL embedded
         → browser React island fetches app_fetcher's
-          Api::V1::InventoriesController / PriceHistoriesController
-          directly, Bearer-authenticated with the embedded token
+          Api::V1::InventoriesController / ItemPricesController /
+          InventoryValuesController directly, Bearer-authenticated with
+          the embedded token
 
 POST /admin/session
     → Admin::SessionsController#create

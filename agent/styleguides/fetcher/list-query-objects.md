@@ -27,7 +27,8 @@ into a response hash. What does not: anything with a notion of caller
 identity (that's `Api::V1::`'s job, if it ever needs this pattern),
 persisting data, or calling `Steam::Client` — this layer only ever reads
 already-persisted data for a response, the same carve-out
-`architecture-layers.md` already states for `PriceHistoriesController`.
+`architecture-layers.md` already states for
+`ItemPricesController#history`/`InventoryValuesController`.
 
 The `app/serializers/` half of this layer is broader than the
 list/detail pairs below. Any action whose response body requires
