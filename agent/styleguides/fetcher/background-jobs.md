@@ -116,6 +116,15 @@ stream.
   safe to repeat by construction; a repeated `PriceUpdateWorker` run just
   records another price sample, which is the intended behavior, not a
   side effect to guard against.
+- Treat each scheduler's staleness clock as an explicit contract.
+  `PriceScheduler` selects via `Item.due_for_price_update` →
+  `stale_or_unpriced`, which is deliberately keyed on `updated_at`
+  ("record untouched for an hour"), not `price_updated_at` ("price last
+  refreshed", used by `oldest_price_at` and the UI). A metadata/admin
+  edit therefore postpones that item's next price refresh; that is
+  accepted behavior, and changing the clock changes scheduler behavior,
+  so it needs its own decision (see
+  `agent/plans/inventory-valuation-consistency.md`).
 - On an external-call failure inside a job, log and return rather than
   raising, when the job's job-level `retry:` isn't the right tool for
   that specific failure (see `PriceUpdateWorker`'s `else` branch logging
