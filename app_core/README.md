@@ -1,24 +1,15 @@
-# README
+# app_core
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+The user-facing Rails app for [CS2 Loadout](../README.md): Steam OpenID
+sign-in, the portfolio dashboard, inventory pages, the public item catalog,
+and the admin panel.
 
-Things you may want to cover:
+- Rails 7.2 with Sorbet, Turbo/Stimulus, and React islands built with Vite.
+- Reads data from `app_fetcher` over HTTP. The browser calls the fetcher
+  directly with a short-lived bridge token; there is no proxy layer.
+- Tests and checks: `bin/ci` (RSpec, Vitest, RuboCop, Sorbet, Brakeman,
+  bundler-audit, ESLint, Prettier).
 
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Local setup and the architecture overview live in the
+[root README](../README.md). Conventions: `agent/styleguides/core/` and
+`agent/styleguides/rails-layering.md`.
