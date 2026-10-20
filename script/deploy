@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Deploy both apps to the VPS: app_fetcher first (it owns the shared Redis
+# accessory), then app_core. Extra arguments are passed through to both
+# `kamal deploy` calls (e.g. --no-cache).
+#
+# Kamal runs on this machine, not inside the app container: the host needs a
+# Ruby matching the apps' Gemfile and the bundle installed. Secrets are read
+# from each app's .kamal/secrets; export the referenced values first.
+#
+# See agent/styleguides/deployment.md.
+
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+(cd "$root/app_fetcher" && bin/kamal deploy "$@")
+(cd "$root/app_core" && bin/kamal deploy "$@")

@@ -12,6 +12,12 @@
 # Configure Using Gemfile
 # gem "pg"
 #
+<%# Production must get its connection settings from the deploy env; other %>
+<%# environments use the docker-compose hosts. Evaluated eagerly, so the %>
+<%# production values are only fetched (and required) in production. %>
+<% production_db_host = Rails.env.production? ? ENV.fetch("DB_HOST") : "db_fetcher" %>
+<% production_db_password = Rails.env.production? ? ENV.fetch("DB_PASSWORD") : "password" %>
+
 default: &default
   adapter: postgresql
   encoding: unicode
@@ -72,18 +78,11 @@ test:
 production:
   primary: &primary_production
     <<: *default
+    host: <%= production_db_host %>
+    username: <%= ENV.fetch("DB_USER", "postgres") %>
+    password: <%= production_db_password %>
     database: app_fetcher_production
-    username: app
-    password: <%= ENV["APP_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
     database: app_fetcher_production_cache
     migrations_paths: db/cache_migrate
-  queue:
-    <<: *primary_production
-    database: app_fetcher_production_queue
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *primary_production
-    database: app_fetcher_production_cable
-    migrations_paths: db/cable_migrate

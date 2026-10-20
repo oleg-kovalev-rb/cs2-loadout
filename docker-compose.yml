@@ -22,7 +22,9 @@ services:
     ports:
       - "6380:6379"
   app_core:
-    build: ./app_core
+    build:
+      context: ./app_core
+      dockerfile: Dockerfile.dev
     volumes:
       - ./app_core:/app
     ports:
@@ -42,7 +44,9 @@ services:
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
 
   app_fetcher:
-    build: ./app_fetcher
+    build:
+      context: ./app_fetcher
+      dockerfile: Dockerfile.dev
     volumes:
       - ./app_fetcher:/app
     ports:
@@ -61,7 +65,9 @@ services:
       APP_DEMO_JWT_SECRET: ${APP_DEMO_JWT_SECRET:?set this in .env, see .env.example}
 
   fetcher_worker:
-    build: ./app_fetcher
+    build:
+      context: ./app_fetcher
+      dockerfile: Dockerfile.dev
     command: bundle exec sidekiq -C config/sidekiq.yml
     volumes:
       - ./app_fetcher:/app
