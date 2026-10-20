@@ -29,10 +29,12 @@ export function InventoryDetail({
     apiBase,
   })
 
-  if (status === 'loading') return <InventoryDetailSkeleton />
-  if (status === 'not_found') return <InventoryNotFound />
-  if (status === 'error') {
-    return <p className="dash-loading dash-loading-error">Couldn&rsquo;t load this inventory.</p>
+  if (!data) {
+    if (status === 'not_found') return <InventoryNotFound />
+    if (status === 'error') {
+      return <p className="dash-loading dash-loading-error">Couldn&rsquo;t load this inventory.</p>
+    }
+    return <InventoryDetailSkeleton />
   }
 
   const priciest = data.priciestItem
@@ -68,6 +70,7 @@ export function InventoryDetail({
       <div className="detail-grid">
         <PortfolioHeroTile
           portfolio={data.portfolio}
+          period={state.period}
           onPeriodChange={(period) => dispatch({ type: 'PERIOD_CHANGED', period })}
         />
 

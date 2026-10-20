@@ -87,6 +87,11 @@ export function useInventoryDetail(
   const [status, setStatus] = useState('loading')
 
   useEffect(() => {
+    setData(null)
+    setStatus('loading')
+  }, [fetcherUrl, steamId, demo, demoToken, apiBase])
+
+  useEffect(() => {
     let cancelled = false
     setStatus('loading')
 

@@ -184,6 +184,47 @@ describe('InventoryDetail', () => {
     )
   })
 
+  test('keeps the detail page rendered while a new period loads', async () => {
+    let resolveSecondFetch
+    const secondFetch = new Promise((resolve) => {
+      resolveSecondFetch = resolve
+    })
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse(detailPayload()))
+      .mockImplementationOnce(() => secondFetch)
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+
+    render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
+    await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: '30d' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(screen.queryByText('Loading inventory…')).not.toBeInTheDocument()
+    expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument()
+    expect(screen.getByText('127')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '30d' })).toHaveClass('is-active')
+
+    resolveSecondFetch(
+      await jsonResponse(
+        detailPayload({
+          portfolio: {
+            ...detailPayload().portfolio,
+            period: '30d',
+            total_value_cents: 600000,
+            change_cents: 60000,
+            change_percent: 11.11,
+          },
+        }),
+      ),
+    )
+
+    await waitFor(() => expect(screen.getByText('$6,000.00')).toBeInTheDocument())
+    expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument()
+  })
+
   test('changing the items sort re-fetches and resets to page=1', async () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse(detailPayload()))
     vi.stubGlobal('fetch', fetchMock)

@@ -5,7 +5,7 @@ import { INVENTORY_DETAIL_PERIODS } from '../chartConfig'
 
 // Read-only, unlike dashboard's PortfolioTile — there's no item-mode
 // toggle here, just this one inventory's value over time.
-export function PortfolioHeroTile({ portfolio, onPeriodChange }) {
+export function PortfolioHeroTile({ portfolio, period, onPeriodChange }) {
   const up = portfolio.changeCents >= 0
   // A single-point history (no change) must not read as a green "▲ $0.00";
   // an incomplete valuation or partial/unavailable change is a lower bound
@@ -25,7 +25,7 @@ export function PortfolioHeroTile({ portfolio, onPeriodChange }) {
         <h2>Portfolio value</h2>
         <PeriodToggle
           periods={INVENTORY_DETAIL_PERIODS}
-          period={portfolio.period}
+          period={period}
           onChange={onPeriodChange}
         />
       </header>

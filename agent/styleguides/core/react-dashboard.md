@@ -1,5 +1,5 @@
 ---
-description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape, item-row trend direction (up/down/flat) and hero-delta zero-hiding, fixed-height paginated lists, mutation failure handling, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
+description: React island conventions in app_core (app/frontend/dashboard/ and any sibling island, e.g. tracked_items/, inventories/) — component structure, cross-island reuse via app/frontend/shared/, derived-data placement, state/data-loading shape (including refetch retention and full-page-state gating), item-row trend direction (up/down/flat) and hero-delta zero-hiding, fixed-height paginated lists, mutation failure handling, charting library boundaries, CSS split, Vitest/@testing-library testing conventions, and the ESLint/Prettier lint/format stack.
 ---
 
 # React Islands (`app_core/app/frontend/`)
@@ -515,6 +515,19 @@ handful of values:
   failure. `status`/`data` regress to an error state only when the
   *first* (data-bearing) stage itself fails, since there is nothing
   meaningful to render without it.
+- **A refetch of the same data source keeps the previous payload in
+  `data` while it runs.** The hook sets `status` back to `'loading'` but
+  does not clear `data`, so a consumer gates its full-page skeleton/error
+  states on the absence of `data` (`status === 'loading' && !data`,
+  `status === 'error' && !data`) and keeps rendering the loaded page
+  otherwise. This is what stops a period/sort/page change from blanking a
+  page that already has content. Only an identity change (a different
+  resource id/endpoint) clears the payload and returns to the skeleton.
+  Canonical: `admin-panel/hooks/useAdminList.js` + `PriceLogsPage.jsx`
+  (the `status === 'loading' && !data` / `status === 'error' && !data`
+  guards), `dashboard/hooks/usePortfolioHistory.js` (retains its series
+  across period changes) + `PortfolioTile`, and
+  `inventories/hooks/useInventoryDetail.js` + `InventoryDetail.jsx`.
 - A status value beyond the generic `'error'` is justified when the UI
   genuinely renders something different for it — `inventories/`'s
   `useInventoryDetail` adds a `'not_found'` status (a 404 from
