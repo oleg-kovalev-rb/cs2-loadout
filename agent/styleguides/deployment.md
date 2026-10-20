@@ -173,7 +173,13 @@ Both files contain **references only**, never literal values:
 - Keep `.kamal/secrets` in version control as a template; source values
   from the environment or a password manager.
 - Store the SSH host key as a secret (`SSH_KNOWN_HOSTS`) instead of
-  relying on `ssh-keyscan` once the setup settles.
+  relying on `ssh-keyscan` once the setup settles. Keep the pinned
+  entries unhashed: SSHKit 1.25.1's known-hosts parser trusts only the
+  first matching hashed entry, and `ssh-keyscan -H` writes one hashed
+  line per key type. A hashed file therefore leaves one algorithm
+  (usually RSA) trusted; when sshd negotiates ed25519, Kamal fails with
+  `Net::SSH::HostKeyMismatch`. Plain lines for the same host are
+  accumulated and verify correctly.
 
 ### MUST NOT
 
@@ -209,8 +215,9 @@ Releases are performed by `.github/workflows/deploy.yml`, not by hand.
 - Triggered by the `CI` workflow completing successfully on `main`, and
   by `workflow_dispatch` with `command: deploy|setup`.
 - Checks out the SHA CI tested, installs Ruby 3.3 + Kamal 2.11.0, writes
-  the dedicated deploy key, and runs `kamal <command>` in `app_fetcher`
-  then `app_core`.
+  the dedicated deploy key, scans the host key with plain (unhashed)
+  `ssh-keyscan`, and runs `kamal <command>` in `app_fetcher` then
+  `app_core`.
 - All secrets come from GitHub Actions Secrets; `config/deploy.yml`
   contains only non-secret values.
 - Automatic deploys are gated by the repository variable

@@ -61,7 +61,12 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 134.209.196.226 >> ~/.ssh/known_hosts
+          # Never add `-H` here. ssh-keyscan then writes one hashed line
+          # per key type, and SSHKit 1.25.1 trusts only the first matching
+          # hashed entry, leaving the other algorithms unknown. Net::SSH
+          # then negotiates ed25519 and aborts with HostKeyMismatch. Plain
+          # lines for the same host are accumulated and verify correctly.
+          ssh-keyscan 134.209.196.226 >> ~/.ssh/known_hosts
 
       - name: Deploy app_fetcher (owns the shared Redis accessory)
         working-directory: app_fetcher

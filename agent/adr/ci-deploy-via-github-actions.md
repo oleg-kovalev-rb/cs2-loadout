@@ -100,6 +100,13 @@ Deferred, not rejected: the workflow currently does a first-use
 `ssh-keyscan` of the one known IP. Storing the host key as a secret is
 stricter and can be added later without changing the rest of the design.
 
+If it is added, the secret must hold plain, unhashed known_hosts lines
+(`ssh-keyscan <ip>`, without `-H`). SSHKit 1.25.1 returns only the first
+matching hashed entry, while `ssh-keyscan -H` writes one hashed line per
+key type, so a hashed file leaves only one algorithm trusted; when sshd
+negotiates ed25519, Kamal aborts with `Net::SSH::HostKeyMismatch`. Plain
+lines for the same host are accumulated and verify normally.
+
 ## Consequences
 
 ### Positive
