@@ -10,7 +10,6 @@ RSpec.describe RarityTier do
         "Restricted" => RarityTier::Restricted,
         "Classified" => RarityTier::Classified,
         "Covert" => RarityTier::Covert,
-        "Extraordinary" => RarityTier::Gold,
         "Contraband" => RarityTier::Gold
       }
 
@@ -32,6 +31,18 @@ RSpec.describe RarityTier do
       result = described_class.for(market_hash_name: "★ Sport Gloves | Pandora's Box (Minimal Wear)", rarity: nil)
 
       expect(result).to eq(RarityTier::Gold)
+    end
+
+    it "classifies a star-prefixed Extraordinary glove as gold" do
+      result = described_class.for(market_hash_name: "★ Sport Gloves | Pandora's Box (Minimal Wear)", rarity: "Extraordinary")
+
+      expect(result).to eq(RarityTier::Gold)
+    end
+
+    it "does not classify an Extraordinary collectible without a star prefix as gold" do
+      result = described_class.for(market_hash_name: "2020 Service Medal", rarity: "Extraordinary")
+
+      expect(result).to be_nil
     end
 
     it "returns nil for an unrecognized or missing raw rarity with no star prefix" do

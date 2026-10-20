@@ -29,7 +29,9 @@ class RarityTier < T::Enum
       when "Restricted" then Restricted
       when "Classified" then Classified
       when "Covert" then Covert
-      when "Extraordinary", "Contraband" then Gold
+      # Steam also tags collectibles and stickers "Extraordinary"; gold-tier
+      # gloves/knives carry the ★ prefix, so only Contraband is mapped by rarity.
+      when "Contraband" then Gold
       else nil
       end
     end

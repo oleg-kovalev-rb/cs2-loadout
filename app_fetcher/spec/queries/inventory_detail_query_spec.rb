@@ -44,15 +44,15 @@ RSpec.describe InventoryDetailQuery do
       expect(page.avg_item_value_cents).to eq(500)
     end
 
-    it "counts Extraordinary and Contraband rarities under Gold" do
+    it "counts star-prefixed and Contraband items under Gold, excluding Extraordinary collectibles" do
       user_inventory = create(:user_inventory)
       create(
         :user_inventory_item,
         user_inventory: user_inventory,
         item: create(
           :item,
-          market_hash_name: "Sport Gloves | Pandora's Box (Minimal Wear)",
-          metadata: { rarity: "Extraordinary" }
+          market_hash_name: "★ Sport Gloves | Pandora's Box (Minimal Wear)",
+          metadata: { rarity: "Extraordinary", category: "Gloves" }
         )
       )
       create(
@@ -62,6 +62,15 @@ RSpec.describe InventoryDetailQuery do
           :item,
           market_hash_name: "M4A4 | Howl (Field-Tested)",
           metadata: { rarity: "Contraband" }
+        )
+      )
+      create(
+        :user_inventory_item,
+        user_inventory: user_inventory,
+        item: create(
+          :item,
+          market_hash_name: "2020 Service Medal",
+          metadata: { rarity: "Extraordinary", category: "Collectible" }
         )
       )
 
