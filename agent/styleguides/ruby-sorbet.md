@@ -139,13 +139,15 @@ Sanctioned deviations from the rules above. Each entry names the rule it
 excepts and the concrete case that justifies it. Add a case here rather
 than widening a `MUST`/`MUST NOT` into a one-off.
 
-- **`T.unsafe` at a generic-deserialization boundary.** The one place the
-  "don't reach for `T.untyped`" MUST NOT doesn't cover is a resource-agnostic
-  applier whose body cannot name the concrete enum: `try_deserialize`
-  returns `T.nilable(T::Enum)`, and the resource-specific `#apply(scope)`
-  lives on the resolved member's subclass, so the dispatch goes through a
-  single localized `T.unsafe(option)`. Not a licence to use `T.unsafe`
-  anywhere else. See `Appliers::SortApplier.call`.
+- **`T.unsafe` at a generic-deserialization/dispatch boundary.** The one
+  place the "don't reach for `T.untyped`" MUST NOT doesn't cover is a
+  resource-agnostic applier whose body cannot name the concrete enum:
+  `try_deserialize` returns `T.nilable(T::Enum)`, and the resource-specific
+  `#apply(scope)` lives on the resolved member's subclass, so the dispatch
+  goes through a single localized `T.unsafe`. `FilterApplier` does the
+  same when reducing over `T.class_of(T::Enum)#values`. Not a licence to
+  use `T.unsafe` anywhere else. See `Appliers::SortApplier.call` and
+  `Appliers::FilterApplier.call`.
 - **Hand-written gem RBI when Tapioca emits an unusable stub.** The
   "don't hand-write an RBI shim for something `tapioca` already generates"
   MUST has one carve-out: when the generated file is an empty stub (the
