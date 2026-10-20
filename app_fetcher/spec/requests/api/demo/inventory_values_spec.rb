@@ -1,20 +1,6 @@
 require "rails_helper"
 
 RSpec.describe "Api::Demo::InventoryValues", type: :request do
-  let!(:item) do
-    create(
-      :item,
-      market_hash_name: "Demo | Value Skin (Field-Tested)",
-      current_price_cents: 2_500,
-      price_updated_at: Time.current,
-      metadata: { marketable: true, rarity: "Covert", category: "Rifle" }
-    )
-  end
-
-  before do
-    allow(Demo::ItemPool).to receive(:market_hash_names).and_return([ item.market_hash_name ])
-  end
-
   it "returns a complete generated history for the requested period" do
     get "/api/demo/inventory_values",
         params: { period: "7d" },
@@ -25,7 +11,7 @@ RSpec.describe "Api::Demo::InventoryValues", type: :request do
     aggregate_failures do
       expect(response).to have_http_status(:success)
       expect(json.dig("current", "complete")).to be(true)
-      expect(json["history"]).not_to be_empty
+      expect(json["history"].size).to eq(7)
       expect(json["history"].last["total_value_cents"]).to eq(json.dig("current", "total_value_cents"))
     end
   end

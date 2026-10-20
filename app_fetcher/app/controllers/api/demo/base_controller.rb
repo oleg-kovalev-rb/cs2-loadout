@@ -25,7 +25,7 @@ module Api
       sig { returns(::Demo::Dataset) }
       def demo_dataset
         @demo_dataset ||= T.let(
-          ::Demo::Dataset.new(seed: demo_seed),
+          ::Demo::Dataset.new,
           T.nilable(::Demo::Dataset)
         )
       end

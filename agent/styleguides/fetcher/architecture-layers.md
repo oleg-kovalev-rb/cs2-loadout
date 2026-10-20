@@ -137,11 +137,14 @@ Models (app/models/, write)
   `agent/styleguides/fetcher/list-query-objects.md` and
   `agent/adr/fetcher/list-query-objects-layer.md` for the full
   structure, interface, and rules — not restated here.
-- **Demo read model** (`app/queries/demo/`, `Demo::Dataset` and
-  `Demo::ItemPool`): a read-only demo-specific collaborator used by
-  `Api::Demo::` controllers. It samples real `Item` rows from the YAML
-  pool, reuses real price/trend caches, and assembles the existing
-  list/detail serializers’ structs. It is deliberately not an
+- **Demo read model** (`app/queries/demo/`, `Demo::Dataset`,
+  `Demo::Inventory`, `Demo::PriceSeries`, and `Demo::ItemPool`): a
+  read-only demo-specific collaborator used by `Api::Demo::` controllers.
+  It builds one fixed 30-item showcase in memory from `Demo::ItemPool`
+  metadata, uses real `Item` current prices only as series anchors, and
+  generates all prices/trends/history through `Demo::PriceSeries`. It
+  assembles the existing list/detail serializers’ structs and never
+  reads the real price/trend/history caches. It is deliberately not an
   `ApplicationService` (no writes/`Result` contract) and not a
   `app/queries/` endpoint query (no persisted demo resource). The only
   demo writer is the `demo:seed_items` rake task, which creates ordinary
@@ -195,12 +198,16 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   `list-query-objects.md` for the full dependency rules.
 - Demo controllers (`Api::Demo::`) depend on the demo base controller’s
   token check and `Demo::Dataset`; they never write and never touch
-  `steam_id`/`UserInventory`. `Demo::Dataset` may depend on `Item`
-  reads, the existing price/trend caches, `Demo::ItemPool`, the existing
-  query structs, `Options::*`, and `Appliers::*` — never on
-  controllers or services. `Demo::ItemPool` only reads
-  `config/demo_items.yml`. The `demo:seed_items` task may depend on
-  `Demo::ItemPool`, `ItemParser`, `Item`, and `PriceUpdateWorker`.
+  `steam_id`/`UserInventory`. `Demo::Dataset` may depend on
+  `Demo::ItemPool`, `Demo::Inventory`, `Demo::PriceSeries`, `Item`
+  (real-price anchor reads only), `ItemParser` (in-memory metadata), the
+  existing query structs, `Options::*`, `Appliers::*`, and `RarityTier`
+  — never on controllers/services or the real price/trend/history
+  caches. `Demo::Inventory` only reads `config/demo_inventory.yml`;
+  `Demo::ItemPool` only reads `config/demo_items.yml`;
+  `Demo::PriceSeries` has no I/O dependencies. The `demo:seed_items`
+  task may depend on `Demo::ItemPool`, `ItemParser`, `Item`, and
+  `PriceUpdateWorker`.
 
 ## Rules
 
@@ -216,9 +223,9 @@ One-directional, per `rails-layering.md`. Concretely for this app:
   except the narrow, named exception in
   `agent/adr/fetcher/cross-scenario-service-layer.md`, and the
   `demo:seed_items` task’s ordinary `Item` upsert.
-- Keep `Api::Demo::`/`Demo::Dataset` read-only: no `UserInventory`,
-  `UserInventoryItem`, or `InventoryValueLog` writes, and no fake
-  `steam_id`. See `demo-api.md`.
+- Keep `Api::Demo::`/`Demo::Dataset` read-only: no `Item`, `PriceLog`,
+  `UserInventory`, `UserInventoryItem`, or `InventoryValueLog` writes,
+  and no fake `steam_id`. See `demo-api.md`.
 
 ### SHOULD
 
@@ -257,14 +264,22 @@ Api::V1::ItemPricesController#dynamics
         ⇢ PriceUpdateWorker.perform_async(item.id)
 
 Api::Demo::InventoriesController#show/#summary/#detail
-    → Demo::Dataset.new(seed: demo_seed)
-        → Demo::ItemPool.market_hash_names
-        → Item reads (real catalog/prices)
-        → ItemTrendCache / PriceHistoryCache (real market data)
+    → Demo::Dataset.new
+        → Demo::Inventory.entries (fixed 30)
+        → Demo::ItemPool entries (metadata) + ItemParser
+        → Item reads (real current prices as anchors only)
+        → Demo::PriceSeries (deterministic per-item series)
+        → summed portfolio history
         → InventoryListQuery::InventorySummary /
           InventoryDetailQuery::InventoryDetails structs
     → existing InventoryListSerializer / InventoryDetailSerializer
-    (read-only; no UserInventory/InventoryValueLog writes)
+    (read-only; no UserInventory/InventoryValueLog/PriceLog writes)
+
+Api::Demo::ItemPricesController#dynamics/#trend/#history
+    → Demo::Dataset.priced_items / trends / history
+        → the same Demo::PriceSeries per item
+    → existing price/trend/history serializers
+    (no ItemPriceCache/ItemTrendCache/PriceHistoryCache reads)
 
 demo:seed_items
     → Demo::ItemPool.entries → ItemParser.parse → Item upsert
@@ -328,8 +343,12 @@ available for a future, similar case — it just no longer describes what
   (`Success(data: <enqueued ids>)`) and persists nothing.
 - Demo: `app_fetcher/app/controllers/api/demo/base_controller.rb`,
   `app_fetcher/app/controllers/api/demo/inventories_controller.rb`,
+  `app_fetcher/app/controllers/api/demo/item_prices_controller.rb`,
   `app_fetcher/app/queries/demo/dataset.rb`,
+  `app_fetcher/app/queries/demo/inventory.rb`,
+  `app_fetcher/app/queries/demo/price_series.rb`,
   `app_fetcher/app/queries/demo/item_pool.rb`,
+  `app_fetcher/config/demo_inventory.yml`,
   `app_fetcher/config/demo_items.yml`, `app_fetcher/lib/tasks/demo.rake` —
   see `agent/styleguides/fetcher/demo-api.md`.
 - Query objects / Appliers / Options / Serializers: none implemented

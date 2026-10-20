@@ -1,58 +1,65 @@
 require "rails_helper"
 
 RSpec.describe "Api::Demo::ItemPrices", type: :request do
-  let!(:item) do
-    create(
-      :item,
-      market_hash_name: "Demo | Priced Skin (Field-Tested)",
-      current_price_cents: 1_234,
-      change_24h_cents: 34,
-      price_updated_at: Time.current,
-      metadata: { marketable: true, rarity: "Restricted", category: "Pistol" }
-    )
-  end
+  let(:showcase_name) { Demo::Inventory.market_hash_names.first }
 
-  let!(:price_log) do
-    create(:price_log, item: item, lowest_price_cents: 1_000, created_at: 2.days.ago)
-  end
-
-  before do
-    allow(Demo::ItemPool).to receive(:market_hash_names).and_return([ item.market_hash_name ])
-  end
-
-  it "returns current prices for the demo item set" do
+  def dynamics
     get "/api/demo/item_prices/dynamics",
         headers: { "Authorization" => "Bearer #{demo_token}" }
 
-    json = JSON.parse(response.body)
+    JSON.parse(response.body)
+  end
+
+  it "returns synthetic current prices for the fixed item set" do
+    json = dynamics
 
     aggregate_failures do
       expect(response).to have_http_status(:success)
-      expect(json.dig("prices", item.market_hash_name, "current_price_cents")).to eq(1_234)
       expect(json["pending_count"]).to eq(0)
+      expect(json.dig("prices").size).to eq(30)
+      expect(json.dig("prices", showcase_name, "current_price_cents")).to be_positive
     end
   end
 
-  it "returns trends for the demo item set" do
+  it "returns five-point trends ending at the current price" do
+    current_price = dynamics.dig("prices", showcase_name, "current_price_cents")
+
     get "/api/demo/item_prices/trend",
         headers: { "Authorization" => "Bearer #{demo_token}" }
 
-    expect(response).to have_http_status(:success)
-    expect(JSON.parse(response.body)).to have_key(item.market_hash_name)
+    trend = JSON.parse(response.body).fetch(showcase_name)
+
+    aggregate_failures do
+      expect(response).to have_http_status(:success)
+      expect(trend.size).to eq(5)
+      expect(trend.last["price_cents"]).to eq(current_price)
+    end
   end
 
-  it "returns real item history for a known item" do
-    get "/api/demo/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history",
-        params: { period: "7d" },
-        headers: { "Authorization" => "Bearer #{demo_token}" }
+  it "returns generated item history for a known item" do
+    current_price = dynamics.dig("prices", showcase_name, "current_price_cents")
+
+    expect {
+      get "/api/demo/item_prices/#{ERB::Util.url_encode(showcase_name)}/history",
+          params: { period: "7d" },
+          headers: { "Authorization" => "Bearer #{demo_token}" }
+    }.not_to change(PriceLog, :count)
 
     json = JSON.parse(response.body)
 
     aggregate_failures do
       expect(response).to have_http_status(:success)
-      expect(json).to be_an(Array)
-      expect(json).not_to be_empty
+      expect(json.size).to eq(7)
+      expect(json.last["price_cents"]).to eq(current_price)
     end
+  end
+
+  it "supports the 24h history window" do
+    get "/api/demo/item_prices/#{ERB::Util.url_encode(showcase_name)}/history",
+        params: { period: "24h" },
+        headers: { "Authorization" => "Bearer #{demo_token}" }
+
+    expect(JSON.parse(response.body).size).to eq(24)
   end
 
   it "returns not found for an unknown item" do

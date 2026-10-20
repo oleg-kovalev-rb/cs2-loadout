@@ -795,6 +795,9 @@ environment, so the final visual browser check remains a manual step.
 - The curated 40–50 item demo pool and its real icon metadata were
   completed by `agent/plans/demo-item-pool.md`; the checked-in pool is no
   longer a placeholder.
+- The seed-random demo data behavior was superseded by
+  `agent/plans/demo-fixed-inventory.md` (fixed showcase + synthetic
+  series).
 - The pre-existing `react-hooks/exhaustive-deps` warning in
   `tracked_items/TrackedItems.jsx` remains (unrelated to this change).
 - A final visual browser pass over the demo card/detail layout is still

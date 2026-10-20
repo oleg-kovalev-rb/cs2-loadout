@@ -7,28 +7,20 @@ module Api
 
       sig { void }
       def dynamics
-        priced_items = ItemPriceCache.fetch_for(demo_dataset.items.map(&:market_hash_name))
-
-        render json: ItemPriceDynamicsSerializer.call(priced_items, 0), status: :ok
+        render json: ItemPriceDynamicsSerializer.call(demo_dataset.priced_items, 0), status: :ok
       end
 
       sig { void }
       def trend
-        render json: ItemTrendCache.fetch_for(demo_dataset.items.map(&:market_hash_name)), status: :ok
+        render json: demo_dataset.trends, status: :ok
       end
 
       sig { void }
       def history
-        item = Item.find_by!(market_hash_name: params[:market_hash_name])
-        period = params[:period].presence || ::Options::DateRange::Last30Days.serialize
+        item = demo_dataset.item!(params[:market_hash_name].to_s)
+        history = demo_dataset.history(item, period: params[:period])
 
-        points = if period == ::Options::DateRange::Last30Days.serialize
-          PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]
-        else
-          ItemPriceHistorySerializer.call(ItemPriceHistoryQuery.call(item, params))
-        end
-
-        render json: points, status: :ok
+        render json: ItemPriceHistorySerializer.call(history), status: :ok
       end
     end
   end

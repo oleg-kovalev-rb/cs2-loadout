@@ -1,0 +1,62 @@
+# Fixed demo showcase: every session sees the same 30 items.
+# base_price_cents is the fallback anchor when the real Item has no price.
+- market_hash_name: "AK-47 | Redline (Field-Tested)"
+  base_price_cents: 4000
+- market_hash_name: "AK-47 | Asiimov (Field-Tested)"
+  base_price_cents: 7000
+- market_hash_name: "AK-47 | Case Hardened (Field-Tested)"
+  base_price_cents: 3500
+- market_hash_name: "AK-47 | Safari Mesh (Field-Tested)"
+  base_price_cents: 200
+- market_hash_name: "M4A4 | Howl (Minimal Wear)"
+  base_price_cents: 550000
+- market_hash_name: "M4A1-S | Printstream (Field-Tested)"
+  base_price_cents: 10000
+- market_hash_name: "M4A1-S | Hyper Beast (Field-Tested)"
+  base_price_cents: 3500
+- market_hash_name: "AWP | Asiimov (Field-Tested)"
+  base_price_cents: 12000
+- market_hash_name: "AWP | Hyper Beast (Field-Tested)"
+  base_price_cents: 4000
+- market_hash_name: "AWP | Dragon Lore (Field-Tested)"
+  base_price_cents: 800000
+- market_hash_name: "SSG 08 | Blood in the Water (Minimal Wear)"
+  base_price_cents: 10000
+- market_hash_name: "Desert Eagle | Blaze (Factory New)"
+  base_price_cents: 60000
+- market_hash_name: "Desert Eagle | Printstream (Field-Tested)"
+  base_price_cents: 5000
+- market_hash_name: "Glock-18 | Fade (Factory New)"
+  base_price_cents: 120000
+- market_hash_name: "USP-S | Kill Confirmed (Field-Tested)"
+  base_price_cents: 8000
+- market_hash_name: "P250 | See Ya Later (Factory New)"
+  base_price_cents: 3000
+- market_hash_name: "P250 | Sand Dune (Factory New)"
+  base_price_cents: 10
+- market_hash_name: "MP9 | Hydra (Factory New)"
+  base_price_cents: 2500
+- market_hash_name: "MP7 | Bloodsport (Factory New)"
+  base_price_cents: 3000
+- market_hash_name: "MAC-10 | Neon Rider (Factory New)"
+  base_price_cents: 3000
+- market_hash_name: "UMP-45 | Primal Saber (Factory New)"
+  base_price_cents: 2000
+- market_hash_name: "Nova | Hyper Beast (Factory New)"
+  base_price_cents: 1500
+- market_hash_name: "XM1014 | Tranquility (Factory New)"
+  base_price_cents: 2500
+- market_hash_name: "Negev | Power Loader (Factory New)"
+  base_price_cents: 500
+- market_hash_name: "★ Karambit | Doppler (Factory New)"
+  base_price_cents: 70000
+- market_hash_name: "★ Butterfly Knife | Fade (Factory New)"
+  base_price_cents: 180000
+- market_hash_name: "★ Bayonet | Lore (Field-Tested)"
+  base_price_cents: 50000
+- market_hash_name: "★ Sport Gloves | Pandora's Box (Field-Tested)"
+  base_price_cents: 120000
+- market_hash_name: "★ Specialist Gloves | Crimson Kimono (Field-Tested)"
+  base_price_cents: 80000
+- market_hash_name: "★ Driver Gloves | King Snake (Field-Tested)"
+  base_price_cents: 70000

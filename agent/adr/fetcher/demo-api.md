@@ -29,6 +29,9 @@ view on demand.
 
 ## Decision
 
+*(Amended 2026-10-20: item selection is now one fixed showcase and demo
+prices/trends/history are synthetic; see the Amendment section.)*
+
 Add a separate **`Api::Demo::`** namespace in `app_fetcher`, read-only,
 with its own base controller and its own bearer-token verification:
 
@@ -177,6 +180,62 @@ Rejected for this feature because:
   metadata, and enqueues `PriceUpdateWorker` for the pool.
 - No demo writes to `UserInventory`, `UserInventoryItem`, or
   `InventoryValueLog`.
+
+## Amendment (2026-10-20): Fixed Synthetic Showcase Dataset
+
+The original decision’s seed-random selection and real
+price/trend/history reads are superseded for demo data.
+
+- The demo inventory is one fixed 30-item showcase from
+  `config/demo_inventory.yml`; every session sees the same composition.
+  The token `seed` remains for auth/traceability but no longer selects
+  items or history.
+- `Demo::Dataset` builds the items in memory from `Demo::ItemPool`
+  metadata and `ItemParser`, using a real `Item#current_price_cents` as
+  an anchor when it is present and available, and the showcase’s
+  `base_price_cents` otherwise.
+- `Demo::PriceSeries` generates the entire price story deterministically
+  from that anchor: current price is the last point, item
+  history/trends come from the same series, and portfolio history is the
+  sum of the item series. The demo path no longer reads
+  `ItemPriceCache`/`ItemTrendCache`/`PriceHistoryCache`/
+  `ItemPriceHistoryQuery`.
+- No demo rows are written. Synthetic prices/logs stay in memory.
+
+Why: mixing a real current price with a generated history produced
+visible discontinuities (for example, a knife whose generated history
+says 100–200 while the real current price is 500). A fixed showcase plus
+one anchor-based series keeps every displayed value internally
+consistent, gives all visitors the same demo, and avoids persisting fake
+price/inventory logs.
+
+Alternatives reconsidered:
+
+- **Steam `market/pricehistory`.** Still requires a session credential
+  the project does not have.
+- **Pre-seed demo `PriceLog`/`InventoryValueLog` rows.** Requires either
+  separate demo tables or polluting real item/inventory history.
+- **Keep per-seed random selection.** Demos stay inconsistent and a
+  single fixed showcase cannot be shared by all visitors.
+
+Consequences:
+
+- Demo prices are realistic only when a real price anchor exists;
+  otherwise the checked-in fallback price is used.
+- The item set is fixed, so the demo is less varied but consistent.
+- `demo:seed_items` remains a catalog task and is no longer required for
+  the demo API to render.
+- The demo read path gains `Demo::Inventory`/`Demo::PriceSeries` and
+  loses its real-cache dependencies.
+
+Constraints:
+
+- `config/demo_inventory.yml` has exactly 30 unique names, all present
+  in `config/demo_items.yml`, with positive integer fallback prices.
+- Generated series always end at the anchor; portfolio history is the
+  sum of the item series; all demo values stay in memory.
+- No writes to `Item`, `PriceLog`, `UserInventory`,
+  `UserInventoryItem`, or `InventoryValueLog`.
 
 ## Related
 

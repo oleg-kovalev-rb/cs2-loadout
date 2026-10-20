@@ -1,26 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Api::Demo::Inventories", type: :request do
-  let!(:item) do
-    create(
-      :item,
-      market_hash_name: "Demo | Test Skin (Field-Tested)",
-      current_price_cents: 1_000,
-      price_updated_at: Time.current,
-      metadata: {
-        marketable: true,
-        rarity: "Classified",
-        category: "Rifle",
-        weapon_type: "Demo",
-        item_name: "Test Skin",
-        condition: "Field-Tested"
-      }
-    )
-  end
-
-  before do
-    allow(Demo::ItemPool).to receive(:market_hash_names).and_return([ item.market_hash_name ])
-  end
+  let(:showcase_name) { Demo::Inventory.market_hash_names.first }
 
   describe "demo token authentication" do
     it "returns unauthorized without a token" do
@@ -85,17 +66,17 @@ RSpec.describe "Api::Demo::Inventories", type: :request do
       end
     end
 
-    it "returns the generated inventory without creating user inventory rows" do
+    it "returns the fixed showcase without creating domain rows" do
       expect {
         get "/api/demo/inventories", headers: { "Authorization" => "Bearer #{demo_token}" }
-      }.not_to change(UserInventory, :count)
+      }.not_to change { [ UserInventory.count, PriceLog.count, InventoryValueLog.count ] }
 
       json = JSON.parse(response.body)
 
       aggregate_failures do
         expect(response).to have_http_status(:success)
-        expect(json["items"].map { |entry| entry["market_hash_name"] }).to include(item.market_hash_name)
-        expect(json["items_count"]).to be >= 1
+        expect(json["items_count"]).to eq(30)
+        expect(json["items"].map { |entry| entry["market_hash_name"] }).to include(showcase_name)
       end
     end
   end
@@ -110,8 +91,8 @@ RSpec.describe "Api::Demo::Inventories", type: :request do
         expect(response).to have_http_status(:success)
         expect(json).to include(
           "steam_id" => "demo",
-          "items_count" => be >= 1,
-          "total_value_cents" => be >= 1_000
+          "items_count" => 30,
+          "total_value_cents" => be_positive
         )
         expect(json.keys).to include(
           "change_24h_cents",
@@ -129,7 +110,7 @@ RSpec.describe "Api::Demo::Inventories", type: :request do
   describe "GET /api/demo/inventory_detail" do
     it "returns the public detail shape with period and sort applied" do
       get "/api/demo/inventory_detail",
-          params: { period: "7d", sort: "price_desc", page: 1, per_page: 12 },
+          params: { period: "7d", sort: "price_desc", page: 1, per_page: 30 },
           headers: { "Authorization" => "Bearer #{demo_token}" }
 
       json = JSON.parse(response.body)
@@ -140,7 +121,7 @@ RSpec.describe "Api::Demo::Inventories", type: :request do
         expect(json.dig("portfolio", "period")).to eq("7d")
         expect(json.dig("portfolio", "history")).not_to be_empty
         expect(json.dig("top_items", "entries").map { |entry| entry["market_hash_name"] })
-          .to include(item.market_hash_name)
+          .to include(showcase_name)
         expect(json["rarity_breakdown"]).to be_an(Array)
       end
     end

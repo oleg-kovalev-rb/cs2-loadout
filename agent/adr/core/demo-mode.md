@@ -47,7 +47,8 @@ Model demo mode as a **session-scoped identity**, not as a `User`:
 - The demo inventory is **generated** in `app_fetcher` from the real
   `Item` catalog using the session seed. No `User`, `UserInventory`,
   `UserInventoryItem`, or `InventoryValueLog` rows are created for a
-  demo.
+  demo. *(Amended 2026-10-20: the dataset is now fixed and synthetic;
+  the seed no longer selects data. See the Amendment section.)*
 - Curated demo items are seeded as ordinary `Item` rows; the demo pool
   is a list of item names, not a second inventory store.
 - Public pages remain real. The demo card is fetched separately and
@@ -190,6 +191,25 @@ Rejected because:
 - `/demo/inventory` is a distinct page; the public
   `/inventories/:steam_id` page must keep using the public API while a
   demo session is active.
+
+## Amendment (2026-10-20): Fixed Synthetic Demo Dataset
+
+The demo dataset is no longer generated per session from the seed. All
+demo sessions share one fixed 30-item showcase generated in
+`app_fetcher`; the seed remains in the Redis session and JWT only for
+traceability, not for item selection or price generation.
+
+Demo current prices, item history/trends, and portfolio history are
+synthetic and generated in memory on read. They are anchored to a real
+`Item#current_price_cents` when available (otherwise a checked-in
+fallback), and the portfolio is the sum of the same item series. No
+`PriceLog`, `InventoryValueLog`, `UserInventory`, or
+`UserInventoryItem` rows are written.
+
+The session/cookie/token behavior, 12-hour TTL, `no-store` caching, and
+public-page isolation above are unchanged. The fixed dataset removes the
+per-session variation the original decision assumed; the demo is
+deliberately the same showcase for every visitor.
 
 ## Related
 
