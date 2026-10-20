@@ -198,6 +198,14 @@ identity, or the real `ItemPriceCache`/`ItemTrendCache`/
   `Demo::PriceSeries` per item: current price = the last point,
   `change_24h_cents` = current − yesterday’s daily point, and the series
   ends at the anchor so current/history cannot jump.
+- Make every history window cover the whole requested range the way the
+  real endpoint does: daily points at `00:00 UTC` from `range.since_date`
+  through yesterday, plus one live point at `Time.current` carrying the
+  current value (the `InventoryValueQuery.history` cutoff-log + live-point
+  shape). The `24h` window spans a full 24 hours inclusively
+  (`now - 24h` through `now`). Do not slice “the last N points” as the
+  window: N daily points span only N−1 days and leave the hero chart’s
+  left edge empty.
 - Compute portfolio history as the sum of the same item series at each
   date; the snapshot is the last portfolio point, complete with all
   items priced. Do not generate an independent portfolio walk.
@@ -346,11 +354,13 @@ Demo-specific expectations:
   `app_fetcher/config/demo_inventory.yml` — the fixed showcase and its
   loader.
 - `app_fetcher/app/queries/demo/price_series.rb` — the deterministic
-  anchor-based price series.
+  anchor-based price series and its whole-window slices (cutoff day
+  through a live “now” point).
 - `app_fetcher/lib/tasks/demo.rake` — icon pass-through and
   fill-only-missing seeding.
 - `app_fetcher/app/queries/demo/dataset.rb` — in-memory fixed items,
-  series-derived portfolio, summary/detail/history/trend assembly.
+  series-derived portfolio (summed window plus live point),
+  summary/detail/history/trend assembly.
 
 ## Related ADR
 

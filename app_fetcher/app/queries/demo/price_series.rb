@@ -47,10 +47,8 @@ module Demo
     def points_for(range)
       case range
       when Options::DateRange::Last24Hours then hourly
-      when Options::DateRange::Last7Days then daily.last(7)
-      when Options::DateRange::Last30Days then daily.last(30)
-      when Options::DateRange::LastYear, Options::DateRange::AllTime then daily
-      else T.absurd(range)
+      when Options::DateRange::AllTime then daily_window(nil)
+      else daily_window(range.since_date)
       end
     end
 
@@ -86,7 +84,7 @@ module Demo
 
       values.reverse.zip(dates).map do |price, date|
         Point.new(
-          at: Time.utc(date.year, date.month, date.day, 12),
+          at: Time.utc(date.year, date.month, date.day),
           price_cents: price,
           volume: volume_for(date.jd)
         )
@@ -100,8 +98,8 @@ module Demo
       start = T.must(daily[-2]).price_cents
       values = T.let([ start ], T::Array[Integer])
 
-      (HOURS - 2).times do |index|
-        progress = (index + 1).to_f / (HOURS - 1)
+      (HOURS - 1).times do |index|
+        progress = (index + 1).to_f / HOURS
         target = start + ((@current_price_cents - start) * progress)
         noise = target * ((random.rand - 0.5) * 2.0 * HOURLY_SWING)
         values << [ (target + noise).round, MIN_PRICE_CENTS ].max
@@ -109,7 +107,7 @@ module Demo
       values << @current_price_cents
 
       values.each_with_index.map do |price, index|
-        at = now - (HOURS - 1 - index).hours
+        at = now - (HOURS - index).hours
 
         Point.new(
           at: at,
@@ -117,6 +115,25 @@ module Demo
           volume: volume_for(at.to_i / 3600)
         )
       end
+    end
+
+    # Mirrors InventoryValueQuery.history: every daily point from the range's
+    # cutoff through yesterday, plus a live point at "now". Slicing the last
+    # N daily points instead would span only N - 1 days and leave the hero
+    # chart's left edge empty (see agent/styleguides/fetcher/demo-api.md).
+    sig { params(since_date: T.nilable(Date)).returns(T::Array[Point]) }
+    def daily_window(since_date)
+      today = Date.current
+      window = daily.reject { |point| point.at.to_date >= today }
+      window = window.select { |point| point.at.to_date >= since_date } if since_date
+      window + [ live_point ]
+    end
+
+    sig { returns(Point) }
+    def live_point
+      at = Time.current.utc
+
+      Point.new(at: at, price_cents: @current_price_cents, volume: volume_for(at.to_i / 3600))
     end
 
     sig { params(salt: Integer).returns(Integer) }

@@ -115,6 +115,19 @@ RSpec.describe Demo::Dataset do
       expect(history.last.price_cents).to eq(item.current_price_cents)
     end
 
+    it "covers the whole requested window with a live point at now" do
+      travel_to Time.utc(2026, 10, 20, 6, 30) do
+        points = described_class.new.value(period: "7d").history.points
+
+        aggregate_failures do
+          expect(points.size).to eq(8)
+          expect(points.first.at).to eq(Time.utc(2026, 10, 13))
+          expect(points.last.at).to eq(Time.utc(2026, 10, 20, 6, 30))
+          expect(points.last.total_value_cents).to eq(3_500)
+        end
+      end
+    end
+
     it "equals the sum of the current item prices" do
       total = dataset.value(period: "7d").snapshot.total_value_cents
       item_sum = dataset.items.sum { |item| item.current_price_cents.to_i }
@@ -193,8 +206,9 @@ RSpec.describe Demo::Dataset do
       item = dataset.items.first
 
       aggregate_failures do
-        expect(dataset.history(item, period: "24h").points.size).to eq(24)
-        expect(dataset.history(item, period: "30d").points.size).to eq(30)
+        expect(dataset.history(item, period: "24h").points.size).to eq(25)
+        expect(dataset.history(item, period: "7d").points.size).to eq(8)
+        expect(dataset.history(item, period: "30d").points.size).to eq(31)
         expect(dataset.history(item, period: "1y").points.size).to eq(365)
       end
     end

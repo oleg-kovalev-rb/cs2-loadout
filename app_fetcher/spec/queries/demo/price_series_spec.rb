@@ -27,11 +27,38 @@ RSpec.describe Demo::PriceSeries do
 
   it "returns the expected number of points per window" do
     aggregate_failures do
-      expect(series.points_for(Options::DateRange::Last24Hours).size).to eq(24)
-      expect(series.points_for(Options::DateRange::Last7Days).size).to eq(7)
-      expect(series.points_for(Options::DateRange::Last30Days).size).to eq(30)
+      expect(series.points_for(Options::DateRange::Last24Hours).size).to eq(25)
+      expect(series.points_for(Options::DateRange::Last7Days).size).to eq(8)
+      expect(series.points_for(Options::DateRange::Last30Days).size).to eq(31)
       expect(series.points_for(Options::DateRange::LastYear).size).to eq(365)
       expect(series.points_for(Options::DateRange::AllTime).size).to eq(365)
+    end
+  end
+
+  it "covers whole ranges: cutoff day through a live point at now" do
+    travel_to Time.utc(2026, 10, 20, 6, 30) do
+      daily = series.daily
+
+      aggregate_failures do
+        expect(daily.map { |point| point.at.strftime('%H:%M') }.uniq).to eq([ "00:00" ])
+        expect(series.points_for(Options::DateRange::Last7Days).first.at).to eq(Time.utc(2026, 10, 13))
+        expect(series.points_for(Options::DateRange::Last30Days).first.at).to eq(Time.utc(2026, 9, 20))
+        expect(series.points_for(Options::DateRange::Last24Hours).first.at).to eq(Time.utc(2026, 10, 19, 6, 30))
+      end
+    end
+  end
+
+  it "ends every window with a live point carrying the anchor" do
+    travel_to Time.utc(2026, 10, 20, 6, 30) do
+      [ Options::DateRange::Last24Hours,
+        Options::DateRange::Last7Days,
+        Options::DateRange::Last30Days,
+        Options::DateRange::LastYear,
+        Options::DateRange::AllTime ].each do |range|
+        last = series.points_for(range).last
+
+        expect([ last.at, last.price_cents ]).to eq([ Time.utc(2026, 10, 20, 6, 30), 4_200 ])
+      end
     end
   end
 

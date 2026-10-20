@@ -49,9 +49,25 @@ function PartialActiveDot({ cx, cy, payload }) {
 
 export function HeroChart({ values, period }) {
   const now = Date.now()
-  // 'all' has no fixed span — bound the domain to the actual data instead
-  // of a known duration, since PERIOD_MS has no entry for it.
-  const domain = period === 'all' ? ['dataMin', 'dataMax'] : [now - PERIOD_MS[period], now]
+  const dataAts = values.map(({ at }) => at)
+  const dataMin = dataAts.length > 0 ? Math.min(...dataAts) : null
+  const dataMax = dataAts.length > 0 ? Math.max(...dataAts) : null
+  // The x-axis starts at the first data point when the series is shorter than
+  // the selected period (otherwise an empty strip sits under a "7d ago"
+  // label); a series reaching back further starts at the period boundary and
+  // the older points are clipped (see XAxis's allowDataOverflow). Labels are
+  // derived from that same extent, so the line always reaches the first tick.
+  // 'all' stays bound to the data alone.
+  const periodStart = period === 'all' ? null : now - PERIOD_MS[period]
+  const axisStart = period === 'all' ? dataMin : Math.max(periodStart, dataMin ?? periodStart)
+  const axisEnd = period === 'all' ? dataMax : Math.max(now, dataMax ?? -Infinity)
+  const hasAxisSpan = axisStart != null && axisEnd != null && axisEnd > axisStart
+  const domain =
+    period === 'all'
+      ? ['dataMin', 'dataMax']
+      : hasAxisSpan
+        ? [axisStart, axisEnd]
+        : [periodStart, now]
   const data = values.map(({ at, value, complete, pricedItemsCount, pricableItemsCount }) => ({
     at,
     cents: value,
@@ -60,7 +76,7 @@ export function HeroChart({ values, period }) {
     pricableItemsCount,
   }))
   const hasPartial = hasPartialPoints(data)
-  const xLabels = generateAxisLabels(period)
+  const xLabels = generateAxisLabels(period, axisStart, axisEnd)
 
   return (
     <>
@@ -75,7 +91,13 @@ export function HeroChart({ values, period }) {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(139,148,171,0.09)" vertical={false} />
-              <XAxis dataKey="at" type="number" domain={domain} hide />
+              <XAxis
+                dataKey="at"
+                type="number"
+                domain={domain}
+                allowDataOverflow={period !== 'all'}
+                hide
+              />
               <YAxis
                 domain={['dataMin', 'dataMax']}
                 tickCount={Y_AXIS_TICK_COUNT}
