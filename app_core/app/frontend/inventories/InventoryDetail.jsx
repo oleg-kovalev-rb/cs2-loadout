@@ -8,8 +8,7 @@ import { TopItemsList } from './components/TopItemsList'
 import { InventoryDetailSkeleton } from './components/InventoryDetailSkeleton'
 import { InventoryNotFound } from './components/InventoryNotFound'
 import { fmtUSD, fmtPrice, centsToUSD, fmtDateTime } from '../shared/utils/format'
-
-const ITEMS_PER_PAGE = 12
+import { TOP_ITEMS_PER_PAGE } from './constants'
 
 export function InventoryDetail({ fetcherUrl, steamId, profile }) {
   const [state, dispatch] = useReducer(detailReducer, initialDetailState)
@@ -17,7 +16,7 @@ export function InventoryDetail({ fetcherUrl, steamId, profile }) {
     period: state.period,
     sort: state.sort,
     page: state.page,
-    perPage: ITEMS_PER_PAGE,
+    perPage: TOP_ITEMS_PER_PAGE,
   })
 
   if (status === 'loading') return <InventoryDetailSkeleton />

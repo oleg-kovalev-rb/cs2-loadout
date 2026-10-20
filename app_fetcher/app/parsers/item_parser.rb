@@ -3,11 +3,11 @@
 class ItemParser
   extend T::Sig
 
-  STAT_TRACK_MARKER = "StatTrak™"
-  SOUVENIR_MARKER = "Souvenir"
-  WEAPON_TYPE_SEPARATOR = " | "
+  STAT_TRACK_MARKER = T.let("StatTrak™".freeze, String)
+  SOUVENIR_MARKER = T.let("Souvenir".freeze, String)
+  WEAPON_TYPE_SEPARATOR = T.let(" | ".freeze, String)
 
-  MARKERS_REGEXP = /StatTrak™\s*|Souvenir\s*/
+  MARKERS_REGEXP = T.let(/StatTrak™\s*|Souvenir\s*/.freeze, Regexp)
   CONDITION_EXTRACT_REGEX = T.let(/\((.+?)\)$/.freeze, Regexp)
   CONDITION_CLEANUP_REGEX = T.let(/\s*\(.+?\)$/.freeze, Regexp)
 

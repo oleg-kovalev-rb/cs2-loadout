@@ -18,11 +18,11 @@ class RarityTier < T::Enum
   class << self
     extend T::Sig
 
-    sig { params(item: Item).returns(T.nilable(RarityTier)) }
-    def for_item(item)
-      return Gold if item.market_hash_name.start_with?(GOLD_PREFIX)
+    sig { params(market_hash_name: String, rarity: T.nilable(String)).returns(T.nilable(RarityTier)) }
+    def for(market_hash_name:, rarity:)
+      return Gold if market_hash_name.start_with?(GOLD_PREFIX)
 
-      case item.rarity
+      case rarity
       when "Consumer Grade" then Consumer
       when "Industrial Grade" then Industrial
       when "Mil-Spec Grade" then MilSpec

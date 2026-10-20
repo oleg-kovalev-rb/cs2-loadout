@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-
-const PER_PAGE = 24
+import { fetchJson } from '../../shared/utils/fetchJson'
+import { INVENTORIES_PER_PAGE } from '../constants'
 
 function mapInventory(raw) {
   return {
@@ -20,12 +20,6 @@ function mapInventory(raw) {
   }
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } })
-  if (!response.ok) throw new Error(`Request to ${url} failed: ${response.status}`)
-  return response.json()
-}
-
 // GET api/public/inventories needs no bridge token at all — it's a
 // genuinely unauthenticated endpoint (Api::Public::ApplicationController
 // has no auth filter), unlike dashboard/'s api/v1/* calls.
@@ -40,7 +34,8 @@ export function useInventoryCatalog(fetcherUrl, { page, sort }) {
 
     async function load() {
       const payload = await fetchJson(
-        `${fetcherUrl}/api/public/inventories?page=${page}&per_page=${PER_PAGE}&sort=${sort}`,
+        `${fetcherUrl}/api/public/inventories?page=${page}&per_page=${INVENTORIES_PER_PAGE}&sort=${sort}`,
+        { headers: { Accept: 'application/json' } },
       )
 
       if (cancelled) return

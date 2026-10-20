@@ -95,6 +95,18 @@ RSpec.describe PriceLogBuilder do
       end
     end
 
+    it "strips space thousands separators from volume, including non-breaking spaces" do
+      price_data = Steam::Response::Data::ItemPriceData.new(
+        lowest_price: "$1",
+        median_price: "$1",
+        volume: "1 234\u00A0567"
+      )
+
+      price_log = described_class.build(14, price_data)
+
+      expect(price_log.volume).to eq(1_234_567)
+    end
+
     it "rounds fractional cents with integer arithmetic" do
       price_data = Steam::Response::Data::ItemPriceData.new(
         lowest_price: "$1,234.567",

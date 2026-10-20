@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import { InventoryItemRow } from './InventoryItemRow'
 import { ItemsSortDropdown } from './ItemsSortDropdown'
 import { Pagination } from '../../shared/components/Pagination'
-
-const ITEMS_PER_PAGE = 12
+import { TOP_ITEMS_PER_PAGE } from '../constants'
 
 export function TopItemsList({
   topItems,
@@ -61,7 +60,7 @@ export function TopItemsList({
         page={page}
         totalPages={meta.total_pages}
         totalCount={meta.total_count}
-        pageSize={ITEMS_PER_PAGE}
+        pageSize={TOP_ITEMS_PER_PAGE}
         onPrev={() => onPageChange(page - 1)}
         onNext={() => onPageChange(page + 1)}
       />

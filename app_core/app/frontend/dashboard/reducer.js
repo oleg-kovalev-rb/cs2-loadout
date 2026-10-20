@@ -1,3 +1,5 @@
+import { toggleSetMember } from '../shared/utils/sets'
+
 export const PAGE_SIZE = 8
 
 export const initialState = {
@@ -9,13 +11,6 @@ export const initialState = {
   filters: { weapons: new Set(), conditions: new Set(), stattrakOnly: false },
   page: 1,
   openDropdown: null, // 'sort' | 'filter' | null
-}
-
-function toggleSetMember(set, value) {
-  const next = new Set(set)
-  if (next.has(value)) next.delete(value)
-  else next.add(value)
-  return next
 }
 
 export function dashboardReducer(state, action) {

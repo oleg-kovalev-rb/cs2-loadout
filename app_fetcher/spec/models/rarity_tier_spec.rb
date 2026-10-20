@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe RarityTier do
-  describe ".for_item" do
+  describe ".for" do
     it "classifies each raw Steam rarity string to its matching tier" do
       mapping = {
         "Consumer Grade" => RarityTier::Consumer,
@@ -15,29 +15,29 @@ RSpec.describe RarityTier do
       }
 
       aggregate_failures do
-        mapping.each do |raw_rarity, tier|
-          item = Item.new(market_hash_name: "AK-47 | Redline (Field-Tested)", metadata: { rarity: raw_rarity })
-          expect(RarityTier.for_item(item)).to eq(tier)
+        mapping.each do |rarity, tier|
+          result = described_class.for(market_hash_name: "AK-47 | Redline (Field-Tested)", rarity:)
+          expect(result).to eq(tier)
         end
       end
     end
 
     it "classifies a star-prefixed market_hash_name as gold regardless of its raw rarity" do
-      item = Item.new(market_hash_name: "★ Karambit | Doppler (Factory New)", metadata: { rarity: "Covert" })
+      result = described_class.for(market_hash_name: "★ Karambit | Doppler (Factory New)", rarity: "Covert")
 
-      expect(RarityTier.for_item(item)).to eq(RarityTier::Gold)
+      expect(result).to eq(RarityTier::Gold)
     end
 
     it "classifies a star-prefixed item with no raw rarity at all as gold" do
-      item = Item.new(market_hash_name: "★ Sport Gloves | Pandora's Box (Minimal Wear)", metadata: {})
+      result = described_class.for(market_hash_name: "★ Sport Gloves | Pandora's Box (Minimal Wear)", rarity: nil)
 
-      expect(RarityTier.for_item(item)).to eq(RarityTier::Gold)
+      expect(result).to eq(RarityTier::Gold)
     end
 
     it "returns nil for an unrecognized or missing raw rarity with no star prefix" do
-      item = Item.new(market_hash_name: "AK-47 | Redline (Field-Tested)", metadata: {})
+      result = described_class.for(market_hash_name: "AK-47 | Redline (Field-Tested)", rarity: nil)
 
-      expect(RarityTier.for_item(item)).to be_nil
+      expect(result).to be_nil
     end
   end
 end

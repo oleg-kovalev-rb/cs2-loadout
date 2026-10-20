@@ -69,7 +69,7 @@ class PriceLogBuilder
     def parse_volume(volume_string)
       return 0 if volume_string.nil? || volume_string.empty?
 
-      volume_string.tr(",", "").to_i
+      volume_string.gsub(SPACE_REGEXP, "").tr(",", "").to_i
     end
   end
 end
