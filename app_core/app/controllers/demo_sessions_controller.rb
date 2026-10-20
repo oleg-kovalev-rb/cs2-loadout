@@ -18,7 +18,7 @@ class DemoSessionsController < ApplicationController
       secure: Rails.env.production?
     }
 
-    redirect_to root_path, notice: "Your demo is ready. It will disappear in 12 hours."
+    redirect_to root_path, notice: "Your demo is ready."
   rescue Redis::BaseError => e
     Rails.logger.error("[Demo] Could not start demo: #{e.message}")
     redirect_to root_path, alert: "Demo is temporarily unavailable."
