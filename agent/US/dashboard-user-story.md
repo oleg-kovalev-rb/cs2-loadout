@@ -2,7 +2,7 @@
 type: user-story
 scope: fetcher+core
 status: target-state (see Status Snapshot — parts of this are already live, parts are pending `dashboard-api-redesign.md`)
-updated: 2026-10-02
+updated: 2026-10-21
 ---
 
 # The Dashboard User Story
@@ -54,7 +54,7 @@ login and the dashboard on a return visit.
 
 **2. Bridge token issued, page renders.** `DashboardsController#show`
 mints a bridge token (`Steam::BridgeToken.encode(steam_id)` — JWT,
-2-minute TTL, payload is just `{steam_id, exp, iat}`, no scopes) and
+8-hour TTL, payload is just `{steam_id, exp, iat}`, no scopes) and
 embeds it plus `APP_FETCHER_PUBLIC_URL` as `data-*` attributes on the
 dashboard root `div`. From here on, **the browser talks to `app_fetcher`
 directly** — no `app_core` proxy exists or is ever added

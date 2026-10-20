@@ -337,7 +337,7 @@ GET /session/callback
 
 GET /dashboard
     → DashboardsController#show
-    → Steam::BridgeToken.encode(steam_id)  (lib/steam/, 2-minute TTL)
+    → Steam::BridgeToken.encode(steam_id)  (lib/steam/, 8-hour TTL)
     → renders shared/_topbar partial (active tab: portfolio) + page with
       token + APP_FETCHER_PUBLIC_URL embedded
         → browser React island fetches app_fetcher's
