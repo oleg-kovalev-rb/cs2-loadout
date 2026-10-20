@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_18_150100) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_20_041500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -20,9 +20,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_18_150100) do
     t.integer "total_value_cents", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "items_count"
-    t.integer "pricable_items_count"
-    t.integer "priced_items_count"
+    t.integer "items_count", null: false
+    t.integer "pricable_items_count", null: false
+    t.integer "priced_items_count", null: false
     t.index ["steam_id", "log_date"], name: "index_inventory_value_logs_on_steam_id_and_log_date", unique: true
   end
 
