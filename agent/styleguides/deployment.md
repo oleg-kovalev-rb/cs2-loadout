@@ -93,6 +93,7 @@ Run from the app directory (`app_core/` or `app_fetcher/`):
 | `APP_ADMIN_BRIDGE_JWT_SECRET` | secret | shared with `app_fetcher` |
 | `APP_DEMO_JWT_SECRET` | secret | shared with `app_fetcher` |
 | `DB_PASSWORD` | secret | matches `POSTGRES_PASSWORD` |
+| `STEAM_WEB_API_KEY` | secret | optional; Steam Web API key for real nickname/avatar |
 
 ### Environment contract (`app_fetcher`)
 
@@ -117,7 +118,8 @@ Both files contain **references only**, never literal values:
 - `KAMAL_REGISTRY_PASSWORD` from the environment (Docker Hub token);
 - `RAILS_MASTER_KEY` from this app's `config/master.key`;
 - the three JWT secrets from the environment;
-- database/Postgres passwords from the environment.
+- database/Postgres passwords from the environment;
+- the optional Steam Web API key from the environment (`app_core` only).
 
 ## Rules
 
@@ -238,6 +240,7 @@ Secret names (repository → workflow):
 | `APP_BRIDGE_JWT_SECRET` | same | both |
 | `APP_ADMIN_BRIDGE_JWT_SECRET` | same | both |
 | `APP_DEMO_JWT_SECRET` | same | both |
+| `STEAM_WEB_API_KEY` | same | `app_core` step |
 
 Repository variable, not a secret: `DEPLOY_ENABLED=true` turns on
 automatic deploys after a green `CI` run.
