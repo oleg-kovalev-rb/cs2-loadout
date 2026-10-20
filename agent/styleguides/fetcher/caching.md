@@ -111,7 +111,8 @@ single-key variant). Must never be called *from* a model — dependency
 direction is Controller/Worker/Service → Caching → Models, one-way, same
 as every other layer in `agent/styleguides/rails-layering.md`. Callers:
 `Api::V1::ItemPricesController#dynamics`/`#trend` and
-`#history`'s explicit `period=30d` branch, plus
+`#history`'s 30-day branch (explicit `period=30d` or the absent-period
+default), plus
 `UserInventorySyncService` (internally, to resolve known vs. missing
 items) on the read side for the bulk variant (`ItemPriceCache`/
 `PriceHistoryCache`/`ItemTrendCache`), invalidated by `PriceUpdateWorker`
@@ -202,7 +203,9 @@ cross-Scenario service layer instead of a worker (see
   while any other range bypasses the cache and queries `PriceLog`
   directly, rather than trying to extend the cache to an arbitrary,
   client-supplied time window (see ADR Context). The controller owns
-  that branch; a history query object never touches the cache.
+  that branch and must normalize an absent/blank `period` to the default
+  `30d` before choosing it, so the implicit and explicit paths share the
+  cache; a history query object never touches the cache.
 
 ### MUST NOT
 

@@ -23,8 +23,9 @@ module Api
       sig { void }
       def history
         item = Item.find_by!(market_hash_name: params[:market_hash_name])
+        period = params[:period].presence || ::Options::DateRange::Last30Days.serialize
 
-        points = if params[:period] == ::Options::DateRange::Last30Days.serialize
+        points = if period == ::Options::DateRange::Last30Days.serialize
           PriceHistoryCache.fetch_for([ item.market_hash_name ])[item.market_hash_name]
         else
           ItemPriceHistorySerializer.call(ItemPriceHistoryQuery.call(item, params))

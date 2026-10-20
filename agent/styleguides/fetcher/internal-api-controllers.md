@@ -105,8 +105,8 @@ for the one remaining named exception:
   for `nil` and render `:not_found` (or an empty success body) inline.
   `ItemPricesController#history` is the canonical case: it resolves the
   `Item` by `market_hash_name` before branching between the 30-day
-  cache and the history query, so every period has the same 404
-  contract.
+  cache (explicit `period=30d` or the absent-period default) and the
+  history query, so every period has the same 404 contract.
 - Validate a closed-enum query param by raising
   `Api::V1::UnsupportedParamError` and let `Api::V1::BaseController`
   render the `:bad_request` response — never render that branch inline

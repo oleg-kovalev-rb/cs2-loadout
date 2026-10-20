@@ -237,16 +237,20 @@ RSpec.describe "GET /api/v1/item_prices/:market_hash_name/history", type: :reque
       end
     end
 
-    it "serves the cached PriceHistoryCache path for an explicit 30d request (no DB hit on a warm cache)" do
-      path = "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history?period=30d"
+    it "serves the cached PriceHistoryCache path for the default and explicit 30d request (no DB hit on a warm cache)" do
+      path = "/api/v1/item_prices/#{ERB::Util.url_encode(item.market_hash_name)}/history"
 
-      get path, headers: headers
+      aggregate_failures do
+        [ path, "#{path}?period=30d" ].each do |request_path|
+          get request_path, headers: headers
 
-      queries = count_queries(model: PriceLog) do
-        get path, headers: headers
+          queries = count_queries(model: PriceLog) do
+            get request_path, headers: headers
+          end
+
+          expect(queries).to eq(0)
+        end
       end
-
-      expect(queries).to eq(0)
     end
   end
 
