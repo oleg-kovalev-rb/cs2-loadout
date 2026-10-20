@@ -1,13 +1,20 @@
 require "rails_helper"
 
 RSpec.describe InventoryValueLog do
-  describe "#complete?" do
-    it "treats a legacy row without counters as complete" do
+  describe "validations" do
+    it "requires all completeness counters" do
       log = build(:inventory_value_log, items_count: nil, pricable_items_count: nil, priced_items_count: nil)
 
-      expect(log.complete?).to be(true)
+      aggregate_failures do
+        expect(log).not_to be_valid
+        expect(log.errors[:items_count]).to be_present
+        expect(log.errors[:pricable_items_count]).to be_present
+        expect(log.errors[:priced_items_count]).to be_present
+      end
     end
+  end
 
+  describe "#complete?" do
     it "is complete when every pricable item was priced" do
       log = build(:inventory_value_log, items_count: 3, pricable_items_count: 2, priced_items_count: 2)
 

@@ -1077,3 +1077,12 @@ docker compose run --rm -T app_core bash -c "npm run format:check && npm run lin
 - Re-ran: `app_fetcher` 435 examples / 0 failures, `srb tc` clean,
   RuboCop clean; `app_core` 43 files / 269 tests passing, Prettier clean,
   ESLint 0 errors (same pre-existing warning).
+
+## Update (2026-10-20): completeness counters are required
+
+This project has never been deployed, so there are no legacy rows without
+completeness counters to support. The three counters on
+`inventory_value_logs` are now `NOT NULL` (with a one-time `0` backfill
+for local databases), `InventoryValueLog#complete?` is a plain
+`priced_items_count >= pricable_items_count`, and the earlier all-nil
+"legacy = complete" branch was removed.
