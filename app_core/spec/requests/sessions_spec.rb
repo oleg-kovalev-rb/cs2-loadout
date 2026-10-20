@@ -32,7 +32,9 @@ RSpec.describe "Sessions", type: :request do
 
         aggregate_failures do
           expect(response.body).to include("Welcome, Oleg!")
-          expect(response.body).to match(/class="flash flash-notice"[^>]*role="status"/)
+          expect(response.body).to match(
+            /class="flash flash-notice"[^>]*role="status"[^>]*data-controller="flash"[^>]*data-flash-delay-value="5000"/
+          )
         end
       end
     end
@@ -46,7 +48,9 @@ RSpec.describe "Sessions", type: :request do
 
         aggregate_failures do
           expect(response.body).to include("Login failed. Please try again.")
-          expect(response.body).to match(/class="flash flash-alert"[^>]*role="alert"/)
+          expect(response.body).to match(
+            /class="flash flash-alert"[^>]*role="alert"[^>]*data-controller="flash"[^>]*data-flash-delay-value="5000"/
+          )
         end
       end
     end

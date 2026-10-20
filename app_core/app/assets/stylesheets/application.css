@@ -100,6 +100,10 @@ body {
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.flash-stack:empty {
+  display: none;
+}
+
 .flash {
   --flash-accent: var(--accent, #8368ff);
 
@@ -116,6 +120,12 @@ body {
   line-height: 1.4;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
   animation: flash-in 180ms ease-out;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.flash.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .flash::before {
@@ -150,6 +160,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .flash {
     animation: none;
+    transition: none;
   }
 }
 

@@ -29,6 +29,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@hotwired/stimulus": "^3.2.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1"
