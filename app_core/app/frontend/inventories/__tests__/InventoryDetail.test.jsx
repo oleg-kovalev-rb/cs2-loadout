@@ -174,11 +174,11 @@ describe('InventoryDetail', () => {
     render(<InventoryDetail fetcherUrl="http://fetcher.test" steamId="76561198000000001" />)
     await waitFor(() => expect(screen.getByText('AK-47 | Redline')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: '24h' }))
+    await user.click(screen.getByRole('button', { name: '30d' }))
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('period=24h'),
+        expect.stringContaining('period=30d'),
         expect.anything(),
       ),
     )
