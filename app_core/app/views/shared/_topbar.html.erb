@@ -1,8 +1,8 @@
 <header class="topbar">
-  <div class="brand">
+  <%= link_to root_path, class: "brand", aria: { label: "CS2 Loadout — go to Portfolio" } do %>
     <span class="brand-mark">CS2<span>/</span>LOADOUT</span>
     <span class="brand-sub">Steam market intelligence</span>
-  </div>
+  <% end %>
 
   <nav class="nav-tabs">
     <%= link_to "My Inventory", root_path, class: "nav-tab#{' is-active' if active_tab == :portfolio}" %>

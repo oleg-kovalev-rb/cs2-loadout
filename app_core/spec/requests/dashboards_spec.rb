@@ -37,6 +37,12 @@ RSpec.describe "GET /", type: :request do
       end
     end
 
+    it "links the brand back to the portfolio page" do
+      get root_path
+
+      expect(response.body).to match(%r{<a[^>]+class="brand"[^>]+href="/"})
+    end
+
     it "gates sign-out behind a confirm overlay instead of triggering it directly" do
       get root_path
 
