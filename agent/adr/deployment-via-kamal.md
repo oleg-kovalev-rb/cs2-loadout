@@ -64,8 +64,9 @@ network. `app_core` reaches the Redis accessory declared by the fetcher
 configuration (`steam-fetcher-redis`) for its demo-session database; this
 is the one cross-app runtime dependency besides the public HTTPS API.
 Images are stored in **Docker Hub** (free, matching the official
-Rails deployment guide). Deploys are run **manually** from the developer
-machine; CI/CD is a later, separate decision.
+Rails deployment guide). Release execution later moved to GitHub
+Actions — see `agent/adr/ci-deploy-via-github-actions.md`; this ADR
+still owns the topology.
 
 The production image is `Dockerfile` (Rails 7.2 production template,
 multi-stage, non-root, entrypoint, port 3000). The current development
@@ -168,7 +169,8 @@ Rejected because:
   must be sized for ~4 GB, not the 1 GB the Rails guide assumes.
 - Docker Hub's free plan allows one private repository, so the two images
   are public.
-- Deploys are manual until a CI workflow is added.
+- Deploys are driven by CI (see `ci-deploy-via-github-actions.md`); a
+  manual local deploy remains possible for debugging.
 
 ### Risks
 

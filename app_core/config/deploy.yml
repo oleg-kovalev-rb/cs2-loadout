@@ -1,31 +1,31 @@
 # Deployment for app_core. Conventions and rationale:
 # agent/styleguides/deployment.md and agent/adr/deployment-via-kamal.md.
 #
-# Before the first `bin/kamal setup`, replace <server-ip>, <domain> and
-# <dockerhub-user>, and export the secrets referenced in .kamal/secrets.
+# Before the first `bin/kamal setup`, replace 134.209.196.226, cs2-loadout.pro and
+# olegkovalevswe, and export the secrets referenced in .kamal/secrets.
 
 service: steam-core
 
-image: <dockerhub-user>/steam-core
+image: olegkovalevswe/steam-core
 
 servers:
   web:
-    - <server-ip>
+    - 134.209.196.226
 
 # Shared kamal-proxy on the VPS. `app_port` matches the image's EXPOSE.
 proxy:
   ssl: true
-  host: app.<domain>
+  host: app.cs2-loadout.pro
   app_port: 3000
 
 registry:
-  username: <dockerhub-user>
+  username: olegkovalevswe
   password:
     - KAMAL_REGISTRY_PASSWORD
 
 env:
   clear:
-    APP_FETCHER_PUBLIC_URL: https://api.<domain>
+    APP_FETCHER_PUBLIC_URL: https://api.cs2-loadout.pro
     DB_HOST: steam-core-db
     DB_USER: postgres
     REDIS_URL_DEMO: redis://steam-fetcher-redis:6379/3
@@ -51,12 +51,12 @@ builder:
   arch: amd64
 
 # A cold first boot runs db:prepare; give it more than the default 30s.
-deploy_timeout: 60
+deploy_timeout: 120
 
 accessories:
   db:
     image: postgres:15
-    host: <server-ip>
+    host: 134.209.196.226
     env:
       clear:
         POSTGRES_DB: app_core_production

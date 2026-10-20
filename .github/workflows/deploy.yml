@@ -1,0 +1,76 @@
+name: Deploy
+
+# Releases run here, not on a laptop. The first run on a fresh server is a
+# manual dispatch with `command: setup`; after that every successful CI run
+# on main deploys. See agent/adr/ci-deploy-via-github-actions.md and
+# agent/styleguides/deployment.md.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Kamal command to run in each app (setup is for a fresh server)
+        type: choice
+        options: [deploy, setup]
+        default: deploy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Automatic deploys stay off until the server is bootstrapped: run the
+    # workflow manually with `command: setup`, then set the repository
+    # variable DEPLOY_ENABLED=true. Manual dispatch always runs.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      APP_BRIDGE_JWT_SECRET: ${{ secrets.APP_BRIDGE_JWT_SECRET }}
+      APP_ADMIN_BRIDGE_JWT_SECRET: ${{ secrets.APP_ADMIN_BRIDGE_JWT_SECRET }}
+      APP_DEMO_JWT_SECRET: ${{ secrets.APP_DEMO_JWT_SECRET }}
+      KAMAL_COMMAND: ${{ github.event.inputs.command || 'deploy' }}
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install Kamal
+        run: gem install kamal -v 2.11.0 --no-document
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 134.209.196.226 >> ~/.ssh/known_hosts
+
+      - name: Deploy app_fetcher (owns the shared Redis accessory)
+        working-directory: app_fetcher
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_FETCHER }}
+        run: kamal "$KAMAL_COMMAND"
+
+      - name: Deploy app_core
+        working-directory: app_core
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_CORE }}
+        run: kamal "$KAMAL_COMMAND"
