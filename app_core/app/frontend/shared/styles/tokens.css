@@ -156,6 +156,8 @@ html {
   display: flex;
   flex-direction: column;
   gap: 1px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .dash-root .nav-tabs {
