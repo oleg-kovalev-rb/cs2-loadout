@@ -27,10 +27,6 @@ export function conditionsPresent(items) {
   return CONDITIONS.filter((condition) => present.has(condition))
 }
 
-export function stattrakPresent(items) {
-  return items.some((item) => item.stattrak)
-}
-
 export function changePct(item) {
   return item.change24hPercent || 0
 }

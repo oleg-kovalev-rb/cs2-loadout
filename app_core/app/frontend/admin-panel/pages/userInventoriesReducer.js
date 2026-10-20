@@ -1,15 +1,10 @@
+import { toggleSetMember } from '../../shared/utils/sets'
+
 export const initialState = {
   page: 1,
   perPage: 25,
   selectedIds: new Set(),
   expandedSteamIds: new Set(),
-}
-
-function toggleSetMember(set, value) {
-  const next = new Set(set)
-  if (next.has(value)) next.delete(value)
-  else next.add(value)
-  return next
 }
 
 export function userInventoriesReducer(state, action) {

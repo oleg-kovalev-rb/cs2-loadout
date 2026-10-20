@@ -5,8 +5,7 @@ import { useInventoryProfiles } from './hooks/useInventoryProfiles'
 import { InventoriesToolbar } from './components/InventoriesToolbar'
 import { InventoryGrid } from './components/InventoryGrid'
 import { Pagination } from '../shared/components/Pagination'
-
-const PER_PAGE = 24
+import { INVENTORIES_PER_PAGE } from './constants'
 
 export function InventoriesIndex({ fetcherUrl }) {
   const [state, dispatch] = useReducer(catalogReducer, initialCatalogState)
@@ -55,7 +54,7 @@ export function InventoriesIndex({ fetcherUrl }) {
         page={state.page}
         totalPages={totalPages}
         totalCount={totalCount}
-        pageSize={PER_PAGE}
+        pageSize={INVENTORIES_PER_PAGE}
         onPrev={() => dispatch({ type: 'PAGE_CHANGED', page: state.page - 1 })}
         onNext={() => dispatch({ type: 'PAGE_CHANGED', page: state.page + 1 })}
       />

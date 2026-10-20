@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { fetchJson } from '../../shared/utils/fetchJson'
 
 const SEARCH_DEBOUNCE_MS = 300
 
@@ -46,12 +47,6 @@ function buildQuery({ search, categories, rarities, stattrakOnly, sort, page, pe
   params.set('page', String(page))
   params.set('per_page', String(perPage))
   return params.toString()
-}
-
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } })
-  if (!response.ok) throw new Error(`Request to ${url} failed: ${response.status}`)
-  return response.json()
 }
 
 // Public endpoint — no Authorization header, unlike every other dashboard
@@ -102,7 +97,9 @@ export function useItemsCatalog(
       perPage,
     })
 
-    fetchJson(`${fetcherUrl}/api/public/items?${query}`)
+    fetchJson(`${fetcherUrl}/api/public/items?${query}`, {
+      headers: { Accept: 'application/json' },
+    })
       .then((raw) => {
         if (cancelled) return
         setData({ meta: mapMeta(raw.meta), items: raw.items.map(mapItem) })

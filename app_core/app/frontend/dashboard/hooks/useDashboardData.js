@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fetchJson } from '../../shared/utils/fetchJson'
 
 function mapItem(raw) {
   const metadata = raw.metadata || {}
@@ -17,12 +18,6 @@ function mapItem(raw) {
     change24hPercent: 0,
     trendPoints: [],
   }
-}
-
-async function fetchJson(url, options) {
-  const response = await fetch(url, options)
-  if (!response.ok) throw new Error(`Request to ${url} failed: ${response.status}`)
-  return response.json()
 }
 
 // Skeleton-only: this hook's single job is "what does this user own."

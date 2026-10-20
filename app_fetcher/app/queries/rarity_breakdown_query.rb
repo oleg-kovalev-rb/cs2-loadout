@@ -19,7 +19,7 @@ class RarityBreakdownQuery
         .where(user_inventory_id: user_inventory_ids)
         .pluck(:user_inventory_id, "items.market_hash_name", Arel.sql("items.metadata ->> 'rarity'"))
         .each do |user_inventory_id, market_hash_name, rarity|
-          tier = RarityTier.for_item(Item.new(market_hash_name: market_hash_name, metadata: { rarity: rarity }))
+          tier = RarityTier.for(market_hash_name:, rarity:)
           next unless tier
 
           inventory_counts = (counts[user_inventory_id] ||= {})

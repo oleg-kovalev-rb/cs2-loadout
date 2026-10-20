@@ -2,13 +2,8 @@ import { useMemo } from 'react'
 import { ItemsToolbar } from './ItemsToolbar'
 import { ItemRow } from './ItemRow'
 import { Pagination } from '../../shared/components/Pagination'
-import {
-  applyFilters,
-  applySort,
-  weaponTypesPresent,
-  conditionsPresent,
-  stattrakPresent,
-} from '../utils/filters'
+import { applyFilters, applySort, weaponTypesPresent, conditionsPresent } from '../utils/filters'
+import { stattrakPresent } from '../../shared/utils/itemFilters'
 import { PAGE_SIZE } from '../reducer'
 
 export function ItemsTile({

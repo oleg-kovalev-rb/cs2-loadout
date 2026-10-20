@@ -112,6 +112,9 @@ app/frontend/shared/
                              stylesheet layers on top of
   utils/
     format.js               — display formatting with no island-specific shape
+    fetchJson.js            — fetch + JSON parse/HTTP-error envelope
+    sets.js                 — `toggleSetMember` for reducer Set state
+    itemFilters.js          — cross-island item predicates (`stattrakPresent`)
   chartConfig.js            — chart-rendering constants/mechanics
                               (PERIOD_MS, tick counts, generateAxisLabels)
                               with no per-island period-set choice baked in
@@ -119,7 +122,7 @@ app/frontend/shared/
     Sparkline.jsx, PeriodToggle.jsx, Pagination.jsx, HeroChart.jsx,
     ChartTooltip.jsx         — generic chart/sparkline/pagination primitives
   __tests__/
-    format.test.js
+    format.test.js, fetchJson.test.js, sets.test.js, itemFilters.test.js
 ```
 
 A file moves to `shared/` the moment a second consumer needs it
@@ -441,7 +444,8 @@ Action types are flat strings (`'PERIOD_CHANGED'`, `'ITEM_ROW_CLICKED'`,
 `'WEAPON_FILTER_TOGGLED'`, ...), each returning a full new state object
 via spread. Multi-select filter state is a plain object of `Set`s
 (`{weapons: Set, conditions: Set, stattrakOnly: bool}`), toggled through a
-shared `toggleSetMember` helper — follow this shape for a new
+shared `toggleSetMember` helper (`shared/utils/sets.js`) — follow this
+shape for a new
 multi-select filter rather than inventing a different collection type.
 
 **Data loading** is a custom hook per *distinct* data-loading need. The

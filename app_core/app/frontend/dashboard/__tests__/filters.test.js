@@ -1,11 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import {
-  applyFilters,
-  applySort,
-  weaponTypesPresent,
-  conditionsPresent,
-  stattrakPresent,
-} from '../utils/filters'
+import { applyFilters, applySort, weaponTypesPresent, conditionsPresent } from '../utils/filters'
 
 const items = [
   {
@@ -171,19 +165,5 @@ describe('conditionsPresent', () => {
       'Field-Tested',
       'Battle-Scarred',
     ])
-  })
-})
-
-describe('stattrakPresent', () => {
-  test('empty items returns false', () => {
-    expect(stattrakPresent([])).toBe(false)
-  })
-
-  test('returns false when no item is StatTrak', () => {
-    expect(stattrakPresent(items.filter((i) => !i.stattrak))).toBe(false)
-  })
-
-  test('returns true when at least one item is StatTrak', () => {
-    expect(stattrakPresent(items)).toBe(true)
   })
 })
