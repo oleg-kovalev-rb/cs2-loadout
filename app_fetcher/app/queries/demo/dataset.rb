@@ -74,7 +74,7 @@ module Demo
           total_count: items.size,
           trends: trends_for(entries)
         ),
-        avg_item_value_cents: items.empty? ? 0 : T.must(value.snapshot).total_value_cents / items.size,
+        avg_item_value_cents: items.empty? ? 0 : round_to_whole_dollar(T.must(value.snapshot).total_value_cents / items.size),
         priciest_item: items.max_by { |item| item.current_price_cents || 0 },
         rarity_counts: rarity_counts
       )
@@ -298,6 +298,11 @@ module Demo
         items.sort_by { |item| [ item.metadata["item_name"].to_s.downcase, item.market_hash_name ] }
       else T.absurd(option)
       end
+    end
+
+    sig { params(cents: Integer).returns(Integer) }
+    def round_to_whole_dollar(cents)
+      (cents.to_f / Demo::PriceSeries::PRICE_STEP_CENTS).round * Demo::PriceSeries::PRICE_STEP_CENTS
     end
 
     sig { params(items: T::Array[Item]).returns(T::Hash[String, T::Array[ItemTrendCache::TrendPoint]]) }
