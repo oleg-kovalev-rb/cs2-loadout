@@ -152,7 +152,7 @@ describe('usePortfolioHistory', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  test('retries while no UserInventory exists yet, then settles', async () => {
+  test('retries while the skeleton inventory sync has not created UserInventory yet, then settles', async () => {
     vi.useFakeTimers()
     const empty = payload({
       current: null,

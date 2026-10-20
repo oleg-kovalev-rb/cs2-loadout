@@ -80,12 +80,15 @@ stream.
   query-only `perform` is less failure-prone than a worker's Steam call,
   so its `N` is typically on the low end, but it's still set explicitly,
   not left to Sidekiq's default.
-- Route work that calls `Steam::Client` onto its own queue (`:prices`),
-  separate from cheap orchestration work (`:default`) — see
+- Route work that calls `Steam::Client` onto the shared Steam-I/O queue
+  (`:prices`), separate from cheap orchestration work (`:default`) — see
   `config/sidekiq.yml`'s queue list and `PriceUpdateWorker`/
   `UserInventorySyncWorker` vs. `InventoryValueUpdateWorker`/
-  `PriceScheduler`. This keeps a Steam-API outage or rate-limit backoff
-  from starving unrelated jobs.
+  `PriceScheduler`. Despite its name, `:prices` is not price-domain
+  work: both workers use it because they share the same Steam API call
+  budget, so splitting them into separate queues would only change
+  priority between them, not add capacity. This keeps a Steam-API outage
+  or rate-limit backoff from starving unrelated jobs.
 - Use a bulk write (`Item.upsert_all(..., unique_by: ...)`) instead of a
   per-record loop of `.new`/`.save!` when a job processes a batch of
   independent records. No current worker does this directly (see

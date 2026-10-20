@@ -33,14 +33,15 @@ RSpec.describe InventoryDetailQuery do
       expect(page.priciest_item).to eq(priced)
     end
 
-    it "computes avg_item_value_cents from total_value_cents and items_count" do
+    it "computes avg_item_value_cents across all items, counting unpriced items as zero" do
       user_inventory = create(:user_inventory)
       create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 1000))
       create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, current_price_cents: 500))
+      create(:user_inventory_item, user_inventory: user_inventory, item: create(:item, :without_price))
 
       page = described_class.call(user_inventory.steam_id, ActionController::Parameters.new)
 
-      expect(page.avg_item_value_cents).to eq(750)
+      expect(page.avg_item_value_cents).to eq(500)
     end
 
     it "counts Extraordinary and Contraband rarities under Gold" do

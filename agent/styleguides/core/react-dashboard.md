@@ -375,7 +375,9 @@ owning island's own reducer/state shape?
   rather than growing a near-identical copy. `shared/utils/format.js`'s
   `fmtPrice`/`conditionAbbr`/`fmtUSD`/`fmtDateTime` are the same case for
   formatting — pure functions over plain values with no reducer/state
-  dependency, imported directly rather than re-exported or copied. A
+  dependency, imported directly rather than re-exported or copied.
+  `fmtPrice` treats only `null`/`undefined` as missing; `0` is a real
+  price and formats as `$0.00`. A
   shared component may have a narrower contract than a specific new use
   needs — adapt at the call site, don't fork the component for it.
   `shared/components/Pagination.jsx`'s contract is **1-indexed**, the same

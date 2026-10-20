@@ -59,8 +59,8 @@ export function usePortfolioHistory(fetcherUrl, bridgeToken, period) {
         setChange(mapChange(payload.change))
         setStatus('success')
 
-        const complete = payload.current?.complete === true
-        if (!complete && index < RETRY_SCHEDULE_MS.length) {
+        const retryable = payload.current == null || payload.current.complete !== true
+        if (retryable && index < RETRY_SCHEDULE_MS.length) {
           const timer = setTimeout(() => attempt(index + 1), RETRY_SCHEDULE_MS[index])
           timers.push(timer)
         }

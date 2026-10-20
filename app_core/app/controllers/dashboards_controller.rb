@@ -5,8 +5,9 @@ class DashboardsController < ApplicationController
 
   sig { void }
   def show
+    user = current_user
     @bridge_token = T.let(
-      current_user ? Steam::BridgeToken.encode(current_user.steam_id) : nil,
+      user ? Steam::BridgeToken.encode(user.steam_id) : nil,
       T.nilable(String)
     )
   end

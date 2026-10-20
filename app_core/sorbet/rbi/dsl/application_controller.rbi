@@ -28,7 +28,7 @@ class ApplicationController
     include ::ActionController::Base::HelperMethods
     include ::ApplicationHelper
 
-    sig { returns(T.untyped) }
+    sig { returns(T.nilable(::User)) }
     def current_user; end
   end
 
