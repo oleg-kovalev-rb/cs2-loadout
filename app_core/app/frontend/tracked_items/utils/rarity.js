@@ -9,7 +9,7 @@ const RARITY_COLORS = {
   Contraband: '#e4ae39',
 }
 
-const NEUTRAL_RARITY_COLOR = '#8791ab'
+const NEUTRAL_RARITY_COLOR = '#8b9099'
 
 export function rarityColor(rarity) {
   return RARITY_COLORS[rarity] || NEUTRAL_RARITY_COLOR

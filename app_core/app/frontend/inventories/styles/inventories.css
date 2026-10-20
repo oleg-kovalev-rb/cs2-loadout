@@ -96,7 +96,7 @@
   text-decoration: none;
 }
 .dash-root .inv-card:hover {
-  border-color: #39435c;
+  border-color: #34383e;
   background: var(--surface-raised);
 }
 .dash-root .inv-card-top {
