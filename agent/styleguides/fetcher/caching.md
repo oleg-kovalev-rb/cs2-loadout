@@ -38,9 +38,11 @@ callers key into it:
 - **TTL-only** (`.read`/`.write`): data changes due to activity this
   codebase has no write path into, so there's no event to hook an
   explicit `.invalidate` call to — staleness is bounded purely by a short
-  TTL instead. `ItemListCache` is this variant's current example
-  (keyed by a SHA256 hash of normalized filter/sort/pagination params —
-  see Rules — with no single caller-supplied id driving it).
+  TTL instead. `ItemListCache`/`InventoryListCache` are this variant's
+  no-single-natural-identifier examples (keyed by a SHA256 hash of
+  normalized filter/sort/pagination params — see Rules), while
+  `InventoryDetailCache` is its hybrid example (a natural `steam_id` plus
+  the hash of the remaining params).
   `UserInventoryCache` used to be its example before `ItemListCache`
   existed, but moved to the single-key read-through variant once the
   weekly sync + manual refresh (`UserInventorySyncService`, see
@@ -58,7 +60,8 @@ matters.
   and schedulers, these stay flat even when they cache Steam-domain
   data): `ItemPriceCache`, `PriceHistoryCache` (bulk read-through +
   invalidation), `UserInventoryCache` (single-key read-through +
-  invalidation).
+  invalidation), `ItemListCache`/`InventoryListCache`/
+  `InventoryDetailCache` (TTL-only).
 - Each class is a plain Ruby class with only class-level methods (`class
   << self; extend T::Sig; ...; end` for private ones, per
   `agent/styleguides/ruby-sorbet.md`) — never instantiated.
@@ -298,19 +301,21 @@ section only adds what's specific to caching.
   `app_fetcher/app/caching/price_history_cache.rb`,
   `app_fetcher/app/caching/item_trend_cache.rb`.
 - Single-key read-through + invalidation: `app_fetcher/app/caching/user_inventory_cache.rb`.
-- TTL-only: `app_fetcher/app/caching/item_catalog_cache.rb` — the
-  no-single-natural-identifier key shape (hash of normalized filter/sort/
-  pagination params).
-- TTL-only, hybrid key (natural id + hashed remaining inputs): no current
-  implementation — `InventoryDetailCache`
-  (`agent/plans/public-inventory-endpoints.md`) will be the first.
+- TTL-only, no-single-natural-identifier key: `app_fetcher/app/caching/item_list_cache.rb`,
+  `app_fetcher/app/caching/inventory_list_cache.rb` — the key shape is a
+  hash of normalized filter/sort/pagination params.
+- TTL-only, hybrid key (natural id + hashed remaining inputs):
+  `app_fetcher/app/caching/inventory_detail_cache.rb` — `steam_id` plus a
+  hash of the normalized period/page/per-page/sort params.
 
 `ItemPriceCache`/`PriceHistoryCache` are tracked in
 `agent/plans/fetcher-price-caching.md`; `ItemTrendCache` is tracked in
 `agent/plans/dashboard-api-redesign.md`; `UserInventoryCache`'s
 single-key read-through shape is tracked in
 `agent/plans/user-inventory-persistence.md`; `ItemListCache` is
-tracked in `agent/plans/item-catalog-query-refactor.md`. Prop's use of
+tracked in `agent/plans/item-catalog-query-refactor.md`;
+`InventoryListCache`/`InventoryDetailCache` are tracked in
+`agent/plans/public-inventory-endpoints.md`. Prop's use of
 `Rails.cache` for rate-limiting, in `config/initializers/prop.rb`,
 predates this styleguide and doesn't follow any of the three variants.
 

@@ -196,9 +196,10 @@ method needs to be guarded.
   `app_core/lib/steam/profile_fetcher.rb`
 - `app_core/app/actions/steam/login_user.rb`,
   `app_core/app/models/user.rb`
-- `app_fetcher/app/models/price_period.rb` — the `T::Enum` pattern for a
-  closed set of API-param tags, plus `#since`/`#since_date` and
-  `.resolve`
+- `app_fetcher/app/queries/options/date_range.rb` — the `T::Enum` pattern
+  for a closed set of API-param tags, plus the nested
+  `Param#parse(allowed_ranges:, default:, error_class:)` validator and
+  `#duration`/`#since`/`#since_date`
 - `app_fetcher/app/models/item.rb` + `app_fetcher/sorbet/rbi/dsl/item.rbi`
   — the `tapioca dsl` regeneration workflow for a model that gained a new
   `scope`

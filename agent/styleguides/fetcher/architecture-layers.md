@@ -21,8 +21,9 @@ was chosen over merging any of these layers.
 
 Applies to any code that ingests, transforms, persists, or schedules the
 refresh of Steam data. Not relevant to code that only reads already-
-persisted data for a response (`PriceHistoriesController`, which is a
-plain AR query with no parsing/building involved).
+persisted data for a response (`ItemPricesController#history`,
+`InventoryValuesController`, which are plain AR queries with no
+parsing/building involved).
 
 ## Structure
 

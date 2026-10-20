@@ -2,11 +2,12 @@
 
 ## Status
 
-Proposed
+Accepted — refined by the 2026-10-20 updates below (DateRange/history
+queries and ListQuery naming).
 
 ## Context
 
-`Api::Public::ItemsController#catalog` (`agent/plans/public-items-catalog-endpoint.md`)
+`Api::Public::ItemsController#index` (`agent/plans/public-items-catalog-endpoint.md`)
 shipped with every piece of filter/sort/pagination/serialization logic
 written directly in the controller action — `normalized_filters`,
 `clamp_param`, `compute_page`, `item_json`. This was deliberate: the
@@ -33,17 +34,16 @@ controllers within one Scenario* — a kind of logic `app/services/` was
 never designed to cover. Reusing it by analogy would misrepresent what
 that ADR actually decided.
 
-A closely related, narrower pattern already exists, undocumented:
-`app_fetcher/app/models/price_period.rb` (`PricePeriod < T::Enum`, a
-`case self` method with an `else T.absurd(self)` exhaustiveness guard;
-since replaced by `Options::DateRange` — see the 2026-10-20 update),
-used inline by `ItemPricesController#history` and
-`InventoryValuesController` to validate a closed-enum query param. It
-demonstrates the right *mechanism* (a `T::Enum` where each value carries
-its own behavior, checked exhaustively by Sorbet) but has never been
-generalized beyond a single param on two controllers, and covers only
-"resolve a closed-enum param," not filtering, pagination, or response
-serialization.
+A closely related, narrower pattern already existed at decision time:
+the model-level price-period enum (a `T::Enum` with a `case self` method
+and an `else T.absurd(self)` exhaustiveness guard; since replaced by
+`Options::DateRange` — see the 2026-10-20 update), used inline by
+`ItemPricesController#history` and `InventoryValuesController` to
+validate a closed-enum query param. It demonstrates the right
+*mechanism* (a `T::Enum` where each value carries its own behavior,
+checked exhaustively by Sorbet) but has never been generalized beyond a
+single param on two controllers, and covers only "resolve a closed-enum
+param," not filtering, pagination, or response serialization.
 
 This project has twice declined to extract a shared abstraction before a
 third real example existed (`agent/adr/fetcher/public-api-namespace.md`'s
@@ -61,18 +61,19 @@ from one example: the per-resource orchestrating class.
 
 Introduce two new top-level `app/` layers in `app_fetcher`:
 
-- **`app/queries/`** — per-resource query objects (`ItemCatalogQuery`
-  today), plus two subfolders of resource-agnostic mechanics:
+- **`app/queries/`** — per-resource query objects (`ItemListQuery`
+  today, alongside `InventoryListQuery`/`InventoryDetailQuery`), plus
+  two subfolders of resource-agnostic mechanics:
   `app/queries/appliers/` (→ `Appliers::` namespace) and
   `app/queries/options/` (→ `Options::` namespace).
 - **`app/serializers/`** — pure, I/O-free response-shaping functions.
 
 **`Options::*`** (`app/queries/options/`) are `T::Enum` subclasses, one
 per resource per concern (`Options::ItemSortOption`,
-`Options::ItemFilterField`). Each enum value implements its own behavior
+`Options::ItemFilterOption`). Each enum value implements its own behavior
 via `#apply(scope)` / `#apply(scope, params)`, dispatched with `case
 self` and closed with `T.absurd(self)` so Sorbet statically guarantees
-every value is handled — the same mechanism `PricePeriod` already uses,
+every value is handled — the same mechanism `Options::DateRange` uses,
 generalized to filtering and sorting. An `Options::*` enum closes over
 the **names** of filterable/sortable fields for a resource (a genuinely
 closed set — "Item can be filtered by category, rarity, stattrak,
@@ -89,43 +90,46 @@ it never references a specific model or enum member:
 - `Appliers::Pagination` — a plain value object (not `T::Enum`/Strategy;
   clamping a number into a range isn't a choice between named
   behaviors). Owns the shared defaults/bounds.
-- `Appliers::SortApplier.call(raw_value, enum_class:, default:,
-  param_name:)` → a resolved `T::Enum` member, never nilable. Raises
-  `Api::Public::UnsupportedParamError` itself on an unrecognized value —
-  callers never branch on a nil/Result return.
+- `Appliers::SortApplier.call(scope, params, enum_class:, default:,
+  param_name:, error_class:)` → the sorted `ActiveRecord::Relation`, never
+  nilable. Reads `params[param_name]`, falls back to `default`, and raises
+  `error_class` itself on an unrecognized value — callers never branch on
+  a nil/Result return. Public callers may rely on the default
+  `Api::Public::UnsupportedParamError`; a V1 caller passes its own class.
 - `Appliers::FilterApplier.call(scope, params, enum_class:)` → reduces
   `enum_class.values` over the scope, each value applying itself.
 
-**`<Resource>CatalogQuery`** (flat, `app/queries/` root — e.g.
-`ItemCatalogQuery`) is one class per resource, not one generic class
-parameterized across resources. It composes the `Options::*`/`Appliers::*`
-pieces above plus whatever is genuinely specific to that resource (for
+**`<Resource>ListQuery`** (flat, `app/queries/` root — e.g.
+`ItemListQuery`, `InventoryListQuery`) is one class per resource, not
+one generic class parameterized across resources. It composes the
+`Options::*`/`Appliers::*` pieces above plus whatever is genuinely
+specific to that resource (for
 `Item`: price-change aggregates, 7-day trend lookup, catalog freshness).
-Naming is deliberately resource-specific (`ItemCatalogQuery`, not
+Naming is deliberately resource-specific (`ItemListQuery`, not
 `ItemQuery`) so the name itself signals "this may contain business logic
 that won't generalize," rather than implying a reusable abstraction that
 isn't there yet. `.call(params)` returns a `T::Struct` describing the
 data a response needs — never a `Result`-shaped success/error wrapper,
 since the only failure mode (an invalid closed-enum param) is already
-raised, not returned, by `Appliers::SortApplier`. A `<Resource>CatalogQuery`
+raised, not returned, by `Appliers::SortApplier`. A `<Resource>ListQuery`
 has no knowledge of HTTP or caching — those stay the controller's job.
 
 **Shared concern queries** (flat, `app/queries/` root — e.g.
-`InventoryValuation`) are read-only calculations over already-persisted
+`InventoryValueQuery`) are read-only calculations over already-persisted
 data whose result is consumed by more than one query object, an
 `Api::V1::` read action, or a cross-Scenario service. They are not
 endpoint queries: they return `T::Struct`s, never a response hash, and
 they own the SQL aggregate expressions shared by a single-resource path
 and a bulk/catalog path so those two cannot drift. A concern query may
-be called by `<Resource>CatalogQuery`/`<Resource>DetailQuery`, an
+be called by `<Resource>ListQuery`/`<Resource>DetailQuery`, an
 `Api::V1::` controller action, and a cross-Scenario service; it never
 calls a controller, service, serializer, or response-payload cache, and
 it performs no writes. This is a third shape in the layer, not a
-generalization of the per-resource catalog/detail classes: the reuse
+generalization of the per-resource list/detail classes: the reuse
 axis is "the same read-only calculation", not "the same endpoint
 mechanics."
 
-**`app/serializers/`** classes (flat, e.g. `ItemCatalogSerializer`) are
+**`app/serializers/`** classes (flat, e.g. `ItemListSerializer`) are
 pure functions from an already-fetched data struct to a response hash.
 No database or cache access is permitted inside this layer — that is
 this layer's one hard boundary.
@@ -190,9 +194,9 @@ resources grows. `Options::<Resource><Concern>`, one file each under
 `app/queries/options/`, keeps the existing one-class-per-file convention
 and remains trivially greppable by name.
 
-### Alternative: a single generic `CatalogQuery` facade for every resource
+### Alternative: a single generic `ListQuery` facade for every resource
 
-Rather than one `<Resource>CatalogQuery` class per resource, a single
+Rather than one `<Resource>ListQuery` class per resource, a single
 generic class parameterized by `{model:, sort_enum:, filter_enum:,
 serializer:}`, so adding endpoint #2/#3 is "pass different config," not
 "write a new class."
@@ -205,14 +209,14 @@ resource-specific extras (price-change aggregates, trend lookup,
 freshness timestamp) are the only concrete data point available today
 for "what does a catalog query need beyond items+count+pagination" — not
 enough to design a generic facade's extension points against. The
-per-resource `<Resource>CatalogQuery` shape can be revisited once a
+per-resource `<Resource>ListQuery` shape can be revisited once a
 second real resource exists to validate it against, without having
 locked in a wrong generic contract first.
 
-### Alternative: `Result`/outcome wrapper objects on `SortApplier` and `<Resource>CatalogQuery`
+### Alternative: `Result`/outcome wrapper objects on `SortApplier` and `<Resource>ListQuery`
 
 Have `Appliers::SortApplier` return a `Result` (`success`/`error`/
-`scope`), and have `<Resource>CatalogQuery.call` similarly return a
+`scope`), and have `<Resource>ListQuery.call` similarly return a
 `Result` (`success`/`error`/`payload`), so callers branch on a return
 value instead of rescuing an exception.
 
@@ -229,9 +233,9 @@ valid" or "what's on this page" — removing the wrapper entirely, in
 favor of a raised exception and a cache-free return struct, kept each
 class's return type honestly scoped to what it actually computes.
 
-### Alternative: cache read/write inside `<Resource>CatalogQuery`
+### Alternative: cache read/write inside `<Resource>ListQuery`
 
-Have the query object check `ItemCatalogCache` itself, computing and
+Have the query object check `ItemListCache` itself, computing and
 caching its own payload, so the controller only ever makes one call.
 
 Rejected: this conflates two independent concerns — "what are the
@@ -258,7 +262,7 @@ single, consistent answer.
 - The resource-agnostic `Appliers::*` classes are genuinely reusable
   immediately — endpoint #2 and #3 don't rewrite pagination clamping or
   closed-enum resolution, only their own `Options::*` enums and
-  `<Resource>CatalogQuery`.
+  `<Resource>ListQuery`.
 
 ### Negative
 
@@ -266,20 +270,19 @@ single, consistent answer.
   parsers/builders/workers/schedulers/services/caching — `app_fetcher`'s
   layer map keeps growing.
 - `Appliers::SortApplier`/`Appliers::FilterApplier` type their
-  `enum_class:` parameter loosely (`T.untyped`) rather than against a
-  proper bound (e.g. a shared interface module every `Options::*` class
-  includes), to avoid designing that bound from a single concrete enum
-  pair. This is a real, accepted gap in static checking until a second
-  resource's `Options::*` classes exist to validate the right bound
-  against.
-- Each new resource repeats the `<Resource>CatalogQuery` *pattern*, not
+  `enum_class:` parameter as `T.class_of(T::Enum)` and dispatch the
+  resource-specific `#apply` through a single localized `T.unsafe`; the
+  base enum type cannot express the per-value behavior statically. This
+  is the narrow, accepted gap documented in `ruby-sorbet.md`, not a broad
+  `T.untyped`.
+- Each new resource repeats the `<Resource>ListQuery` *pattern*, not
   shared code — some boilerplate per new list endpoint is an accepted
   cost of not generalizing the facade yet (see Alternatives).
 
 ### Risks
 
 - A future contributor could, on seeing a second or third
-  `<Resource>CatalogQuery`, be tempted to immediately collapse them into
+  `<Resource>ListQuery`, be tempted to immediately collapse them into
   the generic facade this decision explicitly deferred — doing that
   without the second example actually confirming the right generic
   shape would repeat the mistake this decision avoided. The guard is the
@@ -293,7 +296,7 @@ single, consistent answer.
 
 ## Implementation Constraints
 
-- `app/queries/` (flat root): one `<Resource>CatalogQuery` class per
+- `app/queries/` (flat root): one `<Resource>ListQuery` class per
   resource, each a `.call(params)` class method returning a `T::Struct`,
   never a `Result`/success-or-error shape. No reference to any
   `app/caching/` class or to `ActionController`/HTTP concepts.
@@ -307,17 +310,19 @@ single, consistent answer.
 - `app/serializers/` (flat root): pure functions only — no
   `ActiveRecord`/`Rails.cache` calls permitted inside this layer.
 - Shared concern queries (`app/queries/<concern>.rb`, e.g.
-  `InventoryValuation`): return `T::Struct`s, never a response hash;
+  `InventoryValueQuery`): return `T::Struct`s, never a response hash;
   perform no writes and never call a controller, service, serializer, or
   response-payload cache. They may be called from a resource query, an
   `Api::V1::` read action, or a cross-Scenario service's read step, and
   own the shared aggregate SQL for both the single-resource and
   bulk/catalog paths.
-- The shared `Api::Public::UnsupportedParamError` raised by
+- The `Api::Public::UnsupportedParamError` default used by
   `Appliers::SortApplier` is an `Api::Public::` namespace-level concern,
   not owned by this layer — its location (`lib/api/public/`) and the
   base-controller `rescue_from` that catches it are governed by
-  `public-api-controllers.md`, not restated here.
+  `public-api-controllers.md`, not restated here. The applier's
+  `error_class:` keyword lets a V1 caller opt into its own namespace's
+  error instead.
 - `ItemPricesController#history` / `InventoryValuesController` are not
   migrated to `Appliers::SortApplier` by this decision — their period
   param is a range, not a sort field. See the 2026-10-20 update below
@@ -335,10 +340,10 @@ declare `SUPPORTED_PERIODS` or `for_period` scopes — the owning query
 object applies the cutoff.
 
 Two `<Resource>HistoryQuery` classes (`InventoryValueHistoryQuery`,
-`ItemPriceHistoryQuery`) resolve the range and return `Page` structs of
-points. They never read `PriceHistoryCache`; the controller keeps the
-explicit 30-day cache branch. `InventorySerializer` covers the simple
-`inventories/me` envelope.
+`ItemPriceHistoryQuery`) resolve the range and return content-named typed
+structs of points (`ItemPriceHistory`/`InventoryValue`). They never read a
+`PriceHistoryCache`; the controller keeps the 30-day cache branch.
+`InventorySerializer` covers the simple `inventories/me` envelope.
 
 ## Update (2026-10-20): ListQuery naming, content-named results, aggregate projection
 
@@ -458,7 +463,7 @@ Negative / risks:
   error class.
 - `agent/styleguides/fetcher/architecture-layers.md` — updated to add
   these layers to `app_fetcher`'s layer map.
-- `app_fetcher/app/models/price_period.rb` — the partial, undocumented
-  precedent this decision generalizes.
+- `app_fetcher/app/queries/options/date_range.rb` — the partial,
+  undocumented precedent this decision generalizes.
 - `agent/plans/item-catalog-query-refactor.md` — the plan this
   decision unblocks.

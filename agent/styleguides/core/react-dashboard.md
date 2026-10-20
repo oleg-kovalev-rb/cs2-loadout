@@ -41,12 +41,16 @@ more than one but each with its own independent data-loading shape):
 
 ```text
 app/frontend/dashboard/
-  Dashboard.jsx           — root component: owns the useReducer + the
-                            data-loading hook, renders the tiles
+  Dashboard.jsx           — root component: owns the useReducer + composes
+                            the data-loading hooks, renders the tiles
   reducer.js              — the one UI-state reducer + its initialState
   chartConfig.js           — chart tuning constants (periods, tick counts)
   hooks/
-    useDashboardData.js    — the one data-loading hook
+    useDashboardData.js    — skeleton/inventory-ownership load
+    useItemPrices.js       — current prices + coverage retry
+    useItemTrend.js        — per-item trend points
+    usePortfolioHistory.js — portfolio series/current/change
+    useItemHistory.js      — selected item's price series
   components/
     <Name>Tile.jsx, <Name>.jsx — presentational components
   utils/
@@ -322,12 +326,12 @@ stack, and `agent/styleguides/ci-and-coverage.md` /
 
 ## Derived Data: `utils/`
 
-Any computation over raw data — filtering, sorting, bucketing into time
-series, formatting — is a pure function in `utils/`, never inlined in a
-component's render body. Existing examples: `filters.js`
-(`applyFilters`/`applySort`), `portfolioSeries.js`, `marketVolume.js`,
-`itemSeries.js`, `bucketing.js` (the shared bucketing primitives both
-series functions build on).
+Any computation over raw data — filtering, sorting, formatting,
+narrowing a set of names — is a pure function in `utils/`, never inlined
+in a component's render body. Existing examples: `filters.js`
+(`applyFilters`/`applySort` plus the present-only facet helpers) and
+`priceCoverage.js` (`priceableNames`, which narrows the price hook's
+retry set to marketable, not-price-unavailable items).
 
 These functions:
 
@@ -335,13 +339,11 @@ These functions:
   shape — `marketHashName`, `currentPriceCents`, `priceHistory`, etc.,
   not the raw snake_case API response) and return plain data;
 - are null/empty-safe by construction, not by the caller checking first
-  — e.g. `itemSeries` treats a missing `priceHistory` as `[]`;
-  `portfolioSeries`/`marketVolume` both produce a sensible empty result
-  (`[]` series, `0` totals) for an empty or not-yet-hydrated items array,
-  rather than throwing or requiring a guard at the call site. Any new
-  derivation function must do the same — a partially-loaded or
-  empty-items state is a normal input, not an edge case to special-case
-  outside the function.
+  — e.g. `priceableNames` treats a missing items array as `[]`, and
+  `applyFilters` returns an empty list for empty input rather than
+  throwing or requiring a guard at the call site. Any new derivation
+  function must do the same — a partially-loaded or empty-items state is
+  a normal input, not an edge case to special-case outside the function.
 - are covered by dedicated unit tests with no rendering involved (see
   Testing).
 
@@ -442,10 +444,15 @@ via spread. Multi-select filter state is a plain object of `Set`s
 shared `toggleSetMember` helper — follow this shape for a new
 multi-select filter rather than inventing a different collection type.
 
-**Data loading** is a custom hook per *distinct* data-loading need. For
-the dashboard, there's exactly one need, so there's exactly one hook
-(`useDashboardData(fetcherUrl, bridgeToken)`). For the admin panel, all
-four pages have the *same* need — paginated reads against one of four
+**Data loading** is a custom hook per *distinct* data-loading need. The
+dashboard has five: `useDashboardData` (the inventory skeleton),
+`useItemPrices` (current prices plus coverage retry), `useItemTrend`
+(trend points), `usePortfolioHistory` (portfolio series/current/change),
+and `useItemHistory` (the selected item's history). They are split by
+when each can start and what it independently reports, not by endpoint
+count: the skeleton gates the name-driven price/trend hooks, while the
+history hooks key off the user's selected period/item. For the admin
+panel, all four pages have the *same* need — paginated reads against one of four
 structurally identical `Api::Admin::` index endpoints, differing only in
 resource path and per-page defaults — so this is one generic hook,
 `useAdminList(resourcePath, { page, perPage })`, parametrized and reused
@@ -470,13 +477,18 @@ renders its own fallback (`steam_id` + letter avatar) rather than entering
 its error state, since the enrichment is additive to the `app_fetcher`-
 sourced render, never a gate on it.
 
-Regardless of island, every data-loading hook returns `{data, status,
-error}` with `status` a flat string enum. Three rules that generalize
-beyond today's exact handful of values:
+Regardless of island, every data-loading hook exposes a flat string
+`status` plus a payload named for the data it returns (`data`,
+`pricesByName`, `trendByName`, `series`/`current`/`change`); it also
+returns `error` when the UI renders a failure state for that hook.
+`status` follows three rules that generalize beyond today's exact
+handful of values:
 
 - `status` describes the *overall* load, and only needs enough values to
   distinguish states the UI actually renders differently — today that's
-  `'loading' | 'success' | 'error'`. A load with more than one
+  `'loading' | 'success' | 'error'`, plus `'pending' | 'ready'` for
+  additive hooks whose data starts absent and is allowed to stay that way
+  (trend/item history). A load with more than one
   independently-resolving stage (e.g. an initial fast read plus a slower
   batch that fills in more detail) should **not** try to cram every
   stage into one `status` enum — add a second, narrower status field
@@ -633,8 +645,8 @@ globals even though they'd work.
   there is no single cross-island test directory, the same way there is
   no shared cross-island `components/`/`utils/` beyond `shared/` itself.
 - `.test.js` for testing a pure `utils/`/`reducer.js` function with no
-  rendering (`filters.test.js`, `portfolioSeries.test.js`,
-  `marketVolume.test.js`, `reducer.test.js`). `.test.jsx` only when the
+  rendering (`filters.test.js`, `priceCoverage.test.js`,
+  `reducer.test.js`). `.test.jsx` only when the
   test itself renders JSX (`ItemsTile.test.jsx`) — matches the
   source-file split below.
 
@@ -656,11 +668,13 @@ layout/presentation, it doesn't need one just for existing.
 
 ### Test styles, by what's under test
 
-- **Pure-function unit tests** (`filters.test.js`, `portfolioSeries.test.js`,
-  `marketVolume.test.js`, `reducer.test.js`): call the function directly
+- **Pure-function unit tests** (`filters.test.js`, `priceCoverage.test.js`,
+  `reducer.test.js`): call the function directly
   with hand-built plain-object fixtures, assert on the return value — no
   rendering, no mocking.
-- **Hook tests** (`useDashboardData.test.js`): `renderHook` +
+- **Hook tests** (`useDashboardData.test.js`, `useItemPrices.test.js`,
+  `useItemTrend.test.js`, `usePortfolioHistory.test.js`,
+  `useItemHistory.test.js`): `renderHook` +
   `waitFor` from `@testing-library/react`, with `vi.stubGlobal('fetch',
   vi.fn()...)` to control network responses — mock at the `fetch`
   boundary, not by stubbing the hook's own internals.
@@ -676,7 +690,7 @@ layout/presentation, it doesn't need one just for existing.
   `ItemsTile.test.jsx`'s own header comment for the reasoning). For a
   root component that both owns the reducer *and* triggers its own data
   loading (e.g. `inventories/`'s `InventoriesIndex`/`InventoryDetail`,
-  unlike `Dashboard.jsx` which delegates loading to a hook it merely
+  unlike `Dashboard.jsx` which delegates loading to the hooks it merely
   calls), the same integration style applies directly to the root
   component itself — mock `fetch`, render the real component (no harness
   needed, since it already owns its own reducer), and drive it through
@@ -688,8 +702,12 @@ layout/presentation, it doesn't need one just for existing.
 Dashboard.jsx
     ↓ useReducer(dashboardReducer, initialState)      (reducer.js)
     ↓ useDashboardData(fetcherUrl, bridgeToken)         (hooks/)
-        ↓ fetch — GET Api::V1::InventoriesController#show
-        ↓ fetch — POST Api::V1::PriceHistoriesController#index
+        ↓ fetch — GET Api::V1::InventoriesController#show (/inventories/me)
+    ↓ useItemPrices / useItemTrend
+        ↓ fetch — GET Api::V1::ItemPricesController#dynamics / #trend
+    ↓ usePortfolioHistory / useItemHistory
+        ↓ fetch — GET Api::V1::InventoryValuesController#index
+        ↓ fetch — GET Api::V1::ItemPricesController#history
           (see architecture-layers.md: called directly, no app_core proxy)
     ↓ passes data + dispatch-bound callbacks to tiles   (components/)
         ↓ tiles call utils/ functions to derive what they render
@@ -705,7 +723,9 @@ patterns.
 
 - `app_core/app/frontend/dashboard/Dashboard.jsx`,
   `app_core/app/frontend/dashboard/reducer.js`
-- `app_core/app/frontend/dashboard/hooks/useDashboardData.js`
+- `app_core/app/frontend/dashboard/hooks/useDashboardData.js`,
+  `useItemPrices.js`, `useItemTrend.js`, `usePortfolioHistory.js`,
+  `useItemHistory.js` — one hook per distinct data-loading need
 - `app_core/app/frontend/dashboard/components/ItemsTile.jsx` — the
   composition/derivation/testing pattern in one place
 - `app_core/app/frontend/shared/components/Sparkline.jsx` vs.
@@ -721,7 +741,8 @@ patterns.
   `app_core/app/frontend/inventories/components/PortfolioHeroTile.jsx` —
   the hero-delta zero-hiding guard (see Component Conventions)
 - `app_core/app/frontend/dashboard/__tests__/ItemsTile.test.jsx`,
-  `useDashboardData.test.js`, `portfolioSeries.test.js`
+  `useDashboardData.test.js`, `useItemPrices.test.js`,
+  `usePortfolioHistory.test.js`
 - `app_core/app/frontend/admin-panel/AdminPanel.jsx`,
   `app_core/app/frontend/admin-panel/useHashRoute.js`,
   `app_core/app/frontend/admin-panel/adminApi.js`,
