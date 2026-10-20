@@ -210,6 +210,85 @@ describe('useInventoryDetail', () => {
     )
   })
 
+  test('keeps the previous payload while a period refetch is in flight', async () => {
+    let resolveSecondFetch
+    const secondFetch = new Promise((resolve) => {
+      resolveSecondFetch = resolve
+    })
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse(detailPayload()))
+      .mockImplementationOnce(() => secondFetch)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result, rerender } = renderHook(
+      ({ period }) =>
+        useInventoryDetail('http://fetcher.test', '76561198000000001', {
+          period,
+          sort: 'price_desc',
+          page: 1,
+          perPage: 12,
+        }),
+      { initialProps: { period: '7d' } },
+    )
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+    const firstData = result.current.data
+
+    rerender({ period: '30d' })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(result.current.status).toBe('loading')
+    expect(result.current.data).toBe(firstData)
+
+    resolveSecondFetch(
+      await jsonResponse(
+        detailPayload({
+          portfolio: { ...detailPayload().portfolio, period: '30d', total_value_cents: 600000 },
+        }),
+      ),
+    )
+
+    await waitFor(() => expect(result.current.data.portfolio.totalValueCents).toBe(600000))
+    expect(result.current.data.portfolio.period).toBe('30d')
+  })
+
+  test('clears the previous payload when the inventory identity changes', async () => {
+    let resolveSecondFetch
+    const secondFetch = new Promise((resolve) => {
+      resolveSecondFetch = resolve
+    })
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => jsonResponse(detailPayload()))
+      .mockImplementationOnce(() => secondFetch)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result, rerender } = renderHook(
+      ({ steamId }) =>
+        useInventoryDetail('http://fetcher.test', steamId, {
+          period: '7d',
+          sort: 'price_desc',
+          page: 1,
+          perPage: 12,
+        }),
+      { initialProps: { steamId: '76561198000000001' } },
+    )
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+
+    rerender({ steamId: '76561198000000002' })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(result.current.data).toBeNull()
+    expect(result.current.status).toBe('loading')
+
+    resolveSecondFetch(await jsonResponse(detailPayload({ steam_id: '76561198000000002' })))
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+    expect(result.current.data.steamId).toBe('76561198000000002')
+  })
+
   test('a 404 response maps to a distinct not_found status, not the generic error status', async () => {
     vi.stubGlobal(
       'fetch',
