@@ -341,3 +341,18 @@ From `app_core/` (or the docker-compose CI equivalent):
 - The yellow `Demo` badge was intentionally left unchanged (out of
   scope); it sits near the new orange and can be neutralized later if it
   reads muddy.
+
+## Follow-up (post-implementation)
+
+- `app_core/app/assets/stylesheets/application.css` (Propshaft, loaded by
+  every ERB page via `stylesheet_link_tag :app`) was missed in the first
+  pass: it hardcoded the old navy/violet palette, and it is the only
+  stylesheet on the admin login page (`/admin/session/new`), where no
+  Vite token CSS is loaded. Updated the admin-login block and the
+  flash-toast fallbacks to the new palette using
+  `var(--token, <new fallback>)`, so the page is correct both with and
+  without `tokens.css`. Verified `GET /admin/session/new` renders the
+  graphite palette and the served asset contains zero legacy literals.
+- This file is not covered by the project's Prettier `format:check`
+  (`app/frontend` only) and failed Prettier before this change too, so
+  its existing double-quote style was preserved rather than reformatted.

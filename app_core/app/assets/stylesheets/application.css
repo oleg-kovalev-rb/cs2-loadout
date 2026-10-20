@@ -11,7 +11,7 @@
 
 body {
   margin: 0;
-  background: #0c111b;
+  background: var(--bg, #0b0c0e);
 }
 
 .admin-login {
@@ -19,16 +19,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0c111b;
-  color: #edf0f7;
+  background: var(--bg, #0b0c0e);
+  color: var(--text, #eef0f2);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .admin-login-card {
   width: 320px;
   padding: 32px;
-  background: #141a28;
-  border: 1px solid #262f44;
+  background: var(--surface, #151719);
+  border: 1px solid var(--border, #26292e);
   border-radius: 10px;
 }
 
@@ -39,15 +39,15 @@ body {
 }
 
 .admin-login-title .dim {
-  color: #57607a;
+  color: var(--text-faint, #5b6069);
 }
 
 .admin-login-error {
   margin: 0 0 16px;
   padding: 8px 10px;
   border-radius: 7px;
-  background: rgba(240, 84, 107, 0.13);
-  color: #f0546b;
+  background: var(--down-soft, rgba(240, 84, 107, 0.13));
+  color: var(--down, #f0546b);
   font-size: 13px;
 }
 
@@ -57,7 +57,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8791ab;
+  color: var(--text-muted, #8b9099);
   margin: 14px 0 6px;
 }
 
@@ -65,9 +65,9 @@ body {
 .admin-login-form input[type="password"] {
   width: 100%;
   box-sizing: border-box;
-  background: #1c2334;
-  border: 1px solid #262f44;
-  color: #edf0f7;
+  background: var(--surface-raised, #1d2023);
+  border: 1px solid var(--border, #26292e);
+  color: var(--text, #eef0f2);
   border-radius: 7px;
   padding: 8px 10px;
   font-size: 13px;
@@ -76,9 +76,9 @@ body {
 .admin-login-form input[type="submit"] {
   margin-top: 20px;
   width: 100%;
-  background: #8368ff;
-  border: 1px solid #8368ff;
-  color: #fff;
+  background: var(--accent, #4ea8e0);
+  border: 1px solid var(--accent, #4ea8e0);
+  color: var(--accent-ink, #08131d);
   border-radius: 7px;
   padding: 9px 13px;
   font-size: 13px;
@@ -105,17 +105,17 @@ body {
 }
 
 .flash {
-  --flash-accent: var(--accent, #8368ff);
+  --flash-accent: var(--accent, #4ea8e0);
 
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--border, #262f44);
+  border: 1px solid var(--border, #26292e);
   border-left: 3px solid var(--flash-accent);
   border-radius: var(--radius-md, 10px);
-  background: var(--surface, #141a28);
-  color: var(--text, #edf0f7);
+  background: var(--surface, #151719);
+  color: var(--text, #eef0f2);
   font-size: 0.8125rem;
   line-height: 1.4;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
