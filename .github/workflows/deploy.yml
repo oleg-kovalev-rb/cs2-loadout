@@ -78,4 +78,5 @@ jobs:
         working-directory: app_core
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY_CORE }}
+          STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
         run: kamal "$KAMAL_COMMAND"

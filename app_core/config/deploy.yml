@@ -35,6 +35,7 @@ env:
     - APP_ADMIN_BRIDGE_JWT_SECRET
     - APP_DEMO_JWT_SECRET
     - DB_PASSWORD
+    - STEAM_WEB_API_KEY
 
 aliases:
   console: app exec --interactive --reuse "bin/rails console"
