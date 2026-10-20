@@ -114,6 +114,13 @@ RSpec.describe Demo::Dataset do
 
       expect(history.last.price_cents).to eq(item.current_price_cents)
     end
+
+    it "equals the sum of the current item prices" do
+      total = dataset.value(period: "7d").snapshot.total_value_cents
+      item_sum = dataset.items.sum { |item| item.current_price_cents.to_i }
+
+      expect(total).to eq(item_sum)
+    end
   end
 
   describe "#summary" do
