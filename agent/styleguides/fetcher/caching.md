@@ -139,7 +139,7 @@ cross-Scenario service layer instead of a worker (see
   expires_in: TTL) { ... }` is correct there, not a bypass of this rule.
 - Construct keys as versioned arrays: `[<namespace>, <version_integer>,
   id]` (e.g. `["item_price", 1, market_hash_name]`,
-  `["user_inventory", 2, steam_id]`). Bump the version segment whenever
+  `["user_inventory", 1, steam_id]`). Bump the version segment whenever
   the cached payload's shape changes — never reuse a version number for a
   differently-shaped value.
 - When a cached resource has no single natural identifier — a result
@@ -150,7 +150,7 @@ cross-Scenario service layer instead of a worker (see
   differing only in param order or case still resolve to the same key.
   Then use `Digest::SHA256.hexdigest` of that normalized representation
   as `id` in the same versioned-array shape above, e.g.
-  `["items_catalog", 1, Digest::SHA256.hexdigest(normalized_filters.to_json)]`.
+  `["items_list", 1, Digest::SHA256.hexdigest(normalized_filters.to_json)]`.
   Hashing an un-normalized input first would defeat the point — two
   equivalent-but-differently-ordered requests would hash to different
   digests and silently fragment the cache. Only include inputs that
