@@ -178,19 +178,18 @@ module Demo
     def portfolio_points(range)
       return [] if items.empty?
 
-      days = window_days(range)
-      totals = portfolio_daily.last(days)
-      dates = series_for_item(T.must(items.first)).daily.map(&:at).last(days)
-
-      totals.each_with_index.map do |total, index|
-        InventoryValueQuery::ValueHistory::Point.new(
-          at: T.must(dates[index]),
-          total_value_cents: total,
-          complete: true,
-          priced_items_count: items.size,
-          pricable_items_count: items.size
-        )
+      dates = series_for_item(T.must(items.first)).daily.map(&:at)
+      today = Date.current
+      since_date = range.since_date
+      indexes = dates.each_index.select do |index|
+        date = T.must(dates[index]).to_date
+        date < today && (since_date.nil? || date >= since_date)
       end
+      points = indexes.map do |index|
+        value_point(at: T.must(dates[index]), total: T.must(portfolio_daily[index]))
+      end
+
+      points + [ value_point(at: Time.current.utc, total: T.must(portfolio_daily.last)) ]
     end
 
     sig { returns(T::Array[Integer]) }
@@ -209,15 +208,18 @@ module Demo
       end
     end
 
-    sig { params(range: Options::DateRange).returns(Integer) }
-    def window_days(range)
-      case range
-      when Options::DateRange::Last24Hours then 1
-      when Options::DateRange::Last7Days then 7
-      when Options::DateRange::Last30Days then 30
-      when Options::DateRange::LastYear, Options::DateRange::AllTime then HISTORY_DAYS
-      else T.absurd(range)
-      end
+    sig do
+      params(at: Time, total: Integer)
+        .returns(InventoryValueQuery::ValueHistory::Point)
+    end
+    def value_point(at:, total:)
+      InventoryValueQuery::ValueHistory::Point.new(
+        at: at,
+        total_value_cents: total,
+        complete: true,
+        priced_items_count: items.size,
+        pricable_items_count: items.size
+      )
     end
 
     sig { params(points: T::Array[InventoryValueQuery::ValueHistory::Point]).returns(InventoryValueQuery::ValueSnapshot) }

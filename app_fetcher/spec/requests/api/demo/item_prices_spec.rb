@@ -49,7 +49,7 @@ RSpec.describe "Api::Demo::ItemPrices", type: :request do
 
     aggregate_failures do
       expect(response).to have_http_status(:success)
-      expect(json.size).to eq(7)
+      expect(json.size).to eq(8)
       expect(json.last["price_cents"]).to eq(current_price)
     end
   end
@@ -59,7 +59,7 @@ RSpec.describe "Api::Demo::ItemPrices", type: :request do
         params: { period: "24h" },
         headers: { "Authorization" => "Bearer #{demo_token}" }
 
-    expect(JSON.parse(response.body).size).to eq(24)
+    expect(JSON.parse(response.body).size).to eq(25)
   end
 
   it "returns not found for an unknown item" do

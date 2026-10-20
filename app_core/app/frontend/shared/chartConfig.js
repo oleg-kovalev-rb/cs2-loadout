@@ -14,28 +14,51 @@ export const PERIOD_MS = {
 export const X_AXIS_TICK_COUNT = 5 // x-axis labels shown (independent of point count)
 export const Y_AXIS_TICK_COUNT = 4 // y-axis price labels shown
 
-// How much real time each period spans, independent of how many points we plot for it.
-const PERIOD_SPAN = {
-  '24h': { units: 24, label: 'h', now: 'now' },
-  '7d': { units: 7, label: 'd', now: 'today' },
-  '30d': { units: 30, label: 'd', now: 'today' },
-  '1y': { units: 12, label: 'mo', now: 'today' },
+const PERIOD_LABEL = {
+  '24h': { label: 'h', now: 'now' },
+  '7d': { label: 'd', now: 'today' },
+  '30d': { label: 'd', now: 'today' },
+  '1y': { label: 'mo', now: 'today' },
 }
 
-// 'all' has no fixed span to count back from — it's bounded by whatever
-// data actually exists, not a known duration — so only the trailing
-// "today" tick is meaningful; earlier ticks are left blank rather than
-// showing a fabricated relative offset.
-export function generateAxisLabels(period, tickCount = X_AXIS_TICK_COUNT) {
+const UNIT_MS = {
+  h: 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+  mo: (365 * 24 * 60 * 60 * 1000) / 12,
+}
+
+// Whole-unit labels stop being readable when the span has fewer units than
+// there are gaps between ticks: rounding then produces duplicate labels.
+const MIN_UNITS_FOR_WHOLE_LABELS = X_AXIS_TICK_COUNT - 1
+
+function labelUnit(nominalLabel, spanMs) {
+  if (nominalLabel === 'h') return 'h'
+  if (spanMs / UNIT_MS[nominalLabel] >= MIN_UNITS_FOR_WHOLE_LABELS) return nominalLabel
+
+  return nominalLabel === 'mo' ? 'd' : 'h'
+}
+
+// `start`/`end` are the effective x-axis extent, not the nominal period: the
+// chart extends the axis to include the data (Recharts' allowDataOverflow is
+// false), so a short series gets labels for the span it actually has instead
+// of a left-hand label claiming history that doesn't exist.
+export function generateAxisLabels(period, start, end, tickCount = X_AXIS_TICK_COUNT) {
+  // 'all' has no fixed span to count back from — it's bounded by whatever
+  // data actually exists, not a known duration — so only the trailing
+  // "today" tick is meaningful; earlier ticks are left blank rather than
+  // showing a fabricated relative offset.
   if (period === 'all') {
     return Array.from({ length: tickCount }, (_, i) => (i === tickCount - 1 ? 'today' : ''))
   }
 
-  const { units, label, now } = PERIOD_SPAN[period]
+  const { label: nominalLabel, now } = PERIOD_LABEL[period]
+  const span = end > start ? end - start : PERIOD_MS[period]
+  const label = labelUnit(nominalLabel, span)
+  const spanUnits = span / UNIT_MS[label]
 
   return Array.from({ length: tickCount }, (_, i) => {
     const frac = tickCount === 1 ? 1 : i / (tickCount - 1)
-    const unitsAgo = Math.round(units * (1 - frac))
+    const unitsAgo = Math.round(spanUnits * (1 - frac))
     return unitsAgo === 0 ? now : `${unitsAgo}${label} ago`
   })
 }

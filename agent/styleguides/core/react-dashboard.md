@@ -647,6 +647,31 @@ these criteria, don't default to "always use the charting library":
   — the two exist for different rendering-cost profiles, not out of
   inconsistency.
 
+### Hero chart x-axis: span the data, not just the period
+
+The hero chart is shared by the dashboard portfolio, the item-detail
+view, and the public inventory-detail page, so this rule applies to all
+of them:
+
+- The x-domain starts at the first data point when the series is shorter
+  than the selected period, and at `now - PERIOD_MS[period]` otherwise;
+  it ends at `max(now, last point)` (`'all'` keeps `dataMin..dataMax`).
+  Data older than the period boundary is clipped (`allowDataOverflow`),
+  so a mature series fills the axis up to its first tick while a short
+  one shrinks the axis instead of leaving an empty strip.
+- Generate the x labels from that extent, not from the nominal period
+  alone (`shared/chartConfig.js`'s `generateAxisLabels(period, start,
+  end)`). A series that covers the period keeps the canonical labels
+  (`7d ago … today`, `24h ago … now`, `12mo … today`); a shorter series
+  is labelled with its real span, so the line starts at the left edge
+  and no label claims history that doesn't exist.
+- Never leave a nominal-period label on a shorter axis (e.g. `7d ago`
+  beside two days of data) and never fabricate points to fill the gap.
+  When the real span is shorter than four whole units, downgrade the
+  label unit (`d` → `h`, `mo` → `d`) so adjacent labels cannot repeat.
+- `'all'` keeps its blank-label treatment: it has no known span to
+  count back from.
+
 ## Styling
 
 Plain CSS classes, BEM-ish naming (`tile`, `tile-hero`, `dropdown-panel`,
@@ -785,7 +810,8 @@ detail; public reads stay public); see Demo Mode above.
   composition/derivation/testing pattern in one place
 - `app_core/app/frontend/shared/components/Sparkline.jsx` vs.
   `app_core/app/frontend/shared/components/HeroChart.jsx` — the
-  charting-tool boundary
+  charting-tool boundary; `HeroChart.jsx` also owns the x-domain/label
+  span rule (see Charting)
 - `app_core/app/frontend/shared/utils/trend.js` — the shared `up`/`down`/
   `flat` trend-direction helper every island's item row derives through
   (see Component Conventions)

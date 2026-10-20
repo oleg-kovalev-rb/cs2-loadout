@@ -11,7 +11,8 @@ RSpec.describe "Api::Demo::InventoryValues", type: :request do
     aggregate_failures do
       expect(response).to have_http_status(:success)
       expect(json.dig("current", "complete")).to be(true)
-      expect(json["history"].size).to eq(7)
+      expect(json["history"].size).to eq(8)
+      expect(Time.iso8601(json["history"].first["at"]).utc.to_date).to eq(Date.current - 7)
       expect(json["history"].last["total_value_cents"]).to eq(json.dig("current", "total_value_cents"))
     end
   end
