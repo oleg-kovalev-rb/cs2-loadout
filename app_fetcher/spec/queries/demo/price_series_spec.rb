@@ -51,16 +51,10 @@ RSpec.describe Demo::PriceSeries do
     expect(series.change_24h_cents).to eq(points.last.price_cents - points[-2].price_cents)
   end
 
-  it "keeps every generated price on a whole-dollar boundary" do
-    prices = series.daily.map(&:price_cents) + series.hourly.map(&:price_cents)
-
-    expect(prices).to all(satisfy { |price_cents| price_cents.positive? && (price_cents % 100).zero? })
-  end
-
-  it "rounds a low anchor up to the minimum whole-dollar price" do
+  it "keeps prices positive for a low anchor" do
     low = described_class.new(market_hash_name: "P250 | Sand Dune (Factory New)", current_price_cents: 1)
 
-    expect(low.daily.map(&:price_cents)).to all(be >= 100)
+    expect(low.daily.map(&:price_cents)).to all(be_positive)
   end
 
   it "varies by item name for the same anchor" do

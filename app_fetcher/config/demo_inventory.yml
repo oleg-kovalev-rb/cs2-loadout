@@ -33,7 +33,7 @@
 - market_hash_name: "P250 | See Ya Later (Factory New)"
   base_price_cents: 3000
 - market_hash_name: "P250 | Sand Dune (Factory New)"
-  base_price_cents: 100
+  base_price_cents: 10
 - market_hash_name: "MP9 | Hydra (Factory New)"
   base_price_cents: 2500
 - market_hash_name: "MP7 | Bloodsport (Factory New)"

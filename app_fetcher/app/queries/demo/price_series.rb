@@ -18,7 +18,6 @@ module Demo
     DAILY_SWING = T.let(0.035, Float)
     HOURLY_SWING = T.let(0.006, Float)
     MIN_PRICE_CENTS = T.let(1, Integer)
-    PRICE_STEP_CENTS = T.let(100, Integer)
     MIN_MULTIPLIER = T.let(0.5, Float)
     MAX_MULTIPLIER = T.let(2.0, Float)
 
@@ -28,7 +27,7 @@ module Demo
     sig { params(market_hash_name: String, current_price_cents: Integer).void }
     def initialize(market_hash_name:, current_price_cents:)
       @market_hash_name = market_hash_name
-      @current_price_cents = T.let(round_price([ current_price_cents, MIN_PRICE_CENTS ].max), Integer)
+      @current_price_cents = T.let([ current_price_cents, MIN_PRICE_CENTS ].max, Integer)
       @seed = T.let(Digest::SHA256.hexdigest(market_hash_name).first(8).to_i(16), Integer)
       @daily = T.let(nil, T.nilable(T::Array[Point]))
       @hourly = T.let(nil, T.nilable(T::Array[Point]))
@@ -81,7 +80,7 @@ module Demo
       values = T.let([ @current_price_cents ], T::Array[Integer])
 
       (DAYS - 1).times do
-        previous = round_price((T.must(values.last) * (1.0 + ((random.rand - 0.5) * 2.0 * DAILY_SWING))).round)
+        previous = (T.must(values.last) * (1.0 + ((random.rand - 0.5) * 2.0 * DAILY_SWING))).round
         values << previous.clamp(lower_bound, upper_bound)
       end
 
@@ -105,7 +104,7 @@ module Demo
         progress = (index + 1).to_f / (HOURS - 1)
         target = start + ((@current_price_cents - start) * progress)
         noise = target * ((random.rand - 0.5) * 2.0 * HOURLY_SWING)
-        values << round_price([ (target + noise).round, MIN_PRICE_CENTS ].max)
+        values << [ (target + noise).round, MIN_PRICE_CENTS ].max
       end
       values << @current_price_cents
 
@@ -125,19 +124,14 @@ module Demo
       Random.new(@seed + salt).rand(1..500)
     end
 
-    sig { params(price_cents: Integer).returns(Integer) }
-    def round_price(price_cents)
-      [ (price_cents.to_f / PRICE_STEP_CENTS).round * PRICE_STEP_CENTS, PRICE_STEP_CENTS ].max
-    end
-
     sig { returns(Integer) }
     def lower_bound
-      round_price([ (@current_price_cents * MIN_MULTIPLIER).round, MIN_PRICE_CENTS ].max)
+      [ (@current_price_cents * MIN_MULTIPLIER).round, MIN_PRICE_CENTS ].max
     end
 
     sig { returns(Integer) }
     def upper_bound
-      round_price([ (@current_price_cents * MAX_MULTIPLIER).round, lower_bound ].max)
+      [ (@current_price_cents * MAX_MULTIPLIER).round, lower_bound ].max
     end
   end
 end

@@ -61,7 +61,7 @@ RSpec.describe Demo::Dataset do
       end
     end
 
-    it "uses a real current price as the anchor, rounded to a whole dollar" do
+    it "uses a real current price as the anchor when available" do
       create(
         :item,
         market_hash_name: first_name,
@@ -71,7 +71,7 @@ RSpec.describe Demo::Dataset do
       )
 
       aggregate_failures do
-        expect(dataset.items.first.current_price_cents).to eq(12_300)
+        expect(dataset.items.first.current_price_cents).to eq(12_345)
         expect(dataset.items.last.current_price_cents).to eq(2_500)
       end
     end
@@ -163,7 +163,7 @@ RSpec.describe Demo::Dataset do
         expect(details.items.entries.map(&:market_hash_name)).to eq([ first_name ])
         expect(details.items.total_count).to eq(2)
         expect(details.items.pagination.total_pages(2)).to eq(2)
-        expect(details.avg_item_value_cents).to eq(1_800)
+        expect(details.avg_item_value_cents).to eq(1_750)
         expect(details.priciest_item&.market_hash_name).to eq(second_name)
       end
     end
