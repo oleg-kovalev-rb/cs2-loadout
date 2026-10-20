@@ -1,10 +1,14 @@
-# typed: true
+# typed: strict
 
 class SessionsController < ApplicationController
+  extend T::Sig
+
+  sig { void }
   def create
     redirect_to Steam::Authenticator.auth_url(callback_session_url, root_url), allow_other_host: true
   end
 
+  sig { void }
   def callback
     user = Steam::LoginUser.call(request.query_parameters.except("controller", "action"))
 
@@ -19,6 +23,7 @@ class SessionsController < ApplicationController
     redirect_to root_path, alert: "Internal server error during login."
   end
 
+  sig { void }
   def destroy
     session.delete(:user_id)
     redirect_to root_path, notice: "Logged out."

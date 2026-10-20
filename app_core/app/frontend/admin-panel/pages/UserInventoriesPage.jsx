@@ -3,23 +3,9 @@ import { userInventoriesReducer, initialState } from './userInventoriesReducer'
 import { useAdminList } from '../hooks/useAdminList'
 import { adminGet, adminSend } from '../adminApi'
 import { Pagination } from '../components/Pagination'
-import { fmtDateTime } from '../utils/format'
+import { fmtDateTime, fmtPrice } from '../utils/format'
 
 const VISIBLE_ITEMS = 2
-
-// Deliberately not `fmtPrice`: that helper treats 0 and null/undefined the
-// same (both render as "—"), which is correct for a price that simply
-// hasn't loaded yet, but wrong here — total_value_cents distinguishes a
-// confirmed-empty/worthless inventory (0, a real value) from one that has
-// never been synced to a value log at all (null), and those must render
-// differently.
-function fmtValueOrDash(cents) {
-  if (cents == null) return '—'
-  return (
-    '$' +
-    (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  )
-}
 
 export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
   const [state, dispatch] = useReducer(userInventoriesReducer, initialState)
@@ -158,7 +144,7 @@ export function UserInventoriesPage({ fetcherUrl, bridgeToken }) {
                       </td>
                       <td className="mono">{inv.steam_id}</td>
                       <td className="mono">{inv.items_count}</td>
-                      <td className="mono">{fmtValueOrDash(inv.total_value_cents)}</td>
+                      <td className="mono">{fmtPrice(inv.total_value_cents)}</td>
                       <td className="mono text-muted">{fmtDateTime(inv.updated_at)}</td>
                       <td>
                         <div className="row-actions">

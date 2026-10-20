@@ -2,16 +2,16 @@ import { describe, test, expect } from 'vitest'
 import { fmtPrice, fmtDateTime } from '../utils/format'
 
 describe('fmtPrice', () => {
-  test('renders a dash for zero (not tradable)', () => {
-    expect(fmtPrice(0)).toBe('—')
-  })
-
   test('renders a dash for null (no price yet)', () => {
     expect(fmtPrice(null)).toBe('—')
   })
 
   test('renders a dash for undefined (no price yet)', () => {
     expect(fmtPrice(undefined)).toBe('—')
+  })
+
+  test('renders zero as a real price, not a missing one', () => {
+    expect(fmtPrice(0)).toBe('$0.00')
   })
 
   test('renders a formatted USD price for a real value', () => {

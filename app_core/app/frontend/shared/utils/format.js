@@ -9,7 +9,7 @@ export function centsToUSD(cents) {
 }
 
 export function fmtPrice(cents) {
-  if (!cents) return '—'
+  if (cents == null) return '—'
   return fmtUSD(centsToUSD(cents))
 }
 

@@ -6,9 +6,9 @@ describe('fmtPrice', () => {
     expect(fmtPrice(1245)).toBe('$12.45')
   })
 
-  test('renders an em dash for null/zero', () => {
+  test('renders an em dash for null but zero as a real price', () => {
     expect(fmtPrice(null)).toBe('—')
-    expect(fmtPrice(0)).toBe('—')
+    expect(fmtPrice(0)).toBe('$0.00')
   })
 })
 

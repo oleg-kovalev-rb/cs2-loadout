@@ -44,14 +44,4 @@ a change's scope just because an unrelated file is flagged here.
 
 ## `app_core`
 
-- `app_core/lib/steam/authenticator.rb` — missing a Sorbet `# typed:`
-  sigil entirely; every sibling in `lib/steam/` (`bridge_token.rb`,
-  `profile_fetcher.rb`) is `typed: strict`.
-- `app_core/app/controllers/application_controller.rb` — no Sorbet sigil
-  at all.
-- `app_core/app/controllers/sessions_controller.rb` — `typed: true`
-  instead of `typed: strict`.
-  Both are real, hand-written controllers with actual logic, not
-  boilerplate — `app_fetcher`'s controllers prove `strict` works fine on
-  controllers, so this isn't a justified exception, just drift. See
-  `agent/styleguides/ruby-sorbet.md`.
+(none yet)
